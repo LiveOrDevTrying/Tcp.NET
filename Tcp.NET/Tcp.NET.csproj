@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PackageId>Tcp.NET</PackageId>
+    <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
+    <Description>The server and client modules for a simple Tcp Server with Authorization and Client implementation.</Description>
+    <Copyright>Copyright 2019</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
+    <PackageIconUrl>https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/Tcp.NETLogo.png</PackageIconUrl>
+    <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
+    <RepositoryType>Github Public</RepositoryType>
+    <PackageTags>Tcp server client Tcp.NET TcpSharp dotnet net 2.1 2.0</PackageTags>
+    <PackageReleaseNotes>Initial commit</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Tcp.NET.Client" Version="1.0.0" />
+    <PackageReference Include="Tcp.NET.Server" Version="1.0.1" />
+  </ItemGroup>
+
+</Project>
