@@ -1,7 +1,8 @@
 ﻿using System;
+using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Models;
 
-namespace Tcp.NET.Core.Events.Args
+namespace Tcp.NET.Server.Events.Args
 {
     public class TcpMessageAuthEventArgs : TcpMessageEventArgs
     {

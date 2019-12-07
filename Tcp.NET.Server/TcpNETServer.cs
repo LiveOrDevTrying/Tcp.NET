@@ -11,33 +11,35 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Core.Enums;
+using Tcp.NET.Server.Handlers;
+using Tcp.NET.Server.Events.Args;
 
 namespace Tcp.NET.Server
 {
-    public class TcpAsyncServer : 
+    public class TcpNETServer : 
         CoreNetworking<TcpConnectionAuthEventArgs, TcpMessageAuthEventArgs, TcpErrorAuthEventArgs>, 
-        ITcpAsyncServer
+        ITcpNETServer
     {
         protected readonly TcpHandler _handler;
-        protected readonly TcpConnectionManager _connectionManager;
+        protected readonly ITcpConnectionManager _connectionManager;
         protected readonly ParamsTcpServer _parameters;
         protected readonly IUserService _userService;
 
         protected Timer _timerPing;
 
-        public TcpAsyncServer(ParamsTcpServer parameters,
+        public TcpNETServer(ParamsTcpServer parameters,
             IUserService userService,
-            TcpHandler handler,
-            TcpConnectionManager connectionManager)
+            ITcpConnectionManager connectionManager)
         {
             _parameters = parameters;
             _userService = userService;
             _connectionManager = connectionManager;
 
-            _handler = handler;
+            _handler = new TcpHandler();
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
+            _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
         }
 
         public virtual bool BroadcastToAllAuthorizedUsers(PacketDTO packet)

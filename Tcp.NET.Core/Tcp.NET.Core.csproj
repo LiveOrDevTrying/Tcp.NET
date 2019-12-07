@@ -11,9 +11,9 @@
     <PackageIconUrl>https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/Tcp.NETLogo.png</PackageIconUrl>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
-    <PackageTags>Tcp server client Tcp.NET TcpSharp dotnet net 21 20</PackageTags>
-    <PackageReleaseNotes>Initial commit</PackageReleaseNotes>
-    <Version>1.0.1</Version>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 21 20</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <ItemGroup>

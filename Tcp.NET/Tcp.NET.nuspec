@@ -10,15 +10,15 @@
     <projectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</projectUrl>
     <icon>Logo.png</icon>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>The server and client modules for a simple Tcp Server with Authorization and Client implementation.</description>
+    <description>The server and client modules for a Tcp Server with Authorization and Client implementation.</description>
     <releaseNotes>Initial commit</releaseNotes>
     <copyright>Copyright 2019</copyright>
-    <tags>Tcp server client Tcp.NET TcpSharp dotnet net 2.1 2.0</tags>
+    <tags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</tags>
     <dependencies>
       <group targetFramework="netcoreapp2.1">
         <dependency id="Microsoft.NETCore.App" version="[2.1,3]" />
-        <dependency id="Tcp.NET.Client" version="[1,2]" />
-        <dependency id="Tcp.NET.Server" version="[1.0.1,2]" />
+        <dependency id="Tcp.NET.Client" version="[1.0.2,2]" />
+        <dependency id="Tcp.NET.Server" version="[1.0.2,2]" />
       </group>
     </dependencies>
   </metadata>

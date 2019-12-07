@@ -1,13 +1,13 @@
 ﻿using PHS.Core.Models;
-using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Server.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Tcp.NET.Server.Events.Args;
 
 namespace Tcp.NET.Server
 {
-    public interface ITcpAsyncServer : ICoreNetworking<TcpConnectionAuthEventArgs, TcpMessageAuthEventArgs, TcpErrorAuthEventArgs>
+    public interface ITcpNETServer : ICoreNetworking<TcpConnectionAuthEventArgs, TcpMessageAuthEventArgs, TcpErrorAuthEventArgs>
     {
         bool IsServerRunning { get; }
         Socket Socket { get;

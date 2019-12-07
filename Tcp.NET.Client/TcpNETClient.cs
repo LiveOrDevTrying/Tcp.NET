@@ -11,11 +11,9 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
 {
-    public class TcpAsyncClient : 
+    public class TcpNETClient : 
         CoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
-        ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>,
-        IDisposable, 
-        ITcpAsyncClient
+        ITcpNETClient
     {
         // ManualResetEvent instances signal completion.  
         protected ManualResetEvent _connectDone = new ManualResetEvent(false);
@@ -24,7 +22,7 @@ namespace Tcp.NET.Client
 
         protected Socket _connectionSocket;
 
-        public virtual void Start(string host, int port, string endOfLineCharacters)
+        public virtual void Connect(string host, int port, string endOfLineCharacters)
         {
             _endOfLineCharacters = endOfLineCharacters;
 
@@ -148,7 +146,7 @@ namespace Tcp.NET.Client
 
             return false;
         }
-        public virtual void Stop()
+        public virtual void Disconnect()
         {
             try
             {

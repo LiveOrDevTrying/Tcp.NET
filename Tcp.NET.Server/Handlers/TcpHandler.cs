@@ -10,22 +10,22 @@ using System.Threading;
 using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Enums;
 
-namespace Tcp.NET.Server
+namespace Tcp.NET.Server.Handlers
 {
-    public class TcpHandler : 
+    public sealed class TcpHandler : 
         CoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
         ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs> 
     {
-        protected Thread _tcpServerThread;
-        protected string _url;
-        protected volatile bool _isServerRunning;
-        protected int _port;
-        protected int _numberOfConnections;
-        protected Socket _connectionSocket;
+        private Thread _tcpServerThread;
+        private string _url;
+        private volatile bool _isServerRunning;
+        private int _port;
+        private int _numberOfConnections;
+        private Socket _connectionSocket;
 
-        protected ManualResetEvent _allDone = new ManualResetEvent(false);
+        private readonly ManualResetEvent _allDone = new ManualResetEvent(false);
 
-        public virtual void Start(string url, int port, string endOfLineCharacters)
+        public void Start(string url, int port, string endOfLineCharacters)
         {
             if (!_isServerRunning)
             {
@@ -44,7 +44,7 @@ namespace Tcp.NET.Server
                 _tcpServerThread.Start();
             }
         }
-        protected virtual void ServerThread()
+        private void ServerThread()
         {
             // Establish the local endpoint for the socket.  
             var hostInfo = Dns.GetHostEntry(_url);
@@ -53,8 +53,6 @@ namespace Tcp.NET.Server
             {
                 try
                 {
-                    Console.WriteLine("Trying to bind TCP on " + address.ToString() + ":" + _port);
-
                     var localEndPoint = new IPEndPoint(address, _port);
 
                     // Create a TCP/IP socket.  
@@ -66,8 +64,6 @@ namespace Tcp.NET.Server
                     _connectionSocket.Listen(100);      // Microsoft starts backlog at 100
 
                     _isServerRunning = true;
-
-                    Console.WriteLine("Bound on " + address.ToString() + ":" + _port);
 
                     FireEvent(this, new TcpConnectionEventArgs
                     {
@@ -93,12 +89,10 @@ namespace Tcp.NET.Server
                 }
                 catch
                 {
-                    Console.WriteLine("Bad IP. " + address.ToString() + ":" + _port + "Trying the next ...");
-                    //throw new ArgumentException("Server start error", ex);
                 }
             }
         }
-        public virtual void Stop()
+        public void Stop()
         {
             try
             {
@@ -128,7 +122,6 @@ namespace Tcp.NET.Server
             catch
             {
                 _isServerRunning = false;
-                Console.WriteLine("Server disconnect error from TCP.");
             }
         }
 
@@ -160,7 +153,6 @@ namespace Tcp.NET.Server
             }
             catch
             {
-                Console.WriteLine("Send error from tcp");
                 DisconnectClient(socket);
             }
 
@@ -202,7 +194,6 @@ namespace Tcp.NET.Server
             }
             catch
             {
-                Console.WriteLine("Send error from tcp");
                 DisconnectClient(socket);
             }
 
@@ -240,7 +231,6 @@ namespace Tcp.NET.Server
             }
             catch
             {
-                Console.WriteLine("Send raw error from tcp");
                 DisconnectClient(socket);
             }
 
@@ -305,7 +295,6 @@ namespace Tcp.NET.Server
             }
             catch
             {
-                Console.WriteLine("Accept callback from TCP error");
             }
         }
         private void ReadCallback(IAsyncResult ar)
@@ -382,7 +371,6 @@ namespace Tcp.NET.Server
                 });
 
                 DisconnectClient(handler);
-                Console.WriteLine("Read callback from Tcp error");
             }
         }
         private void SendCallback(IAsyncResult ar)
@@ -400,7 +388,6 @@ namespace Tcp.NET.Server
                 var socket = (Socket)ar.AsyncState;
 
                 DisconnectClient(socket);
-                Console.WriteLine("Send callback from Tcp error");
             }
         }
 
@@ -429,6 +416,7 @@ namespace Tcp.NET.Server
         public override void Dispose()
         {
             Stop();
+            _allDone.Dispose();
             base.Dispose();
         }
     }

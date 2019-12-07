@@ -11,13 +11,13 @@
     <PackageIconUrl>https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/Tcp.NETLogo.png</PackageIconUrl>
     <RepositoryType>Github Public</RepositoryType>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
-    <PackageTags>Tcp server client Tcp.NET TcpSharp dotnet net 2.1 2.0</PackageTags>
-    <PackageReleaseNotes>Initial commit</PackageReleaseNotes>
-    <Version>1.0.1</Version>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
+    <PackageReleaseNotes></PackageReleaseNotes>
+    <Version>1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Core" Version="1.0.1" />
+    <PackageReference Include="Tcp.NET.Core" Version="1.0.3" />
   </ItemGroup>
 
 </Project>

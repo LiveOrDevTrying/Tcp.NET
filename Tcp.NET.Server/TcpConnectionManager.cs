@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace Tcp.NET.Server
 {
-    public class TcpConnectionManager
+    public class TcpConnectionManager : ITcpConnectionManager
     {
         protected ConcurrentDictionary<int, Socket> _clientsUnauthorized =
             new ConcurrentDictionary<int, Socket>();
 
-        protected ConcurrentDictionary<Guid, IUserConnectionTcpDTO> _clientsAuthorized = 
+        protected ConcurrentDictionary<Guid, IUserConnectionTcpDTO> _clientsAuthorized =
             new ConcurrentDictionary<Guid, IUserConnectionTcpDTO>();
 
         public IUserConnectionTcpDTO GetIdentity(Guid userId)
@@ -52,12 +52,7 @@ namespace Tcp.NET.Server
 
         public bool AddSocketUnauthorized(Socket socket)
         {
-            if (!_clientsUnauthorized.ContainsKey(socket.GetHashCode()))
-            {
-                return _clientsUnauthorized.TryAdd(socket.GetHashCode(), socket);
-            }
-
-            return false;
+            return !_clientsUnauthorized.ContainsKey(socket.GetHashCode()) ? _clientsUnauthorized.TryAdd(socket.GetHashCode(), socket) : false;
         }
         public IUserConnectionTcpDTO AddConnectionAuthorized(Guid userId, Socket socket)
         {
@@ -122,12 +117,7 @@ namespace Tcp.NET.Server
 
         public bool IsConnectionUnauthorized(Socket socket)
         {
-            if (!IsConnectionAuthorized(socket))
-            {
-                return _clientsUnauthorized.ContainsKey(socket.GetHashCode());
-            }
-
-            return false;
+            return !IsConnectionAuthorized(socket) ? _clientsUnauthorized.ContainsKey(socket.GetHashCode()) : false;
         }
         public bool IsConnectionAuthorized(Socket socket)
         {

@@ -4,11 +4,11 @@ using Tcp.NET.Core.Events.Args;
 
 namespace Tcp.NET.Client
 {
-    public interface ITcpAsyncClient : 
+    public interface ITcpNETClient : 
         ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>
     {
-        void Start(string url, int port, string endOfLineCharacters);
-        void Stop();
+        void Connect(string url, int port, string endOfLineCharacters);
+        void Disconnect();
 
         bool SendToServer(PacketDTO packet);
         bool SendToServer(string message);
