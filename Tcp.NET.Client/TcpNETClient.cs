@@ -314,7 +314,7 @@ namespace Tcp.NET.Client
         {
             get
             {
-                return _connectionSocket.Connected;
+                return _connectionSocket != null && _connectionSocket.Connected;
             }
         }
 

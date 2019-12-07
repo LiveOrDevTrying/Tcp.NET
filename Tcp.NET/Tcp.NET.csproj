@@ -13,11 +13,12 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
+    <Authors>Rob Engel - LiveOrDevTrying</Authors>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Client" Version="1.0.2" />
+    <PackageReference Include="Tcp.NET.Client" Version="1.0.3" />
     <PackageReference Include="Tcp.NET.Server" Version="1.0.2" />
   </ItemGroup>
 
