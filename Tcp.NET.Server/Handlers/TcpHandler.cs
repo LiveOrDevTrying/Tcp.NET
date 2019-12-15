@@ -69,7 +69,10 @@ namespace Tcp.NET.Server.Handlers
                     {
                         ConnectionEventType = ConnectionEventType.ServerStart,
                         ArgsType = ArgsType.Connection,
-                        Socket = _connectionSocket,
+                        Connection = new ConnectionSocketDTO
+                        {
+                            Socket = _connectionSocket
+                        },
                         ConnectionType = TcpConnectionType.ServerStart
                     });
 
@@ -107,11 +110,14 @@ namespace Tcp.NET.Server.Handlers
                     _connectionSocket.Close();
                 }
 
-                FireEvent(this, new TcpConnectionEventArgs()
+                FireEvent(this, new TcpConnectionEventArgs
                 {
                     ConnectionEventType = ConnectionEventType.ServerStop,
-                    Socket = _connectionSocket,
-                    ArgsType = ArgsType.Connection
+                    ArgsType = ArgsType.Connection,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = _connectionSocket
+                    }
                 });
 
                 if (_tcpServerThread != null)
@@ -125,7 +131,7 @@ namespace Tcp.NET.Server.Handlers
             }
         }
 
-        public bool Send(PacketDTO packet, Socket socket)
+        public bool Send(PacketDTO packet, ConnectionSocketDTO connection)
         {
             try
             {
@@ -140,25 +146,25 @@ namespace Tcp.NET.Server.Handlers
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = socket,
                     Message = message,
                     ArgsType = ArgsType.Message,
-                    Packet = packet
+                    Packet = packet,
+                    Connection = connection
                 });
 
                 // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
+                connection.Socket.BeginSend(byteData, 0, byteData.Length, 0,
+                    new AsyncCallback(SendCallback), connection.Socket);
                 return true;
             }
             catch
             {
-                DisconnectClient(socket);
+                DisconnectClient(connection);
             }
 
             return false;
         }
-        public bool Send(string message, Socket socket)
+        public bool Send(string message, ConnectionSocketDTO connection)
         {
             try
             {
@@ -178,28 +184,28 @@ namespace Tcp.NET.Server.Handlers
                 var byteData = Encoding.UTF8.GetBytes(nextMessage);
 
                 // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
+                connection.Socket.BeginSend(byteData, 0, byteData.Length, 0,
+                    new AsyncCallback(SendCallback), connection.Socket);
 
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = socket,
                     Message = payload,
                     ArgsType = ArgsType.Message,
-                    Packet = packet
+                    Packet = packet,
+                    Connection = connection
                 });
 
                 return true;
             }
             catch
             {
-                DisconnectClient(socket);
+                DisconnectClient(connection);
             }
 
             return false;
         }
-        public bool SendRaw(string message, Socket socket)
+        public bool SendRaw(string message, ConnectionSocketDTO connection)
         {
             try
             {
@@ -210,13 +216,13 @@ namespace Tcp.NET.Server.Handlers
                 var byteData = Encoding.UTF8.GetBytes(nextMessage);
 
                 // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
+                connection.Socket.BeginSend(byteData, 0, byteData.Length, 0,
+                    new AsyncCallback(SendCallback), connection.Socket);
 
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = socket,
+                    Connection = connection,
                     Message = message,
                     ArgsType = ArgsType.Message,
                     Packet = new PacketDTO
@@ -231,30 +237,30 @@ namespace Tcp.NET.Server.Handlers
             }
             catch
             {
-                DisconnectClient(socket);
+                DisconnectClient(connection);
             }
 
             return false;
          }
 
-        public bool DisconnectClient(Socket socket)
+        public bool DisconnectClient(ConnectionSocketDTO connection)
         {
             try
             {
                 FireEvent(this, new TcpConnectionEventArgs
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = socket,
                     ArgsType = ArgsType.Connection,
-                    ConnectionType = TcpConnectionType.Disconnect
+                    ConnectionType = TcpConnectionType.Disconnect,
+                    Connection = connection
                 });
 
-                if (socket.Connected)
+                if (connection.Socket.Connected)
                 {
                     _numberOfConnections--;
 
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
+                    connection.Socket.Shutdown(SocketShutdown.Both);
+                    connection.Socket.Close();
                 }
                 return true;
             }
@@ -285,7 +291,10 @@ namespace Tcp.NET.Server.Handlers
                 FireEvent(this, new TcpConnectionEventArgs
                 {
                     ConnectionEventType = ConnectionEventType.Connected,
-                    Socket = handler,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = handler
+                    },
                     ArgsType = ArgsType.Connection,
                     ConnectionType = TcpConnectionType.Connected
                 });
@@ -345,7 +354,10 @@ namespace Tcp.NET.Server.Handlers
                             FireEvent(this, new TcpMessageEventArgs
                             {
                                 MessageEventType = MessageEventType.Receive,
-                                Socket = handler,
+                                Connection = new ConnectionSocketDTO
+                                {
+                                    Socket = handler
+                                },
                                 Message = content,
                                 ArgsType = ArgsType.Message,
                                 Packet = packet
@@ -361,16 +373,20 @@ namespace Tcp.NET.Server.Handlers
             {
                 var state = (StateObject)ar.AsyncState;
                 var handler = state.WorkSocket;
+                var connection = new ConnectionSocketDTO
+                {
+                    Socket = handler
+                };
 
                 FireEvent(this, new TcpConnectionEventArgs()
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = handler,
+                    Connection = connection,
                     ArgsType = ArgsType.Connection,
-                    ConnectionType = TcpConnectionType.Disconnect
+                    ConnectionType = TcpConnectionType.Disconnect,
                 });
 
-                DisconnectClient(handler);
+                DisconnectClient(connection);
             }
         }
         private void SendCallback(IAsyncResult ar)
@@ -387,7 +403,10 @@ namespace Tcp.NET.Server.Handlers
             {
                 var socket = (Socket)ar.AsyncState;
 
-                DisconnectClient(socket);
+                DisconnectClient(new ConnectionSocketDTO
+                {
+                    Socket = socket
+                });
             }
         }
 

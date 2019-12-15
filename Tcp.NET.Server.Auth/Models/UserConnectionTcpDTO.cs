@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 
-namespace Tcp.NET.Server.Models
+namespace Tcp.NET.Server.Auth.Models
 {
     public class UserConnectionTcpDTO : UserConnectionDTO, IUserConnectionTcpDTO
     {

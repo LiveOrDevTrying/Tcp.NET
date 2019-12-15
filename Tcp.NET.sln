@@ -7,9 +7,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Server", "Tcp.NET.S
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Client", "Tcp.NET.Client\Tcp.NET.Client.csproj", "{B411B758-DFED-4CAB-9023-E61EC2FB02D3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET", "Tcp.NET\Tcp.NET.csproj", "{30A7A9E2-048E-41B0-9D81-2AAA3EC3C92A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET", "Tcp.NET\Tcp.NET.csproj", "{30A7A9E2-048E-41B0-9D81-2AAA3EC3C92A}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Core", "Tcp.NET.Core\Tcp.NET.Core.csproj", "{DF60316C-4CBC-4201-BD3E-18116E2CF45E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Server.Auth", "Tcp.NET.Server.Auth\Tcp.NET.Server.Auth.csproj", "{28BEC9A5-0B12-49D2-B74D-A5B712AACAAF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{DF60316C-4CBC-4201-BD3E-18116E2CF45E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF60316C-4CBC-4201-BD3E-18116E2CF45E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF60316C-4CBC-4201-BD3E-18116E2CF45E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28BEC9A5-0B12-49D2-B74D-A5B712AACAAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28BEC9A5-0B12-49D2-B74D-A5B712AACAAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28BEC9A5-0B12-49D2-B74D-A5B712AACAAF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28BEC9A5-0B12-49D2-B74D-A5B712AACAAF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

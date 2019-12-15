@@ -64,7 +64,10 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = _connectionSocket,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = _connectionSocket
+                    },
                     Message = message,
                     Packet = new PacketDTO
                     {
@@ -96,7 +99,10 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = _connectionSocket,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = _connectionSocket
+                    },
                     Packet = packet,
                     Message = packet.Data,
                     ArgsType = ArgsType.Message,
@@ -123,7 +129,10 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Socket = _connectionSocket,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = _connectionSocket
+                    },
                     Packet = new PacketDTO
                     {
                         Action = (int)ActionType.SendToServer,
@@ -153,7 +162,10 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpConnectionEventArgs
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = _connectionSocket,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = _connectionSocket
+                    },
                     ArgsType = ArgsType.Connection,
                 });
 
@@ -182,7 +194,10 @@ namespace Tcp.NET.Client
                 {
                     ConnectionEventType = ConnectionEventType.Connected,
                     ArgsType = ArgsType.Connection,
-                    Socket = _connectionSocket
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = client
+                    }
                 });
 
                 Receive(client);
@@ -247,7 +262,10 @@ namespace Tcp.NET.Client
                                 FireEvent(this, new TcpMessageEventArgs
                                 {
                                     MessageEventType = MessageEventType.Receive,
-                                    Socket = handler,
+                                    Connection = new ConnectionSocketDTO
+                                    {
+                                        Socket = handler
+                                    },
                                     Message = packet.Data,
                                     ArgsType = ArgsType.Message,
                                     Packet = packet
@@ -258,7 +276,10 @@ namespace Tcp.NET.Client
                                 FireEvent(this, new TcpMessageEventArgs
                                 {
                                     MessageEventType = MessageEventType.Receive,
-                                    Socket = handler,
+                                    Connection = new ConnectionSocketDTO
+                                    {
+                                        Socket = handler
+                                    },
                                     Message = content,
                                     ArgsType = ArgsType.Message,
                                     Packet = new PacketDTO
@@ -284,7 +305,10 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpConnectionEventArgs()
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = handler,
+                    Connection = new ConnectionSocketDTO
+                    {
+                        Socket = handler
+                    },
                     ArgsType = ArgsType.Connection
                 });
             }

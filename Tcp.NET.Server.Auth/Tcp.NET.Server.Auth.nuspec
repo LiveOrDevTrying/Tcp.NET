@@ -3,21 +3,21 @@
   <metadata>
     <id>$id$</id>
     <version>$version$</version>
-    <title>Tcp.NET.Server</title>
+    <title>Tcp.NET.Server.Auth</title>
     <authors>Rob Engel - LiveOrDevTrying</authors>
     <owners>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</owners>
     <license type="expression">Apache-2.0</license>
     <projectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</projectUrl>
     <icon>Logo.png</icon>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>The server module for a Tcp Server with Authorization and Client implementation.</description>
-    <releaseNotes>Initial commit</releaseNotes>
+    <description>The server module with Authorization for a Tcp Server and Client implementation.</description>
+    <releaseNotes></releaseNotes>
     <copyright>Copyright 2019</copyright>
-    <tags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</tags>
+    <tags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 auth authorization</tags>
     <dependencies>
       <group targetFramework="netcoreapp2.1">
         <dependency id="Microsoft.NETCore.App" version="[2.1,3]" />
-        <dependency id="Tcp.NET.Core" version="[1.1.0,2]" />
+        <dependency id="Tcp.NET.Server" version="[1.1.0,2]" />
       </group>
     </dependencies>
   </metadata>

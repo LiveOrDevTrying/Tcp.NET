@@ -11,121 +11,39 @@ namespace Tcp.NET.Server
 {
     public class TcpConnectionManager : ITcpConnectionManager
     {
-        protected ConcurrentDictionary<int, Socket> _clientsUnauthorized =
-            new ConcurrentDictionary<int, Socket>();
+        protected ConcurrentDictionary<int, ConnectionSocketDTO> _connections =
+            new ConcurrentDictionary<int, ConnectionSocketDTO>();
 
-        protected ConcurrentDictionary<Guid, IUserConnectionTcpDTO> _clientsAuthorized =
-            new ConcurrentDictionary<Guid, IUserConnectionTcpDTO>();
-
-        public IUserConnectionTcpDTO GetIdentity(Guid userId)
+        public ICollection<ConnectionSocketDTO> GetAllConnections()
         {
-            return _clientsAuthorized.TryGetValue(userId, out var clientAuthorized) ? clientAuthorized : (default);
+            return _connections.Values.ToList();
         }
-        public IUserConnectionTcpDTO GetIdentity(Socket socket)
+
+        public bool AddConnection(ConnectionSocketDTO connection)
         {
-            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Socket.GetHashCode() == socket.GetHashCode())))
+            return !_connections.ContainsKey(connection.Socket.GetHashCode()) ? _connections.TryAdd(connection.Socket.GetHashCode(), connection) : false;
+        }
+        public void RemoveConnection(ConnectionSocketDTO connection, bool isDisconnect)
+        {
+            if (_connections.TryGetValue(connection.Socket.GetHashCode(), out _))
             {
-                var client = _clientsAuthorized.Values.FirstOrDefault(s => s.Connections.Any(t => t.Socket.GetHashCode() == socket.GetHashCode()));
-                return client;
-            }
-
-            return default;
-        }
-        public ConnectionSocketDTO GetConnectionAuthorized(Socket socket)
-        {
-            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Socket.GetHashCode() == socket.GetHashCode())))
-            {
-                var client = _clientsAuthorized.Values.FirstOrDefault(s => s.Connections.Any(t => t.Socket.GetHashCode() == socket.GetHashCode()));
-                return client.Connections.First(s => s.Socket.GetHashCode() == socket.GetHashCode());
-            }
-
-            return default;
-        }
-        public ICollection<Socket> GetAllSocketsUnauthorized()
-        {
-            return _clientsUnauthorized.Values.ToList();
-        }
-        public ICollection<IUserConnectionTcpDTO> GetAllIdentitiesAuthorized()
-        {
-            return _clientsAuthorized.Values.ToList();
-        }
-
-        public bool AddSocketUnauthorized(Socket socket)
-        {
-            return !_clientsUnauthorized.ContainsKey(socket.GetHashCode()) ? _clientsUnauthorized.TryAdd(socket.GetHashCode(), socket) : false;
-        }
-        public IUserConnectionTcpDTO AddConnectionAuthorized(Guid userId, Socket socket)
-        {
-            IUserConnectionTcpDTO client;
-
-            if (_clientsAuthorized.ContainsKey(userId))
-            {
-                client = _clientsAuthorized.First(s => s.Key == userId).Value;
-            }
-            else
-            {
-                client = new UserConnectionTcpDTO
-                {
-                    UserId = userId,
-                    Connections = new List<ConnectionSocketDTO>()
-                };
-                _clientsAuthorized.TryAdd(userId, client);
-            }
-
-            if (!client.Connections.Any(s => s.Socket.GetHashCode() == socket.GetHashCode()))
-            {
-                client.Connections.Add(new ConnectionSocketDTO
-                {
-                    Socket = socket
-                });
-
-                return client;
-            }
-
-            return null;
-        }
-        public void RemoveSocketUnauthorized(Socket socket, bool isDisconnect)
-        {
-            if (_clientsUnauthorized.TryGetValue(socket.GetHashCode(), out _))
-            {
-                _clientsUnauthorized.TryRemove(socket.GetHashCode(), out _);
+                _connections.TryRemove(connection.Socket.GetHashCode(), out _);
             }
 
             if (isDisconnect)
             {
-                socket.Close();
-                socket.Dispose();
+                connection.Socket.Close();
+                connection.Socket.Dispose();
             }
         }
-        public void RemoveConnectionAuthorized(ConnectionSocketDTO connection)
+        public ConnectionSocketDTO GetConnection(Socket socket)
         {
-            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.GetHashCode() == connection.GetHashCode())))
-            {
-                var client = _clientsAuthorized.First(s => s.Value.Connections.Any(t => t.GetHashCode() == connection.GetHashCode())).Value;
-                var instance = client.Connections.First(s => s.GetHashCode() == connection.GetHashCode());
-                client.Connections.Remove(instance);
-
-                if (!client.Connections.Any())
-                {
-                    _clientsAuthorized.TryRemove(client.UserId, out client);
-                }
-
-                instance.Socket.Close();
-                instance.Socket.Dispose();
-            }
+            return _connections.TryGetValue(socket.GetHashCode(), out var connection) ? connection : null;
         }
 
-        public bool IsConnectionUnauthorized(Socket socket)
+        public bool IsConnectionOpen(ConnectionSocketDTO connection)
         {
-            return !IsConnectionAuthorized(socket) ? _clientsUnauthorized.ContainsKey(socket.GetHashCode()) : false;
-        }
-        public bool IsConnectionAuthorized(Socket socket)
-        {
-            return _clientsAuthorized.Values.Any(s => s.Connections.Any(t => t.Socket.GetHashCode() == socket.GetHashCode()));
-        }
-        public bool IsUserConnected(Guid userId)
-        {
-            return _clientsAuthorized.ContainsKey(userId);
+            return _connections.ContainsKey(connection.Socket.GetHashCode());
         }
     }
 }

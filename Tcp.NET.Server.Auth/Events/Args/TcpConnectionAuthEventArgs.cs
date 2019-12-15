@@ -1,13 +1,11 @@
 ﻿using System;
-using Tcp.NET.Core.Enums;
 using Tcp.NET.Core.Events.Args;
-using Tcp.NET.Core.Models;
+using Tcp.NET.Server.Auth.Enums;
 
-namespace Tcp.NET.Server.Events.Args
+namespace Tcp.NET.Server.Auth.Events.Args
 {
     public class TcpConnectionAuthEventArgs : TcpConnectionEventArgs
     {
-        public ConnectionSocketDTO ConnectionSocket { get; set; }
         public Guid UserId { get; set; }
         public TcpConnectionAuthType ConnectionAuthType { get; set; }
     }
