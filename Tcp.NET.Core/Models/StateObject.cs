@@ -6,7 +6,7 @@ namespace Tcp.NET.Core.Models
     // State object for reading client data asynchronously  
     public class StateObject
     {
-        // Client  socket.  
+        // Client socket.  
         public Socket WorkSocket { get; set; } = null;
         // Size of receive buffer.  
         public const int BufferSize = 1024;

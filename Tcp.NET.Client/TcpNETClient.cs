@@ -64,10 +64,7 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = _connectionSocket
-                    },
+                    Socket = _connectionSocket,
                     Message = message,
                     Packet = new PacketDTO
                     {
@@ -99,47 +96,9 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpMessageEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = _connectionSocket
-                    },
+                    Socket = _connectionSocket,
                     Packet = packet,
                     Message = packet.Data,
-                    ArgsType = ArgsType.Message,
-                });
-
-                // Begin sending the data to the remote device.  
-                _connectionSocket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), _connectionSocket);
-
-                return true;
-            }
-            catch
-            {
-            }
-
-            return false;
-        }
-        public virtual bool SendToServerRaw(string message)
-        {
-            try
-            {
-                var byteData = Encoding.UTF8.GetBytes(string.Format("{0}{1}", message, _endOfLineCharacters));
-
-                FireEvent(this, new TcpMessageEventArgs
-                {
-                    MessageEventType = MessageEventType.Sent,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = _connectionSocket
-                    },
-                    Packet = new PacketDTO
-                    {
-                        Action = (int)ActionType.SendToServer,
-                        Data = message,
-                        Timestamp = DateTime.UtcNow
-                    },
-                    Message = message,
                     ArgsType = ArgsType.Message,
                 });
 
@@ -162,10 +121,7 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpConnectionEventArgs
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = _connectionSocket
-                    },
+                    Socket = _connectionSocket,
                     ArgsType = ArgsType.Connection,
                 });
 
@@ -194,10 +150,7 @@ namespace Tcp.NET.Client
                 {
                     ConnectionEventType = ConnectionEventType.Connected,
                     ArgsType = ArgsType.Connection,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = client
-                    }
+                    Socket = client
                 });
 
                 Receive(client);
@@ -255,40 +208,42 @@ namespace Tcp.NET.Client
 
                         if (!string.IsNullOrWhiteSpace(content))
                         {
-                            try
+                            // Digest the ping first
+                            if (content.Trim().ToLower() == "ping")
                             {
-                                var packet = JsonConvert.DeserializeObject<PacketDTO>(content);
-
-                                FireEvent(this, new TcpMessageEventArgs
-                                {
-                                    MessageEventType = MessageEventType.Receive,
-                                    Connection = new ConnectionSocketDTO
-                                    {
-                                        Socket = handler
-                                    },
-                                    Message = packet.Data,
-                                    ArgsType = ArgsType.Message,
-                                    Packet = packet
-                                });
+                                SendToServer("pong");
                             }
-                            catch
+                            else
                             {
-                                FireEvent(this, new TcpMessageEventArgs
+                                try
                                 {
-                                    MessageEventType = MessageEventType.Receive,
-                                    Connection = new ConnectionSocketDTO
+                                    var packet = JsonConvert.DeserializeObject<PacketDTO>(content);
+
+                                    FireEvent(this, new TcpMessageEventArgs
                                     {
-                                        Socket = handler
-                                    },
-                                    Message = content,
-                                    ArgsType = ArgsType.Message,
-                                    Packet = new PacketDTO
+                                        MessageEventType = MessageEventType.Receive,
+                                        Socket = handler,
+                                        Message = packet.Data,
+                                        ArgsType = ArgsType.Message,
+                                        Packet = packet
+                                    });
+                                }
+                                catch
+                                {
+                                    FireEvent(this, new TcpMessageEventArgs
                                     {
-                                        Action = (int)ActionType.SendToClient,
-                                        Data = content,
-                                        Timestamp = DateTime.UtcNow
-                                    }
-                                });
+                                        MessageEventType = MessageEventType.Receive,
+                                        Socket = handler,
+                                        Message = content,
+                                        ArgsType = ArgsType.Message,
+                                        Packet = new PacketDTO
+                                        {
+                                            Action = (int)ActionType.SendToClient,
+                                            Data = content,
+                                            Timestamp = DateTime.UtcNow
+                                        }
+                                    });
+                                }
                             }
                         }
                     }
@@ -305,10 +260,7 @@ namespace Tcp.NET.Client
                 FireEvent(this, new TcpConnectionEventArgs()
                 {
                     ConnectionEventType = ConnectionEventType.Disconnect,
-                    Connection = new ConnectionSocketDTO
-                    {
-                        Socket = handler
-                    },
+                    Socket = handler,
                     ArgsType = ArgsType.Connection
                 });
             }

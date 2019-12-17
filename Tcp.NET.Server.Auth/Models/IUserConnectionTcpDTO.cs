@@ -1,7 +1,7 @@
 ﻿using PHS.Core.Models;
-using Tcp.NET.Core.Models;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Auth.Models
 {

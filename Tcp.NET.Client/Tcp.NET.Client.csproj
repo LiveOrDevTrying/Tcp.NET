@@ -13,13 +13,13 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="IdentityModel" Version="3.10.10" />
-    <PackageReference Include="Tcp.NET.Core" Version="1.1.0" />
+    <PackageReference Include="Tcp.NET.Core" Version="1.1.2" />
   </ItemGroup>
 
   <ItemGroup>

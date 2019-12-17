@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Tcp.NET.Server.Auth.Interfaces;
 using Tcp.NET.Server.Auth.Models;
 
 namespace Tcp.NET.Server.Auth
@@ -9,6 +10,7 @@ namespace Tcp.NET.Server.Auth
     public interface ITcpNETServerAuth : ITcpNETServer
     {
         ITcpConnectionManagerAuth ConnectionManager { get; }
+        IParamsTcpAuthServer Parameters { get; }
 
         bool BroadcastToAllAuthorizedUsers(PacketDTO packet);
         bool BroadcastToAllAuthorizedUsers(PacketDTO packet, Socket socketSending);

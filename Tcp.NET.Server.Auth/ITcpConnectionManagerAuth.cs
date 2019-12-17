@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
-using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Auth.Models;
+using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Auth
 {

@@ -1,8 +1,8 @@
 ﻿using PHS.Core.Models;
 using System.Net.Sockets;
 using Tcp.NET.Core.Events.Args;
-using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Handlers;
+using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
 {
@@ -11,8 +11,8 @@ namespace Tcp.NET.Server
         bool IsServerRunning { get; }
         Socket Socket { get; }
         TcpHandler TcpHandler { get; }
-        bool SendToConnection(PacketDTO packet, ConnectionSocketDTO connection);
-        bool SendToConnectionRaw(string message, ConnectionSocketDTO connection);
-        bool DisconnectClient(ConnectionSocketDTO connection);
+        bool SendToConnection(PacketDTO packet, Socket socket);
+        bool SendToConnectionRaw(string message, Socket socket);
+        bool DisconnectClient(Socket socket);
     }
 }

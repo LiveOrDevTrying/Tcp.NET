@@ -14,6 +14,7 @@ using Tcp.NET.Core.Enums;
 using Tcp.NET.Server.Auth.Events.Args;
 using Tcp.NET.Server.Auth.Models;
 using Tcp.NET.Server.Auth.Enums;
+using Tcp.NET.Server.Auth.Interfaces;
 
 namespace Tcp.NET.Server.Auth
 {
@@ -21,7 +22,7 @@ namespace Tcp.NET.Server.Auth
     {
         protected readonly IUserService _userService;
 
-        public TcpNETServerAuth(ParamsTcpServer parameters,
+        public TcpNETServerAuth(IParamsTcpAuthServer parameters,
             IUserService userService,
             ITcpConnectionManagerAuth connectionManager)
             : base(parameters, connectionManager)
@@ -40,7 +41,7 @@ namespace Tcp.NET.Server.Auth
                     {
                         foreach (var connection in authorizedUser.Connections)
                         {
-                            SendToConnection(packet, connection);
+                            SendToConnection(packet, connection.Socket);
                         }
                     }
 
@@ -65,7 +66,7 @@ namespace Tcp.NET.Server.Auth
                         {
                             if (connection.Socket.GetHashCode() != socketSending.GetHashCode())
                             {
-                                SendToConnection(packet, connection);
+                                SendToConnection(packet, connection.Socket);
                             }
                         }
                     }
@@ -89,7 +90,7 @@ namespace Tcp.NET.Server.Auth
                     {
                         foreach (var connection in authorizedUser.Connections)
                         {
-                            SendToConnectionRaw(message, connection);
+                            SendToConnectionRaw(message, connection.Socket);
                         }
                     }
                     return true;
@@ -118,13 +119,13 @@ namespace Tcp.NET.Server.Auth
 
                     foreach (var connection in user.Connections)
                     {
-                        _handler.Send(packet, connection);
+                        _handler.Send(packet, connection.Socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = connection.Socket,
                             ArgsType = ArgsType.Message,
                             Packet = packet,
                             UserId = user.UserId,
@@ -151,13 +152,13 @@ namespace Tcp.NET.Server.Auth
 
                     foreach (var connection in user.Connections)
                     {
-                        _handler.SendRaw(message, connection);
+                        _handler.SendRaw(message, connection.Socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = connection.Socket,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -178,23 +179,23 @@ namespace Tcp.NET.Server.Auth
             return false;
         }
 
-        public override bool SendToConnection(PacketDTO packet, ConnectionSocketDTO connection)
+        public override bool SendToConnection(PacketDTO packet, Socket socket)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    connection.Socket.Connected)
+                    socket.Connected)
                 {
-                    if (ConnectionManager.IsConnectionUnauthorized(connection.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(socket))
                     {
-                        _handler.Send(packet, connection);
+                        _handler.Send(packet, socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = socket,
                             ArgsType = ArgsType.Message,
                             Packet = packet,
                         });
@@ -202,16 +203,16 @@ namespace Tcp.NET.Server.Auth
                         return true;
                     }
 
-                    if (ConnectionManager.IsConnectionAuthorized(connection.Socket))
+                    if (ConnectionManager.IsConnectionAuthorized(socket))
                     {
-                        var identity = ConnectionManager.GetIdentity(connection.Socket);
-                        _handler.Send(packet, connection);
+                        var identity = ConnectionManager.GetIdentity(socket);
+                        _handler.Send(packet, socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = Socket,
                             ArgsType = ArgsType.Message,
                             Packet = packet,
                             UserId = identity.UserId,
@@ -226,23 +227,23 @@ namespace Tcp.NET.Server.Auth
 
             return false;
         }
-        public override bool SendToConnectionRaw(string message, ConnectionSocketDTO connection)
+        public override bool SendToConnectionRaw(string message, Socket socket)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    connection.Socket.Connected)
+                    socket.Connected)
                 {
-                    if (ConnectionManager.IsConnectionUnauthorized(connection.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(socket))
                     {
-                        _handler.SendRaw(message, connection);
+                        _handler.SendRaw(message, socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = socket,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -255,16 +256,16 @@ namespace Tcp.NET.Server.Auth
                         return true;
                     }
 
-                    if (ConnectionManager.IsConnectionAuthorized(connection.Socket))
+                    if (ConnectionManager.IsConnectionAuthorized(socket))
                     {
-                        var identity = ConnectionManager.GetIdentity(connection.Socket);
-                        _handler.Send(message, connection);
+                        var identity = ConnectionManager.GetIdentity(socket);
+                        _handler.Send(message, socket);
 
                         FireEvent(this, new TcpMessageAuthEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = socket,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -290,13 +291,13 @@ namespace Tcp.NET.Server.Auth
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:
-                    if (!ConnectionManager.IsConnectionUnauthorized(args.Connection.Socket))
+                    if (!ConnectionManager.IsConnectionUnauthorized(args.Socket))
                     {
-                        if (ConnectionManager.AddSocketUnauthorized(args.Connection.Socket))
+                        if (ConnectionManager.AddSocketUnauthorized(args.Socket))
                         {
                             FireEvent(this, new TcpConnectionAuthEventArgs
                             {
-                                Connection = args.Connection,
+                                Socket = args.Socket,
                                 ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
                                 ConnectionEventType = args.ConnectionEventType,
                                 ConnectionType = TcpConnectionType.Connected,
@@ -306,13 +307,13 @@ namespace Tcp.NET.Server.Auth
                     }
                     break;
                 case ConnectionEventType.Disconnect:
-                    if (ConnectionManager.IsConnectionUnauthorized(args.Connection.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
                     {
-                        ConnectionManager.RemoveSocketUnauthorized(args.Connection.Socket, true);
+                        ConnectionManager.RemoveSocketUnauthorized(args.Socket, true);
 
                         FireEvent(this, new TcpConnectionAuthEventArgs
                         {
-                            Connection = args.Connection,
+                            Socket = args.Socket,
                             ConnectionEventType = args.ConnectionEventType,
                             ConnectionType = TcpConnectionType.Disconnect,
                             ArgsType = ArgsType.Connection,
@@ -320,14 +321,14 @@ namespace Tcp.NET.Server.Auth
                         });
                     }
 
-                    if (ConnectionManager.IsConnectionAuthorized(args.Connection.Socket))
+                    if (ConnectionManager.IsConnectionAuthorized(args.Socket))
                     {
-                        var identity = ConnectionManager.GetIdentity(args.Connection.Socket);
-                        ConnectionManager.RemoveConnectionAuthorized(identity.GetConnection(args.Connection.Socket));
+                        var identity = ConnectionManager.GetIdentity(args.Socket);
+                        ConnectionManager.RemoveConnectionAuthorized(identity.GetConnection(args.Socket));
 
                         FireEvent(this, new TcpConnectionAuthEventArgs
                         {
-                            Connection = args.Connection,
+                            Socket = args.Socket,
                             ConnectionEventType = args.ConnectionEventType,
                             ConnectionType = TcpConnectionType.Disconnect,
                             ArgsType = ArgsType.Connection,
@@ -347,7 +348,7 @@ namespace Tcp.NET.Server.Auth
 
                     FireEvent(this, new TcpConnectionAuthEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionAuthType = TcpConnectionAuthType.Authorized,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.ServerStart,
@@ -363,7 +364,7 @@ namespace Tcp.NET.Server.Auth
 
                     FireEvent(this, new TcpConnectionAuthEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionAuthType = TcpConnectionAuthType.Authorized,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.ServerStop,
@@ -376,7 +377,7 @@ namespace Tcp.NET.Server.Auth
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpConnectionAuthEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.Connecting,
@@ -384,14 +385,6 @@ namespace Tcp.NET.Server.Auth
                     });
                     break;
                 case ConnectionEventType.MaxConnectionsReached:
-                    FireEvent(this, new TcpConnectionAuthEventArgs
-                    {
-                        Connection = args.Connection,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.MaxConnectionsReached,
-                        ArgsType = ArgsType.Connection,
-                        ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
-                    });
                     break;
                 default:
                     break;
@@ -406,19 +399,19 @@ namespace Tcp.NET.Server.Auth
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    if (ConnectionManager.IsConnectionUnauthorized(args.Connection.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
                     {
                         await CheckIfAuthorizedAsync(args);
                     }
-                    else if (ConnectionManager.IsConnectionAuthorized(args.Connection.Socket))
+                    else if (ConnectionManager.IsConnectionAuthorized(args.Socket))
                     {
-                        var identity = ConnectionManager.GetIdentity(args.Connection.Socket);
+                        var identity = ConnectionManager.GetIdentity(args.Socket);
 
                         // Digest the pong first
                         if (args.Message.ToLower().Trim() == "pong" ||
                             args.Packet.Data.Trim().ToLower() == "pong")
                         {
-                            var connection = ConnectionManager.GetConnectionAuthorized(args.Connection.Socket);
+                            var connection = ConnectionManager.GetConnectionAuthorized(args.Socket);
                             connection.HasBeenPinged = false;
                         }
                         else
@@ -434,7 +427,7 @@ namespace Tcp.NET.Server.Auth
                                     {
                                         Message = packet.Data,
                                         MessageEventType = MessageEventType.Receive,
-                                        Connection = args.Connection,
+                                        Socket = args.Socket,
                                         ArgsType = ArgsType.Message,
                                         Packet = packet,
                                         UserId = identity.UserId
@@ -446,7 +439,7 @@ namespace Tcp.NET.Server.Auth
                                     {
                                         Message = args.Message,
                                         MessageEventType = MessageEventType.Receive,
-                                        Connection = args.Connection,
+                                        Socket = args.Socket,
                                         ArgsType = ArgsType.Message,
                                         Packet = new PacketDTO
                                         {
@@ -467,15 +460,15 @@ namespace Tcp.NET.Server.Auth
         }
         protected override Task OnErrorEvent(object sender, TcpErrorEventArgs args)
         {
-            if (ConnectionManager.IsConnectionAuthorized(args.Connection.Socket))
+            if (ConnectionManager.IsConnectionAuthorized(args.Socket))
             {
-                var identity = ConnectionManager.GetIdentity(args.Connection.Socket);
+                var identity = ConnectionManager.GetIdentity(args.Socket);
 
                 FireEvent(this, new TcpErrorAuthEventArgs
                 {
                     Exception = args.Exception,
                     Message = args.Message,
-                    Connection = args.Connection,
+                    Socket = args.Socket,
                     ArgsType = ArgsType.Error,
                     UserId = identity.UserId
                 });
@@ -499,15 +492,15 @@ namespace Tcp.NET.Server.Auth
                     else
                     {
                         connection.HasBeenPinged = true;
-                        _handler.Send("Ping", connection);
+                        _handler.Send("Ping", connection.Socket);
                     }
                 }
 
                 foreach (var connectionToRemove in connectionsToRemove)
                 {
                     ConnectionManager.RemoveConnectionAuthorized(connectionToRemove);
-                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove);
-                    _handler.DisconnectClient(connectionToRemove);
+                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove.Socket);
+                    _handler.DisconnectClient(connectionToRemove.Socket);
                 }
             }
         }
@@ -517,15 +510,15 @@ namespace Tcp.NET.Server.Auth
             try
             {
                 // Check for token here
-                if (ConnectionManager.IsConnectionUnauthorized(args.Connection.Socket))
+                if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
                 {
-                    ConnectionManager.RemoveSocketUnauthorized(args.Connection.Socket, false);
+                    ConnectionManager.RemoveSocketUnauthorized(args.Socket, false);
 
                     if (args.Message.Length < "oauth:".Length ||
                         !args.Message.ToLower().StartsWith("oauth:"))
                     {
-                        _handler.SendRaw(_parameters.UnauthorizedString, args.Connection);
-                        args.Connection.Socket.Disconnect(false);
+                        _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
+                        args.Socket.Disconnect(false);
 
                         FireEvent(this, new TcpConnectionAuthEventArgs
                         {
@@ -533,7 +526,7 @@ namespace Tcp.NET.Server.Auth
                             ConnectionEventType = ConnectionEventType.Disconnect,
                             ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
                             ArgsType = ArgsType.Connection,
-                            Connection = args.Connection,
+                            Socket = args.Socket,
                         });
                         return false;
                     }
@@ -545,12 +538,12 @@ namespace Tcp.NET.Server.Auth
                     if (userId == null ||
                         userId == Guid.Empty)
                     {
-                        _handler.SendRaw(_parameters.UnauthorizedString, args.Connection);
-                        args.Connection.Socket.Disconnect(false);
+                        _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
+                        args.Socket.Disconnect(false);
 
                         FireEvent(this, new TcpConnectionAuthEventArgs
                         {
-                            Connection = args.Connection,
+                            Socket = args.Socket,
                             ConnectionType = TcpConnectionType.Disconnect,
                             ConnectionEventType = ConnectionEventType.Disconnect,
                             ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
@@ -559,13 +552,13 @@ namespace Tcp.NET.Server.Auth
                         return false;
                     }
 
-                    var identity = ConnectionManager.AddConnectionAuthorized(userId, args.Connection.Socket);
+                    var identity = ConnectionManager.AddConnectionAuthorized(userId, args.Socket);
 
-                    _handler.SendRaw(_parameters.ConnectionSuccessString, args.Connection);
+                    _handler.SendRaw(Parameters.ConnectionSuccessString, args.Socket);
 
                     FireEvent(this, new TcpConnectionAuthEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionType = TcpConnectionType.Connected,
                         ConnectionEventType = ConnectionEventType.Connected,
                         ConnectionAuthType = TcpConnectionAuthType.Authorized,
@@ -578,12 +571,12 @@ namespace Tcp.NET.Server.Auth
             catch
             { }
 
-            _handler.SendRaw(_parameters.UnauthorizedString, args.Connection);
-            args.Connection.Socket.Disconnect(false);
+            _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
+            args.Socket.Disconnect(false);
 
             FireEvent(this, new TcpConnectionAuthEventArgs
             {
-                Connection = args.Connection,
+                Socket = args.Socket,
                 ConnectionType = TcpConnectionType.Disconnect,
                 ConnectionEventType = ConnectionEventType.Disconnect,
                 ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
@@ -628,6 +621,14 @@ namespace Tcp.NET.Server.Auth
             get
             {
                 return _connectionManager as ITcpConnectionManagerAuth;
+            }
+        }
+
+        public IParamsTcpAuthServer Parameters
+        {
+            get
+            {
+                return _parameters as IParamsTcpAuthServer;
             }
         }
     }

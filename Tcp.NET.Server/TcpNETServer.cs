@@ -21,11 +21,11 @@ namespace Tcp.NET.Server
     {
         protected readonly TcpHandler _handler;
         protected readonly ITcpConnectionManager _connectionManager;
-        protected readonly ParamsTcpServer _parameters;
+        protected readonly IParamsTcpServer _parameters;
 
         protected Timer _timerPing;
 
-        public TcpNETServer(ParamsTcpServer parameters,
+        public TcpNETServer(IParamsTcpServer parameters,
             ITcpConnectionManager connectionManager)
         {
             _parameters = parameters;
@@ -38,29 +38,26 @@ namespace Tcp.NET.Server
             _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
         }
 
-        public virtual bool SendToConnection(PacketDTO packet, ConnectionSocketDTO connection)
+        public virtual bool SendToConnection(PacketDTO packet, Socket socket)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    connection.Socket.Connected)
+                    socket.Connected)
                 {
-                    if (_connectionManager.IsConnectionOpen(connection))
+                    _handler.Send(packet, socket);
+
+                    FireEvent(this, new TcpMessageEventArgs
                     {
-                        _handler.Send(packet, connection);
+                        Message = JsonConvert.SerializeObject(packet),
+                        MessageEventType = MessageEventType.Sent,
+                        ArgsType = ArgsType.Message,
+                        Packet = packet,
+                        Socket = socket
+                    });
 
-                        FireEvent(this, new TcpMessageEventArgs
-                        {
-                            Message = JsonConvert.SerializeObject(packet),
-                            MessageEventType = MessageEventType.Sent,
-                            ArgsType = ArgsType.Message,
-                            Packet = packet,
-                            Connection = connection
-                        });
-
-                        return true;
-                    }
+                    return true;
                 }
             }
             catch
@@ -68,23 +65,23 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual bool SendToConnectionRaw(string message, ConnectionSocketDTO connection)
+        public virtual bool SendToConnectionRaw(string message, Socket socket)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    connection.Socket.Connected)
+                    socket.Connected)
                 {
-                    if (_connectionManager.IsConnectionOpen(connection))
+                    if (_connectionManager.IsConnectionOpen(socket))
                     {
-                        _handler.SendRaw(message, connection);
+                        _handler.SendRaw(message, socket);
 
                         FireEvent(this, new TcpMessageEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
+                            Socket = socket,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -104,9 +101,9 @@ namespace Tcp.NET.Server
             return false;
         }
 
-        public virtual bool DisconnectClient(ConnectionSocketDTO connection)
+        public virtual bool DisconnectClient(Socket socket)
         {
-            return _handler.DisconnectClient(connection);
+            return _handler.DisconnectClient(socket);
         }
 
         protected virtual Task OnConnectionEvent(object sender, TcpConnectionEventArgs args)
@@ -114,23 +111,23 @@ namespace Tcp.NET.Server
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:
-                    if (_connectionManager.AddConnection(args.Connection))
+                    if (_connectionManager.AddConnection(args.Socket))
                     {
                         FireEvent(this, new TcpConnectionEventArgs
                         {
                             ConnectionType = TcpConnectionType.Connected,
                             ConnectionEventType = args.ConnectionEventType,
-                            Connection = args.Connection,
+                            Socket = args.Socket,
                             ArgsType = ArgsType.Connection,
                         });
                     }
                     break;
                 case ConnectionEventType.Disconnect:
-                    _connectionManager.RemoveConnection(args.Connection, true);
+                    _connectionManager.RemoveConnection(args.Socket, true);
 
                     FireEvent(this, new TcpConnectionEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.Disconnect,
                         ArgsType = ArgsType.Connection,
@@ -147,7 +144,7 @@ namespace Tcp.NET.Server
 
                     FireEvent(this, new TcpConnectionEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.ServerStart,
                         ArgsType = ArgsType.Connection
@@ -162,7 +159,7 @@ namespace Tcp.NET.Server
 
                     FireEvent(this, new TcpConnectionEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.ServerStop,
                         ArgsType = ArgsType.Connection,
@@ -174,19 +171,10 @@ namespace Tcp.NET.Server
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpConnectionEventArgs
                     {
-                        Connection = args.Connection,
+                        Socket = args.Socket,
                         ConnectionEventType = args.ConnectionEventType,
                         ConnectionType = TcpConnectionType.Connecting,
                         ArgsType = ArgsType.Connection
-                    });
-                    break;
-                case ConnectionEventType.MaxConnectionsReached:
-                    FireEvent(this, new TcpConnectionEventArgs
-                    {
-                        Connection = args.Connection,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.MaxConnectionsReached,
-                        ArgsType = ArgsType.Connection,
                     });
                     break;
                 default:
@@ -202,9 +190,9 @@ namespace Tcp.NET.Server
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    if (_connectionManager.IsConnectionOpen(args.Connection))
+                    if (_connectionManager.IsConnectionOpen(args.Socket))
                     {
-                        var connection = _connectionManager.GetConnection(args.Connection.Socket);
+                        var connection = _connectionManager.GetConnection(args.Socket);
 
                         // Digest the pong first
                         if (args.Message.ToLower().Trim() == "pong" ||
@@ -226,7 +214,7 @@ namespace Tcp.NET.Server
                                         Message = packet.Data,
                                         MessageEventType = MessageEventType.Receive,
                                         ArgsType = ArgsType.Message,
-                                        Connection = connection,
+                                        Socket = args.Socket,
                                         Packet = packet
                                     });
                                 }
@@ -243,7 +231,7 @@ namespace Tcp.NET.Server
                                             Data = args.Message,
                                             Timestamp = DateTime.UtcNow
                                         },
-                                        Connection = connection
+                                        Socket = Socket
                                     });
                                 }
                             }
@@ -258,21 +246,20 @@ namespace Tcp.NET.Server
         }
         protected virtual Task OnErrorEvent(object sender, TcpErrorEventArgs args)
         {
-            if (_connectionManager.IsConnectionOpen(args.Connection))
+            if (_connectionManager.IsConnectionOpen(args.Socket))
             {
-                var identity = _connectionManager.GetConnection(args.Connection.Socket);
+                var identity = _connectionManager.GetConnection(args.Socket);
 
                 FireEvent(this, new TcpErrorEventArgs
                 {
                     Exception = args.Exception,
                     Message = args.Message,
-                    Connection = args.Connection,
+                    Socket = args.Socket,
                     ArgsType = ArgsType.Error,
                 });
             }
             return Task.CompletedTask;
         }
-
         protected virtual void OnTimerPingTick(object state)
         {
             foreach (var connection in _connectionManager.GetAllConnections())
@@ -287,14 +274,14 @@ namespace Tcp.NET.Server
                 else
                 {
                     connection.HasBeenPinged = true;
-                    _handler.Send("Ping", connection);
+                    _handler.Send("Ping", connection.Socket);
                 }
 
                 foreach (var connectionToRemove in connectionsToRemove)
                 {
-                    _connectionManager.RemoveConnection(connectionToRemove, true);
-                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove);
-                    _handler.DisconnectClient(connectionToRemove);
+                    _connectionManager.RemoveConnection(connectionToRemove.Socket, true);
+                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove.Socket);
+                    _handler.DisconnectClient(connectionToRemove.Socket);
                 }
             }
         }
@@ -326,11 +313,12 @@ namespace Tcp.NET.Server
                 return _handler;
             }
         }
+
         public override void Dispose()
         {
             foreach (var item in _connectionManager.GetAllConnections())
             {
-                _connectionManager.RemoveConnection(item, true);
+                _connectionManager.RemoveConnection(item.Socket, true);
             }
 
             if (_handler != null)

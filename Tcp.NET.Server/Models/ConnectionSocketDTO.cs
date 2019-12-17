@@ -1,6 +1,6 @@
 ﻿using System.Net.Sockets;
 
-namespace Tcp.NET.Core.Models
+namespace Tcp.NET.Server.Models
 {
     public class ConnectionSocketDTO
     {

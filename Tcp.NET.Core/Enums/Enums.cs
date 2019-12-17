@@ -7,6 +7,5 @@
         ServerStart,
         ServerStop,
         Connecting,
-        MaxConnectionsReached,
     }
 }

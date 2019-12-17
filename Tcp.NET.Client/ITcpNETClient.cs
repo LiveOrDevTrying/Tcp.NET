@@ -12,7 +12,6 @@ namespace Tcp.NET.Client
 
         bool SendToServer(PacketDTO packet);
         bool SendToServer(string message);
-        bool SendToServerRaw(string message);
         bool IsConnected { get; }
         Socket Socket { get; }
     }

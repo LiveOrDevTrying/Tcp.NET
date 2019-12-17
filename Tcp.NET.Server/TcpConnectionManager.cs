@@ -14,36 +14,38 @@ namespace Tcp.NET.Server
         protected ConcurrentDictionary<int, ConnectionSocketDTO> _connections =
             new ConcurrentDictionary<int, ConnectionSocketDTO>();
 
-        public ICollection<ConnectionSocketDTO> GetAllConnections()
+        public ConnectionSocketDTO[] GetAllConnections()
         {
-            return _connections.Values.ToList();
-        }
-
-        public bool AddConnection(ConnectionSocketDTO connection)
-        {
-            return !_connections.ContainsKey(connection.Socket.GetHashCode()) ? _connections.TryAdd(connection.Socket.GetHashCode(), connection) : false;
-        }
-        public void RemoveConnection(ConnectionSocketDTO connection, bool isDisconnect)
-        {
-            if (_connections.TryGetValue(connection.Socket.GetHashCode(), out _))
-            {
-                _connections.TryRemove(connection.Socket.GetHashCode(), out _);
-            }
-
-            if (isDisconnect)
-            {
-                connection.Socket.Close();
-                connection.Socket.Dispose();
-            }
+            return _connections.Values.ToArray();
         }
         public ConnectionSocketDTO GetConnection(Socket socket)
         {
             return _connections.TryGetValue(socket.GetHashCode(), out var connection) ? connection : null;
         }
-
-        public bool IsConnectionOpen(ConnectionSocketDTO connection)
+        public bool AddConnection(Socket socket)
         {
-            return _connections.ContainsKey(connection.Socket.GetHashCode());
+            return !_connections.ContainsKey(socket.GetHashCode()) ? _connections.TryAdd(socket.GetHashCode(), new ConnectionSocketDTO
+            {
+                Socket = socket
+            }) : false;
+        }
+        public void RemoveConnection(Socket socket, bool isDisconnect)
+        { 
+            if (_connections.TryRemove(socket.GetHashCode(), out var connection) &&
+                isDisconnect)
+            {
+                connection.Socket.Close();
+                connection.Socket.Dispose();
+            }
+        }
+        public bool IsConnectionOpen(Socket socket)
+        {
+            if (_connections.TryGetValue(socket.GetHashCode(), out var connection))
+            {
+                return connection.Socket.Connected;
+            }
+
+            return false;
         }
     }
 }
