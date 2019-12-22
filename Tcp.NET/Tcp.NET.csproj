@@ -13,7 +13,7 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.2</Version>
+    <Version>1.1.3</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
@@ -26,8 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tcp.NET.Client\Tcp.NET.Client.csproj" />
-    <ProjectReference Include="..\Tcp.NET.Server.Auth\Tcp.NET.Server.Auth.csproj" />
+    <PackageReference Include="Tcp.NET.Client" Version="1.1.4" />
+    <PackageReference Include="Tcp.NET.Server.Auth" Version="1.1.3" />
   </ItemGroup>
 
 </Project>
