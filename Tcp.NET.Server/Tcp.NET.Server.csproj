@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 
@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Core" Version="1.1.2" />
+    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
   </ItemGroup>
 
 </Project>

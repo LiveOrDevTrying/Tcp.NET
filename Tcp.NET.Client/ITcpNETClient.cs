@@ -1,18 +1,19 @@
 ﻿using PHS.Core.Models;
+using PHS.Core.Networking;
 using System.Net.Sockets;
 using Tcp.NET.Core.Events.Args;
 
 namespace Tcp.NET.Client
 {
     public interface ITcpNETClient : 
-        ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>
+        ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
+        INetworkClient
     {
         void Connect(string url, int port, string endOfLineCharacters);
-        void Disconnect();
+        bool Disconnect();
 
         bool SendToServer(PacketDTO packet);
         bool SendToServer(string message);
-        bool IsConnected { get; }
         Socket Socket { get; }
     }
 }

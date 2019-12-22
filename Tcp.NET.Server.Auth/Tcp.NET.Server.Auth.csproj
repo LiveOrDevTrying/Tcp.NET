@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>1.1.1</Version>
+    <Version>1.1.2</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server module with Authorization for a simple Tcp Server and Client implementation</Description>
@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Server" Version="1.1.1" />
+    <ProjectReference Include="..\Tcp.NET.Server\Tcp.NET.Server.csproj" />
   </ItemGroup>
 
 </Project>

@@ -13,19 +13,19 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 21 20</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.2</Version>
+    <Version>1.1.4</Version>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="PHS.Core" Version="1.0.1" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\PHS.Core\PHS.Core.csproj" />
   </ItemGroup>
 
 </Project>

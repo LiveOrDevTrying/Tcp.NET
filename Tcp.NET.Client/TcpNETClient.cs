@@ -55,6 +55,10 @@ namespace Tcp.NET.Client
                 }
             }
         }
+        public virtual bool Connect()
+        {
+            throw new Exception("Not implemented - use Connect(string host, int port, string endOIfLineCharacters)");
+        }
         public virtual bool SendToServer(string message)
         {
             try
@@ -114,7 +118,7 @@ namespace Tcp.NET.Client
 
             return false;
         }
-        public virtual void Disconnect()
+        public virtual bool Disconnect()
         {
             try
             {
@@ -127,10 +131,13 @@ namespace Tcp.NET.Client
 
                 _connectionSocket.Shutdown(SocketShutdown.Both);
                 _connectionSocket.Close();
+                return true;
             }
             catch
             {
             }
+
+            return false;
         }
 
         protected virtual void ConnectCallback(IAsyncResult ar)
@@ -286,7 +293,8 @@ namespace Tcp.NET.Client
             }
         }
 
-        public bool IsConnected
+
+        public bool IsRunning
         {
             get
             {

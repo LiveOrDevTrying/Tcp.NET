@@ -288,8 +288,8 @@ namespace Tcp.NET.Server
 
         protected virtual int GetRateLimit()
         {
-            // 20 messages each 30000 MS with 80% of total time to buffer
-            return Convert.ToInt32(Math.Ceiling(30000f / 20f * 0.8f));
+            // 15000 messages each 30000 MS with 80% of total time to buffer
+            return Convert.ToInt32(Math.Ceiling(30000f / 15000f * 0.8f));
         }
 
         public Socket Socket
