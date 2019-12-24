@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using Tcp.NET.Server.Models;
+using Tcp.NET.Server.Auth.Interfaces;
 
 namespace Tcp.NET.Server.Auth.Models
 {

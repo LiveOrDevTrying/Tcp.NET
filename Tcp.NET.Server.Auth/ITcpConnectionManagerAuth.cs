@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using Tcp.NET.Server.Auth.Interfaces;
 using Tcp.NET.Server.Auth.Models;
 using Tcp.NET.Server.Models;
 
-namespace Tcp.NET.Server.Auth
+namespace Tcp.NET.Server.SSL.Auth
 {
     public interface ITcpConnectionManagerAuth : ITcpConnectionManager
     {

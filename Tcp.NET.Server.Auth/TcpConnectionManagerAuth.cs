@@ -1,14 +1,13 @@
-﻿using Tcp.NET.Core.Models;
-using Tcp.NET.Server.Models;
+﻿using Tcp.NET.Server.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using System.Threading.Tasks;
 using Tcp.NET.Server.Auth.Models;
+using Tcp.NET.Server.Auth.Interfaces;
 
-namespace Tcp.NET.Server.Auth
+namespace Tcp.NET.Server.SSL.Auth
 {
     public class TcpConnectionManagerAuth : TcpConnectionManager, ITcpConnectionManagerAuth
     {

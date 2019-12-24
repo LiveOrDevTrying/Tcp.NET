@@ -13,6 +13,16 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Core", "Tcp.NET.Cor
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Server.Auth", "Tcp.NET.Server.Auth\Tcp.NET.Server.Auth.csproj", "{43967C2E-694B-43D0-AA89-65B0F5236128}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Core.SSL", "Tcp.NET.Core.SSL\Tcp.NET.Core.SSL.csproj", "{1371F0F6-AB6D-4CCA-BE22-F50BD5D4B170}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Server.SSL", "Tcp.NET.Server.SSL\Tcp.NET.Server.SSL.csproj", "{88F6EBEA-BFBE-4ECC-9122-5E65A9511384}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PHS.Core", "..\PHS.Core\PHS.Core.csproj", "{80594D52-A04F-46AB-B17E-F64EE38479F4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Client.SSL", "Tcp.NET.Client.SSL\Tcp.NET.Client.SSL.csproj", "{B44BFC28-2F65-4369-AAC8-04509CC267C8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Server.SSL.Auth", "Tcp.NET.Server.SSL.Auth\Tcp.NET.Server.SSL.Auth.csproj", "{72027388-4D00-4DBF-94F4-9DB98579759C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +49,26 @@ Global
 		{43967C2E-694B-43D0-AA89-65B0F5236128}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43967C2E-694B-43D0-AA89-65B0F5236128}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43967C2E-694B-43D0-AA89-65B0F5236128}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1371F0F6-AB6D-4CCA-BE22-F50BD5D4B170}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1371F0F6-AB6D-4CCA-BE22-F50BD5D4B170}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1371F0F6-AB6D-4CCA-BE22-F50BD5D4B170}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1371F0F6-AB6D-4CCA-BE22-F50BD5D4B170}.Release|Any CPU.Build.0 = Release|Any CPU
+		{88F6EBEA-BFBE-4ECC-9122-5E65A9511384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{88F6EBEA-BFBE-4ECC-9122-5E65A9511384}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{88F6EBEA-BFBE-4ECC-9122-5E65A9511384}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{88F6EBEA-BFBE-4ECC-9122-5E65A9511384}.Release|Any CPU.Build.0 = Release|Any CPU
+		{80594D52-A04F-46AB-B17E-F64EE38479F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80594D52-A04F-46AB-B17E-F64EE38479F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80594D52-A04F-46AB-B17E-F64EE38479F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80594D52-A04F-46AB-B17E-F64EE38479F4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B44BFC28-2F65-4369-AAC8-04509CC267C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B44BFC28-2F65-4369-AAC8-04509CC267C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B44BFC28-2F65-4369-AAC8-04509CC267C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B44BFC28-2F65-4369-AAC8-04509CC267C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72027388-4D00-4DBF-94F4-9DB98579759C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72027388-4D00-4DBF-94F4-9DB98579759C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72027388-4D00-4DBF-94F4-9DB98579759C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72027388-4D00-4DBF-94F4-9DB98579759C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

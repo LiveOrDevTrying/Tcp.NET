@@ -19,7 +19,6 @@
 
   <ItemGroup>
     <PackageReference Include="IdentityModel" Version="3.10.10" />
-    <PackageReference Include="Tcp.NET.Core" Version="1.1.5" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +30,11 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\PHS.Core\PHS.Core.csproj" />
+    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
   </ItemGroup>
 
 </Project>

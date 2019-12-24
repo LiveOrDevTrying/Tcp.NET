@@ -25,9 +25,4 @@
     </None>
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Tcp.NET.Client" Version="1.1.4" />
-    <PackageReference Include="Tcp.NET.Server.Auth" Version="1.1.3" />
-  </ItemGroup>
-
 </Project>

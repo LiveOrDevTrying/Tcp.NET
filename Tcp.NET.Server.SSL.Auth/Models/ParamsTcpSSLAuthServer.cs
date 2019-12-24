@@ -1,8 +1,8 @@
-﻿using Tcp.NET.Server.Auth.Interfaces;
+﻿using Tcp.NET.Server.SSL.Auth.Interfaces;
 
-namespace Tcp.NET.Server.Auth.Models
+namespace Tcp.NET.Server.SSL.Auth.Models
 {
-    public struct ParamsTcpAuthServer : IParamsTcpAuthServer
+    public struct ParamsTcpSSLAuthServer : IParamsTcpSSLAuthServer
     {
         public string Url { get; set; }
         public int Port { get; set; }

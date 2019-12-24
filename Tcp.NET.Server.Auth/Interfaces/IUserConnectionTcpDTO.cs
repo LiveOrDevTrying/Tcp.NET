@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using Tcp.NET.Server.Models;
 
-namespace Tcp.NET.Server.Auth.Models
+namespace Tcp.NET.Server.Auth.Interfaces
 {
     public interface IUserConnectionTcpDTO : IUserConnectionDTO
     {

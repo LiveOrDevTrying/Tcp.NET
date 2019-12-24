@@ -2,33 +2,46 @@
 using PHS.Core.Enums;
 using PHS.Core.Models;
 using PHS.Core.Services;
-using Tcp.NET.Core.Events.Args;
-using Tcp.NET.Server.Models;
 using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Core.Enums;
-using Tcp.NET.Server.Auth.Events.Args;
-using Tcp.NET.Server.Auth.Enums;
-using Tcp.NET.Server.Auth.Interfaces;
+using Tcp.NET.Server.SSL.Auth.Interfaces;
+using Tcp.NET.Server.SSL.Auth.Events.Args;
+using Tcp.NET.Core.SSL.Events.Args;
+using Tcp.NET.Server.SSL.Auth.Enums;
+using Tcp.NET.Core.SSL.Enums;
+using Tcp.NET.Server.Handlers;
+using Tcp.NET.Server.Models;
+using System.Security.Cryptography.X509Certificates;
 
 namespace Tcp.NET.Server.SSL.Auth
 {
-    public class TcpNETServerAuth : TcpNETServer, ITcpNETServerAuth
+    public class TcpNETSSLServerAuth : TcpNETSSLServer, ITcpNETSSLServerAuth
     {
         protected readonly IUserService _userService;
 
-        public TcpNETServerAuth(IParamsTcpAuthServer parameters,
+        public TcpNETSSLServerAuth(IParamsTcpSSLAuthServer parameters,
             IUserService userService,
-            ITcpConnectionManagerAuth connectionManager)
-            : base(parameters, connectionManager)
+            ITcpSSLConnectionManagerAuth connectionManager,
+            X509Certificate certificate)
+            : base(parameters, connectionManager, certificate)
         {
             _userService = userService;
         }
 
-        public virtual bool BroadcastToAllAuthorizedUsers(PacketDTO packet)
+        public TcpNETSSLServerAuth(IParamsTcpSSLAuthServer parameters,
+           IUserService userService,
+           ITcpSSLConnectionManagerAuth connectionManager,
+           string certificateIssuedTo,
+           StoreLocation storeLocation)
+           : base(parameters, connectionManager, certificateIssuedTo, storeLocation)
+        {
+            _userService = userService;
+        }
+
+        public virtual async Task<bool> BroadcastToAllAuthorizedUsersAsync(PacketDTO packet)
         {
             try
             {
@@ -39,7 +52,7 @@ namespace Tcp.NET.Server.SSL.Auth
                     {
                         foreach (var connection in authorizedUser.Connections)
                         {
-                            SendToConnection(packet, connection.Socket);
+                            await SendToClientAsync(packet, connection.Client);
                         }
                     }
 
@@ -51,7 +64,7 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return false;
         }
-        public virtual bool BroadcastToAllAuthorizedUsers(PacketDTO packet, Socket socketSending)
+        public virtual async Task<bool> BroadcastToAllAuthorizedUsersAsync(PacketDTO packet, TcpClient client)
         {
             try
             {
@@ -62,9 +75,9 @@ namespace Tcp.NET.Server.SSL.Auth
                     {
                         foreach (var connection in authorizedUser.Connections)
                         {
-                            if (connection.Socket.GetHashCode() != socketSending.GetHashCode())
+                            if (connection.Client.GetHashCode() != client.GetHashCode())
                             {
-                                SendToConnection(packet, connection.Socket);
+                                await SendToClientAsync(packet, connection.Client);
                             }
                         }
                     }
@@ -77,7 +90,7 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return false;
         }
-        public virtual bool BroadcastToAllAuthorizedUsersRaw(string message)
+        public virtual async Task<bool> BroadcastToAllAuthorizedUsersRawAsync(string message)
         {
             try
             {
@@ -88,7 +101,7 @@ namespace Tcp.NET.Server.SSL.Auth
                     {
                         foreach (var connection in authorizedUser.Connections)
                         {
-                            SendToConnectionRaw(message, connection.Socket);
+                            await SendToClientRawAsync(message, connection.Client);
                         }
                     }
                     return true;
@@ -100,12 +113,12 @@ namespace Tcp.NET.Server.SSL.Auth
             return false;
         }
 
-        public virtual ICollection<IUserConnectionTcpDTO> GetAllConnections()
+        public virtual ICollection<IUserConnectionTcpClientSSLDTO> GetAllConnections()
         {
             return ConnectionManager.GetAllIdentitiesAuthorized();
         }
 
-        public virtual bool SendToUser(PacketDTO packet, Guid userId)
+        public virtual async Task<bool> SendToUserAsync(PacketDTO packet, Guid userId)
         {
             try
             {
@@ -117,15 +130,53 @@ namespace Tcp.NET.Server.SSL.Auth
 
                     foreach (var connection in user.Connections)
                     {
-                        _handler.Send(packet, connection.Socket);
+                        await _handler.SendAsync(packet, connection);
 
-                        FireEvent(this, new TcpMessageAuthEventArgs
+                        FireEvent(this, new TcpSSLMessageAuthEventArgs
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
-                            Socket = connection.Socket,
                             ArgsType = ArgsType.Message,
                             Packet = packet,
+                            UserId = user.UserId,
+                            Client = connection.Client,
+                        });
+                    }
+
+                    return true;
+                }
+            }
+            catch
+            { }
+
+            return false;
+        }
+        public virtual async Task<bool> SendToUserRawAsync(string message, Guid userId)
+        {
+            try
+            {
+                if (_handler != null &&
+                    _handler.IsServerRunning &&
+                    ConnectionManager.IsUserConnected(userId))
+                {
+                    var user = ConnectionManager.GetIdentity(userId);
+
+                    foreach (var connection in user.Connections)
+                    {
+                        await _handler.SendRawAsync(message, connection);
+
+                        FireEvent(this, new TcpSSLMessageAuthEventArgs
+                        {
+                            Message = message,
+                            MessageEventType = MessageEventType.Sent,
+                            Client = connection.Client,
+                            ArgsType = ArgsType.Message,
+                            Packet = new PacketDTO
+                            {
+                                Action = (int)ActionType.SendToClient,
+                                Data = message,
+                                Timestamp = DateTime.UtcNow
+                            },
                             UserId = user.UserId,
                         });
                     }
@@ -138,82 +189,50 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return false;
         }
-        public virtual bool SendToUserRaw(string message, Guid userId)
+
+        public override async Task<bool> SendToClientAsync(PacketDTO packet, TcpClient client)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    ConnectionManager.IsUserConnected(userId))
+                    client.Connected)
                 {
-                    var user = ConnectionManager.GetIdentity(userId);
-
-                    foreach (var connection in user.Connections)
+                    if (ConnectionManager.IsConnectionUnauthorized(client))
                     {
-                        _handler.SendRaw(message, connection.Socket);
+                        var connection = ConnectionManager.GetConnection(client);
 
-                        FireEvent(this, new TcpMessageAuthEventArgs
+                        if (connection != null)
                         {
-                            Message = message,
-                            MessageEventType = MessageEventType.Sent,
-                            Socket = connection.Socket,
-                            ArgsType = ArgsType.Message,
-                            Packet = new PacketDTO
+                            await _handler.SendAsync(packet, connection);
+
+                            FireEvent(this, new TcpSSLMessageAuthEventArgs
                             {
-                                Action = (int)ActionType.SendToClient,
-                                Data = message,
-                                Timestamp = DateTime.UtcNow
-                            },
-                            UserId = user.UserId,
-                        });
+                                Message = JsonConvert.SerializeObject(packet),
+                                MessageEventType = MessageEventType.Sent,
+                                Client = connection.Client,
+                                ArgsType = ArgsType.Message,
+                                Packet = packet,
+                            });
+
+                            return true;
+                        }
                     }
 
-                    return true;
-                }
-            }
-            catch
-            { }
-
-            return false;
-        }
-
-        public override bool SendToConnection(PacketDTO packet, Socket socket)
-        {
-            try
-            {
-                if (_handler != null &&
-                    _handler.IsServerRunning &&
-                    socket.Connected)
-                {
-                    if (ConnectionManager.IsConnectionUnauthorized(socket))
+                    if (ConnectionManager.IsConnectionAuthorized(client))
                     {
-                        _handler.Send(packet, socket);
+                        var identity = ConnectionManager.GetIdentity(client);
+                        var connection = ConnectionManager.GetConnectionAuthorized(client);
+                        await _handler.SendAsync(packet, connection.GetConnection(client));
 
-                        FireEvent(this, new TcpMessageAuthEventArgs
+                        FireEvent(this, new TcpSSLMessageAuthEventArgs
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
-                            Socket = socket,
-                            ArgsType = ArgsType.Message,
-                            Packet = packet,
-                        });
-
-                        return true;
-                    }
-
-                    if (ConnectionManager.IsConnectionAuthorized(socket))
-                    {
-                        var identity = ConnectionManager.GetIdentity(socket);
-                        _handler.Send(packet, socket);
-
-                        FireEvent(this, new TcpMessageAuthEventArgs
-                        {
-                            Message = JsonConvert.SerializeObject(packet),
-                            MessageEventType = MessageEventType.Sent,
-                            Socket = Socket,
                             ArgsType = ArgsType.Message,
                             Packet = packet,
                             UserId = identity.UserId,
+                            Client = client,
                         });
 
                         return true;
@@ -225,23 +244,24 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return false;
         }
-        public override bool SendToConnectionRaw(string message, Socket socket)
+        public override async Task<bool> SendToClientRawAsync(string message, TcpClient client)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    socket.Connected)
+                    client.Connected)
                 {
-                    if (ConnectionManager.IsConnectionUnauthorized(socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(client))
                     {
-                        _handler.SendRaw(message, socket);
+                        var connection = ConnectionManager.GetConnection(client);
+                        await _handler.SendRawAsync(message, connection);
 
-                        FireEvent(this, new TcpMessageAuthEventArgs
+                        FireEvent(this, new TcpSSLMessageAuthEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Socket = socket,
+                            Client = client,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -254,16 +274,17 @@ namespace Tcp.NET.Server.SSL.Auth
                         return true;
                     }
 
-                    if (ConnectionManager.IsConnectionAuthorized(socket))
+                    if (ConnectionManager.IsConnectionAuthorized(client))
                     {
-                        var identity = ConnectionManager.GetIdentity(socket);
-                        _handler.Send(message, socket);
+                        var identity = ConnectionManager.GetIdentity(client);
+                        var connection = ConnectionManager.GetConnectionAuthorized(client);
+                        await _handler.SendAsync(message, connection.GetConnection(client));
 
-                        FireEvent(this, new TcpMessageAuthEventArgs
+                        FireEvent(this, new TcpSSLMessageAuthEventArgs
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
-                            Socket = socket,
+                            Client = client,
                             ArgsType = ArgsType.Message,
                             Packet = new PacketDTO
                             {
@@ -284,54 +305,60 @@ namespace Tcp.NET.Server.SSL.Auth
             return false;
         }
 
-        protected override Task OnConnectionEvent(object sender, TcpConnectionEventArgs args)
+        protected override Task OnConnectionEvent(object sender, TcpSSLConnectionEventArgs args)
         {
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:
-                    if (!ConnectionManager.IsConnectionUnauthorized(args.Socket))
+                    if (!ConnectionManager.IsConnectionUnauthorized(args.Client))
                     {
-                        if (ConnectionManager.AddSocketUnauthorized(args.Socket))
+                        if (ConnectionManager.AddClientUnauthorized(args.Client))
                         {
-                            FireEvent(this, new TcpConnectionAuthEventArgs
+                            FireEvent(this, new TcpSSLConnectionAuthEventArgs
                             {
-                                Socket = args.Socket,
-                                ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
+                                Client = args.Client,
+                                Reader = args.Reader,
+                                Writer = args.Writer,
+                                ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                                 ConnectionEventType = args.ConnectionEventType,
-                                ConnectionType = TcpConnectionType.Connected,
+                                ConnectionType = TcpSSLConnectionType.Connected,
                                 ArgsType = ArgsType.Connection,
                             });
                         }
                     }
                     break;
                 case ConnectionEventType.Disconnect:
-                    if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(args.Client))
                     {
-                        ConnectionManager.RemoveSocketUnauthorized(args.Socket, true);
+                        ConnectionManager.RemoveClientUnauthorized(args.Client, true);
 
-                        FireEvent(this, new TcpConnectionAuthEventArgs
+                        FireEvent(this, new TcpSSLConnectionAuthEventArgs
                         {
-                            Socket = args.Socket,
+                            Client = args.Client,
+                            Reader = args.Reader,
+                            Writer = args.Writer,
                             ConnectionEventType = args.ConnectionEventType,
-                            ConnectionType = TcpConnectionType.Disconnect,
+                            ConnectionType = TcpSSLConnectionType.Disconnect,
                             ArgsType = ArgsType.Connection,
-                            ConnectionAuthType = TcpConnectionAuthType.Unauthorized
+                            ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                         });
                     }
 
-                    if (ConnectionManager.IsConnectionAuthorized(args.Socket))
+                    if (ConnectionManager.IsConnectionAuthorized(args.Client))
                     {
-                        var identity = ConnectionManager.GetIdentity(args.Socket);
-                        ConnectionManager.RemoveConnectionAuthorized(identity.GetConnection(args.Socket));
+                        var identity = ConnectionManager.GetIdentity(args.Client);
+                        ConnectionManager.RemoveConnectionAuthorized(identity.GetConnection(args.Client));
 
-                        FireEvent(this, new TcpConnectionAuthEventArgs
+                        FireEvent(this, new TcpSSLConnectionAuthEventArgs
                         {
-                            Socket = args.Socket,
+                            Client = args.Client,
+                            Reader = args.Reader,
+                            Writer = args.Writer,
                             ConnectionEventType = args.ConnectionEventType,
-                            ConnectionType = TcpConnectionType.Disconnect,
+                            ConnectionType = TcpSSLConnectionType.Disconnect,
                             ArgsType = ArgsType.Connection,
                             UserId = identity.UserId,
-                            ConnectionAuthType = TcpConnectionAuthType.Authorized
+                            ConnectionAuthType = TcpSSLConnectionAuthType.Authorized,
                         });
                     }
                     break;
@@ -344,12 +371,14 @@ namespace Tcp.NET.Server.SSL.Auth
 
                     _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
 
-                    FireEvent(this, new TcpConnectionAuthEventArgs
+                    FireEvent(this, new TcpSSLConnectionAuthEventArgs
                     {
-                        Socket = args.Socket,
-                        ConnectionAuthType = TcpConnectionAuthType.Authorized,
+                        Client = args.Client,
+                        Reader = args.Reader,
+                        Writer = args.Writer,
+                        ConnectionAuthType = TcpSSLConnectionAuthType.Authorized,
                         ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.ServerStart,
+                        ConnectionType = TcpSSLConnectionType.ServerStart,
                         ArgsType = ArgsType.Connection,
                     });
                     break;
@@ -360,25 +389,40 @@ namespace Tcp.NET.Server.SSL.Auth
                         _timerPing = null;
                     }
 
-                    FireEvent(this, new TcpConnectionAuthEventArgs
+                    FireEvent(this, new TcpSSLConnectionAuthEventArgs
                     {
-                        Socket = args.Socket,
-                        ConnectionAuthType = TcpConnectionAuthType.Authorized,
+                        Client = args.Client,
+                        Reader = args.Reader,
+                        Writer = args.Writer,
+                        ConnectionAuthType = TcpSSLConnectionAuthType.Authorized,
                         ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.ServerStop,
+                        ConnectionType = TcpSSLConnectionType.ServerStop,
                         ArgsType = ArgsType.Connection
                     });
 
+
+                    _handler.ConnectionEvent -= OnConnectionEvent;
+                    _handler.MessageEvent -= OnMessageEventAsync;
+                    _handler.ErrorEvent -= OnErrorEvent;
+                    _handler.Dispose();
+
                     Thread.Sleep(5000);
-                    _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
+                    _handler = _serverCertificate != null
+                        ? new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _serverCertificate)
+                        : new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _certificateIssuedTo, _storeLocation);
+                    _handler.ConnectionEvent += OnConnectionEvent;
+                    _handler.MessageEvent += OnMessageEventAsync;
+                    _handler.ErrorEvent += OnErrorEvent;
                     break;
                 case ConnectionEventType.Connecting:
-                    FireEvent(this, new TcpConnectionAuthEventArgs
+                    FireEvent(this, new TcpSSLConnectionAuthEventArgs
                     {
-                        Socket = args.Socket,
-                        ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
+                        Client = args.Client,
+                        Reader = args.Reader,
+                        Writer = args.Writer,
+                        ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                         ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.Connecting,
+                        ConnectionType = TcpSSLConnectionType.Connecting,
                         ArgsType = ArgsType.Connection,
                     });
                     break;
@@ -390,27 +434,27 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return Task.CompletedTask;
         }
-        protected override async Task OnMessageEventAsync(object sender, TcpMessageEventArgs args)
+        protected override async Task OnMessageEventAsync(object sender, TcpSSLMessageEventArgs args)
         {
             switch (args.MessageEventType)
             {
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
+                    if (ConnectionManager.IsConnectionUnauthorized(args.Client))
                     {
                         await CheckIfAuthorizedAsync(args);
                     }
-                    else if (ConnectionManager.IsConnectionAuthorized(args.Socket))
+                    else if (ConnectionManager.IsConnectionAuthorized(args.Client))
                     {
-                        var identity = ConnectionManager.GetIdentity(args.Socket);
+                        var identity = ConnectionManager.GetIdentity(args.Client);
 
                         // Digest the pong first
                         if (args.Message.ToLower().Trim() == "pong" ||
                             args.Packet.Data.Trim().ToLower() == "pong")
                         {
-                            var connection = ConnectionManager.GetConnectionAuthorized(args.Socket);
-                            connection.HasBeenPinged = false;
+                            var connection = ConnectionManager.GetConnectionAuthorized(args.Client);
+                            connection.GetConnection(args.Client).HasBeenPinged = false;
                         }
                         else
                         {
@@ -421,11 +465,11 @@ namespace Tcp.NET.Server.SSL.Auth
                                 {
                                     var packet = JsonConvert.DeserializeObject<PacketDTO>(args.Message);
 
-                                    FireEvent(this, new TcpMessageAuthEventArgs
+                                    FireEvent(this, new TcpSSLMessageAuthEventArgs
                                     {
                                         Message = packet.Data,
                                         MessageEventType = MessageEventType.Receive,
-                                        Socket = args.Socket,
+                                        Client = args.Client,
                                         ArgsType = ArgsType.Message,
                                         Packet = packet,
                                         UserId = identity.UserId
@@ -433,11 +477,11 @@ namespace Tcp.NET.Server.SSL.Auth
                                 }
                                 catch
                                 {
-                                    FireEvent(this, new TcpMessageAuthEventArgs
+                                    FireEvent(this, new TcpSSLMessageAuthEventArgs
                                     {
                                         Message = args.Message,
                                         MessageEventType = MessageEventType.Receive,
-                                        Socket = args.Socket,
+                                        Client = args.Client,
                                         ArgsType = ArgsType.Message,
                                         Packet = new PacketDTO
                                         {
@@ -456,19 +500,19 @@ namespace Tcp.NET.Server.SSL.Auth
                     break;
             }
         }
-        protected override Task OnErrorEvent(object sender, TcpErrorEventArgs args)
+        protected override Task OnErrorEvent(object sender, TcpSSLErrorEventArgs args)
         {
-            if (ConnectionManager.IsConnectionAuthorized(args.Socket))
+            if (ConnectionManager.IsConnectionAuthorized(args.Client))
             {
-                var identity = ConnectionManager.GetIdentity(args.Socket);
+                var identity = ConnectionManager.GetIdentity(args.Client);
 
-                FireEvent(this, new TcpErrorAuthEventArgs
+                FireEvent(this, new TcpSSLErrorAuthEventArgs
                 {
                     Exception = args.Exception,
                     Message = args.Message,
-                    Socket = args.Socket,
                     ArgsType = ArgsType.Error,
-                    UserId = identity.UserId
+                    UserId = identity.UserId,
+                    Client = args.Client
                 });
             }
             return Task.CompletedTask;
@@ -478,7 +522,7 @@ namespace Tcp.NET.Server.SSL.Auth
         {
             foreach (var identity in ConnectionManager.GetAllIdentitiesAuthorized())
             {
-                var connectionsToRemove = new List<ConnectionSocketDTO>();
+                var connectionsToRemove = new List<ConnectionTcpClientSSLDTO>();
 
                 foreach (var connection in identity.Connections)
                 {
@@ -490,41 +534,52 @@ namespace Tcp.NET.Server.SSL.Auth
                     else
                     {
                         connection.HasBeenPinged = true;
-                        _handler.SendRaw("Ping", connection.Socket);
+                        Task.Run(async () =>
+                        {
+                            await _handler.SendRawAsync("Ping", connection);
+                        });
                     }
                 }
 
                 foreach (var connectionToRemove in connectionsToRemove)
                 {
                     ConnectionManager.RemoveConnectionAuthorized(connectionToRemove);
-                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove.Socket);
-                    _handler.DisconnectClient(connectionToRemove.Socket);
+
+                    Task.Run(async () =>
+                    {
+                        await _handler.SendRawAsync("No ping response - disconnected.", connectionToRemove);
+                        _handler.DisconnectClient(connectionToRemove.Client);
+                    });
                 }
             }
         }
 
-        protected virtual async Task<bool> CheckIfAuthorizedAsync(TcpMessageEventArgs args)
+        protected virtual async Task<bool> CheckIfAuthorizedAsync(TcpSSLMessageEventArgs args)
         {
+            var connection = ConnectionManager.GetConnection(args.Client);
+            
             try
             {
                 // Check for token here
-                if (ConnectionManager.IsConnectionUnauthorized(args.Socket))
+                if (ConnectionManager.IsConnectionUnauthorized(args.Client))
                 {
-                    ConnectionManager.RemoveSocketUnauthorized(args.Socket, false);
+                    ConnectionManager.RemoveClientUnauthorized(args.Client, false);
 
                     if (args.Message.Length < "oauth:".Length ||
                         !args.Message.ToLower().StartsWith("oauth:"))
                     {
-                        _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
-                        args.Socket.Disconnect(false);
+                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
+                        args.Client.Close();
 
-                        FireEvent(this, new TcpConnectionAuthEventArgs
+                        FireEvent(this, new TcpSSLConnectionAuthEventArgs
                         {
-                            ConnectionType = TcpConnectionType.Disconnect,
+                            ConnectionType = TcpSSLConnectionType.Disconnect,
                             ConnectionEventType = ConnectionEventType.Disconnect,
-                            ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
+                            ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                             ArgsType = ArgsType.Connection,
-                            Socket = args.Socket,
+                            Client = args.Client,
+                            Reader = connection.Reader,
+                            Writer = connection.Writer
                         });
                         return false;
                     }
@@ -536,30 +591,34 @@ namespace Tcp.NET.Server.SSL.Auth
                     if (userId == null ||
                         userId == Guid.Empty)
                     {
-                        _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
-                        args.Socket.Disconnect(false);
+                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
+                        args.Client.Close();
 
-                        FireEvent(this, new TcpConnectionAuthEventArgs
+                        FireEvent(this, new TcpSSLConnectionAuthEventArgs
                         {
-                            Socket = args.Socket,
-                            ConnectionType = TcpConnectionType.Disconnect,
+                            Client = args.Client,
+                            ConnectionType = TcpSSLConnectionType.Disconnect,
                             ConnectionEventType = ConnectionEventType.Disconnect,
-                            ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
-                            ArgsType = ArgsType.Connection
+                            ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
+                            ArgsType = ArgsType.Connection,
+                            Reader = connection.Reader,
+                            Writer = connection.Writer,
                         });
                         return false;
                     }
 
-                    var identity = ConnectionManager.AddConnectionAuthorized(userId, args.Socket);
+                    var identity = ConnectionManager.AddConnectionAuthorized(userId, connection.Client, connection.Reader, connection.Writer);
 
-                    _handler.SendRaw(Parameters.ConnectionSuccessString, args.Socket);
+                    await _handler.SendRawAsync(Parameters.ConnectionSuccessString, identity.GetConnection(args.Client));
 
-                    FireEvent(this, new TcpConnectionAuthEventArgs
+                    FireEvent(this, new TcpSSLConnectionAuthEventArgs
                     {
-                        Socket = args.Socket,
-                        ConnectionType = TcpConnectionType.Connected,
+                        Client = args.Client,
+                        Reader = connection.Reader,
+                        Writer = connection.Writer,
+                        ConnectionType = TcpSSLConnectionType.Connected,
                         ConnectionEventType = ConnectionEventType.Connected,
-                        ConnectionAuthType = TcpConnectionAuthType.Authorized,
+                        ConnectionAuthType = TcpSSLConnectionAuthType.Authorized,
                         ArgsType = ArgsType.Connection,
                         UserId = identity.UserId
                     });
@@ -569,25 +628,30 @@ namespace Tcp.NET.Server.SSL.Auth
             catch
             { }
 
-            _handler.SendRaw(Parameters.UnauthorizedString, args.Socket);
-            args.Socket.Disconnect(false);
-
-            FireEvent(this, new TcpConnectionAuthEventArgs
+            if (connection != null)
             {
-                Socket = args.Socket,
-                ConnectionType = TcpConnectionType.Disconnect,
-                ConnectionEventType = ConnectionEventType.Disconnect,
-                ConnectionAuthType = TcpConnectionAuthType.Unauthorized,
-                ArgsType = ArgsType.Connection
-            });
+                await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
+                args.Client.Close();
+
+                FireEvent(this, new TcpSSLConnectionAuthEventArgs
+                {
+                    Client = args.Client,
+                    ConnectionType = TcpSSLConnectionType.Disconnect,
+                    ConnectionEventType = ConnectionEventType.Disconnect,
+                    ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
+                    ArgsType = ArgsType.Connection,
+                    Reader = connection.Reader,
+                    Writer = connection.Writer
+                });
+            }
             return false;
         }
 
         public override void Dispose()
         {
-            foreach (var item in ConnectionManager.GetAllSocketsUnauthorized())
+            foreach (var item in ConnectionManager.GetAllClientsUnauthorized())
             {
-                ConnectionManager.RemoveSocketUnauthorized(item, true);
+                ConnectionManager.RemoveClientUnauthorized(item, true);
             }
 
             foreach (var item in ConnectionManager.GetAllIdentitiesAuthorized())
@@ -614,19 +678,19 @@ namespace Tcp.NET.Server.SSL.Auth
             base.Dispose();
         }
 
-        public ITcpConnectionManagerAuth ConnectionManager
+        public new ITcpSSLConnectionManagerAuth ConnectionManager
         {
             get
             {
-                return _connectionManager as ITcpConnectionManagerAuth;
+                return _connectionManager as ITcpSSLConnectionManagerAuth;
             }
         }
 
-        public IParamsTcpAuthServer Parameters
+        public IParamsTcpSSLAuthServer Parameters
         {
             get
             {
-                return _parameters as IParamsTcpAuthServer;
+                return _parameters as IParamsTcpSSLAuthServer;
             }
         }
     }

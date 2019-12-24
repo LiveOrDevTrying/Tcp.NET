@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="PHS.Core" Version="1.0.4" />
+    <ProjectReference Include="..\..\PHS.Core\PHS.Core.csproj" />
   </ItemGroup>
 
 </Project>

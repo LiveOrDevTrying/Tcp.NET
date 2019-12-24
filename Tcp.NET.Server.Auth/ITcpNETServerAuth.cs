@@ -5,7 +5,7 @@ using System.Net.Sockets;
 using Tcp.NET.Server.Auth.Interfaces;
 using Tcp.NET.Server.Auth.Models;
 
-namespace Tcp.NET.Server.Auth
+namespace Tcp.NET.Server.SSL.Auth
 {
     public interface ITcpNETServerAuth : ITcpNETServer
     {

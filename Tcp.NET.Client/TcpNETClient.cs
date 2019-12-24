@@ -55,10 +55,6 @@ namespace Tcp.NET.Client
                 }
             }
         }
-        public virtual bool Connect()
-        {
-            throw new Exception("Not implemented - use Connect(string host, int port, string endOIfLineCharacters)");
-        }
         public virtual bool SendToServer(string message)
         {
             try
