@@ -5,7 +5,7 @@ using Tcp.NET.Server.Auth.Interfaces;
 using Tcp.NET.Server.Auth.Models;
 using Tcp.NET.Server.Models;
 
-namespace Tcp.NET.Server.SSL.Auth
+namespace Tcp.NET.Server.Auth
 {
     public interface ITcpConnectionManagerAuth : ITcpConnectionManager
     {

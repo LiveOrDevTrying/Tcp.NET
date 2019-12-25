@@ -14,7 +14,7 @@ using Tcp.NET.Server.Auth.Events.Args;
 using Tcp.NET.Server.Auth.Enums;
 using Tcp.NET.Server.Auth.Interfaces;
 
-namespace Tcp.NET.Server.SSL.Auth
+namespace Tcp.NET.Server.Auth
 {
     public class TcpNETServerAuth : TcpNETServer, ITcpNETServerAuth
     {

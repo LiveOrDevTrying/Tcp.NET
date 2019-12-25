@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using Tcp.NET.Server.Auth.Models;
 using Tcp.NET.Server.Auth.Interfaces;
 
-namespace Tcp.NET.Server.SSL.Auth
+namespace Tcp.NET.Server.Auth
 {
     public class TcpConnectionManagerAuth : TcpConnectionManager, ITcpConnectionManagerAuth
     {
