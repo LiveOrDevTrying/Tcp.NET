@@ -19,7 +19,7 @@ namespace Tcp.NET.Server
         ITcpNETSSLServer
     {
         protected readonly ITcpSSLConnectionManager _connectionManager;
-        protected readonly IParamsTcpServer _parameters;
+        protected readonly IParamsTcpServerSSL _parameters;
         protected TcpHandlerSSL _handler;
 
         protected readonly X509Certificate _serverCertificate;
@@ -28,7 +28,7 @@ namespace Tcp.NET.Server
 
         protected Timer _timerPing;
 
-        public TcpNETSSLServer(IParamsTcpServer parameters,
+        public TcpNETSSLServer(IParamsTcpServerSSL parameters,
             ITcpSSLConnectionManager connectionManager,
             X509Certificate serverCertificate)
         {
@@ -42,7 +42,7 @@ namespace Tcp.NET.Server
             _handler.ErrorEvent += OnErrorEvent;
         }
 
-        public TcpNETSSLServer(IParamsTcpServer parameters,
+        public TcpNETSSLServer(IParamsTcpServerSSL parameters,
             ITcpSSLConnectionManager connectionManager,
             string certificateIssuedTo,
             StoreLocation storeLocation)

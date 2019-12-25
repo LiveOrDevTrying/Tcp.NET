@@ -1,6 +1,6 @@
 ﻿namespace Tcp.NET.Server.Models
 {
-    public interface IParamsTcpServer
+    public interface IParamsTcpServerSSL
     {
         string EndOfLineCharacters { get; set; }
         int IntervalReconnectSec { get; set; }

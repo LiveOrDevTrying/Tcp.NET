@@ -1,6 +1,6 @@
 ﻿namespace Tcp.NET.Server.Models
 {
-    public struct ParamsTcpServerSSL : IParamsTcpServer
+    public struct ParamsTcpServerSSL : IParamsTcpServerSSL
     {
         public string Url { get; set; }
         public int Port { get; set; }
