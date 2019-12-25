@@ -1,4 +1,4 @@
-﻿using Tcp.NET.Server.Models;
+﻿using Tcp.NET.Server.SSL.Models;
 
 namespace Tcp.NET.Server.SSL.Auth.Interfaces
 {

@@ -1,4 +1,4 @@
-﻿namespace Tcp.NET.Server.Models
+﻿namespace Tcp.NET.Server.SSL.Models
 {
     public interface IParamsTcpServerSSL
     {

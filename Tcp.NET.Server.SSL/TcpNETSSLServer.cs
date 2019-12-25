@@ -9,10 +9,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Core.SSL.Enums;
 using Tcp.NET.Core.SSL.Events.Args;
-using Tcp.NET.Server.Handlers;
-using Tcp.NET.Server.Models;
+using Tcp.NET.Server.SSL.Handlers;
+using Tcp.NET.Server.SSL.Models;
 
-namespace Tcp.NET.Server
+namespace Tcp.NET.Server.SSL
 {
     public class TcpNETSSLServer : 
         CoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>, 

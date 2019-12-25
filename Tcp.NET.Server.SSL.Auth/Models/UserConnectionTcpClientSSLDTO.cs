@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
-using Tcp.NET.Server.Models;
 using Tcp.NET.Server.SSL.Auth.Interfaces;
+using Tcp.NET.Server.SSL.Models;
 
 namespace Tcp.NET.Server.SSL.Auth.Models
 {

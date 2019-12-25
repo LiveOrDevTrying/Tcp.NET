@@ -1,7 +1,7 @@
 ﻿using System.IO;
 using System.Net.Sockets;
 
-namespace Tcp.NET.Server.Models
+namespace Tcp.NET.Server.SSL.Models
 {
     public class ConnectionTcpClientSSLDTO
     {

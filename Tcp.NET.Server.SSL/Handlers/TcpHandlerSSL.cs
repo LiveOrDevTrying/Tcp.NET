@@ -6,16 +6,14 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Net.Security;
-using System.Security.Authentication;
 using System.IO;
 using Tcp.NET.Core.SSL.Events.Args;
-using Tcp.NET.Core.SSL;
 using Tcp.NET.Core.SSL.Enums;
-using Tcp.NET.Server.Models;
+using Tcp.NET.Server.SSL.Models;
 using System.Security.Cryptography.X509Certificates;
 using Tcp.NET.Core.SSL.Helpers;
 
-namespace Tcp.NET.Server.Handlers
+namespace Tcp.NET.Server.SSL.Handlers
 {
     public sealed class TcpHandlerSSL : 
         CoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>, 

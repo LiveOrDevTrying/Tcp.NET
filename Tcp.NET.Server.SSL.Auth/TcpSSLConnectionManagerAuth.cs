@@ -1,5 +1,4 @@
-﻿using Tcp.NET.Server.Models;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,13 +6,14 @@ using System.Net.Sockets;
 using Tcp.NET.Server.SSL.Auth.Interfaces;
 using System.IO;
 using Tcp.NET.Server.SSL.Auth.Models;
+using Tcp.NET.Server.SSL.Models;
 
 namespace Tcp.NET.Server.SSL.Auth
 {
     public class TcpSSLConnectionManagerAuth : TcpSSLConnectionManager, ITcpSSLConnectionManagerAuth
     {
-        protected ConcurrentDictionary<int, TcpClient> _clientsUnauthorized =
-            new ConcurrentDictionary<int, TcpClient>();
+        protected ConcurrentDictionary<int, ConnectionTcpClientSSLDTO> _clientsUnauthorized =
+            new ConcurrentDictionary<int, ConnectionTcpClientSSLDTO>();
 
         protected ConcurrentDictionary<Guid, IUserConnectionTcpClientSSLDTO> _clientsAuthorized =
             new ConcurrentDictionary<Guid, IUserConnectionTcpClientSSLDTO>();
@@ -41,7 +41,16 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return default;
         }
-        public ICollection<TcpClient> GetAllClientsUnauthorized()
+        public ConnectionTcpClientSSLDTO GetConnectionUnauthorized(TcpClient client)
+        {
+            if (_clientsUnauthorized.ContainsKey(client.GetHashCode()))
+            {
+                return _clientsUnauthorized.Values.FirstOrDefault(s => s.Client.GetHashCode() == client.GetHashCode());
+            }
+
+            return default;
+        }
+        public ICollection<ConnectionTcpClientSSLDTO> GetAllClientsUnauthorized()
         {
             return _clientsUnauthorized.Values.ToList();
         }
@@ -50,9 +59,14 @@ namespace Tcp.NET.Server.SSL.Auth
             return _clientsAuthorized.Values.ToList();
         }
 
-        public bool AddClientUnauthorized(TcpClient client)
+        public bool AddClientUnauthorized(TcpClient client, StreamReader reader, StreamWriter writer)
         {
-            return !_clientsUnauthorized.ContainsKey(client.GetHashCode()) ? _clientsUnauthorized.TryAdd(client.GetHashCode(), client) : false;
+            return !_clientsUnauthorized.ContainsKey(client.GetHashCode()) ? _clientsUnauthorized.TryAdd(client.GetHashCode(), new ConnectionTcpClientSSLDTO
+            {
+                Reader = reader,
+                Writer = writer,
+                Client = client
+            }) : false;
         }
         public IUserConnectionTcpClientSSLDTO AddConnectionAuthorized(Guid userId, TcpClient client, StreamReader reader, StreamWriter writer)
         {
@@ -86,14 +100,14 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return null;
         }
-        public void RemoveClientUnauthorized(TcpClient client, bool isDisconnect)
+        public void RemoveClientUnauthorized(ConnectionTcpClientSSLDTO client, bool isDisconnect)
         {
             if (_clientsUnauthorized.TryRemove(client.GetHashCode(), out var connection))
             {
                 if (isDisconnect)
                 {
                     connection.Client.Close();
-                    client.Dispose();
+                    connection.Client.Dispose();
                 }
             }
         }

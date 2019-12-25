@@ -2,9 +2,9 @@
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Tcp.NET.Core.SSL.Events.Args;
-using Tcp.NET.Server.Handlers;
+using Tcp.NET.Server.SSL.Handlers;
 
-namespace Tcp.NET.Server
+namespace Tcp.NET.Server.SSL
 {
     public interface ITcpNETSSLServer : ICoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>
     {

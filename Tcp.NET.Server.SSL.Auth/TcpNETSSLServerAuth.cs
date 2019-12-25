@@ -12,9 +12,9 @@ using Tcp.NET.Server.SSL.Auth.Events.Args;
 using Tcp.NET.Core.SSL.Events.Args;
 using Tcp.NET.Server.SSL.Auth.Enums;
 using Tcp.NET.Core.SSL.Enums;
-using Tcp.NET.Server.Handlers;
-using Tcp.NET.Server.Models;
 using System.Security.Cryptography.X509Certificates;
+using Tcp.NET.Server.SSL.Models;
+using Tcp.NET.Server.SSL.Handlers;
 
 namespace Tcp.NET.Server.SSL.Auth
 {
@@ -312,7 +312,7 @@ namespace Tcp.NET.Server.SSL.Auth
                 case ConnectionEventType.Connected:
                     if (!ConnectionManager.IsConnectionUnauthorized(args.Client))
                     {
-                        if (ConnectionManager.AddClientUnauthorized(args.Client))
+                        if (ConnectionManager.AddClientUnauthorized(args.Client, args.Reader, args.Writer))
                         {
                             FireEvent(this, new TcpSSLConnectionAuthEventArgs
                             {
@@ -330,7 +330,8 @@ namespace Tcp.NET.Server.SSL.Auth
                 case ConnectionEventType.Disconnect:
                     if (ConnectionManager.IsConnectionUnauthorized(args.Client))
                     {
-                        ConnectionManager.RemoveClientUnauthorized(args.Client, true);
+                        var connection = ConnectionManager.GetConnectionUnauthorized(args.Client);
+                        ConnectionManager.RemoveClientUnauthorized(connection, true);
 
                         FireEvent(this, new TcpSSLConnectionAuthEventArgs
                         {
@@ -556,19 +557,18 @@ namespace Tcp.NET.Server.SSL.Auth
 
         protected virtual async Task<bool> CheckIfAuthorizedAsync(TcpSSLMessageEventArgs args)
         {
-            var connection = ConnectionManager.GetConnection(args.Client);
-            
             try
             {
                 // Check for token here
                 if (ConnectionManager.IsConnectionUnauthorized(args.Client))
                 {
-                    ConnectionManager.RemoveClientUnauthorized(args.Client, false);
+                    var connectionUnauth = ConnectionManager.GetConnectionUnauthorized(args.Client);
+                    ConnectionManager.RemoveClientUnauthorized(connectionUnauth, false);
 
                     if (args.Message.Length < "oauth:".Length ||
                         !args.Message.ToLower().StartsWith("oauth:"))
                     {
-                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
+                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connectionUnauth);
                         args.Client.Close();
 
                         FireEvent(this, new TcpSSLConnectionAuthEventArgs
@@ -578,8 +578,8 @@ namespace Tcp.NET.Server.SSL.Auth
                             ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                             ArgsType = ArgsType.Connection,
                             Client = args.Client,
-                            Reader = connection.Reader,
-                            Writer = connection.Writer
+                            Reader = connectionUnauth.Reader,
+                            Writer = connectionUnauth.Writer
                         });
                         return false;
                     }
@@ -591,7 +591,7 @@ namespace Tcp.NET.Server.SSL.Auth
                     if (userId == null ||
                         userId == Guid.Empty)
                     {
-                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
+                        await _handler.SendRawAsync(Parameters.UnauthorizedString, connectionUnauth);
                         args.Client.Close();
 
                         FireEvent(this, new TcpSSLConnectionAuthEventArgs
@@ -601,21 +601,21 @@ namespace Tcp.NET.Server.SSL.Auth
                             ConnectionEventType = ConnectionEventType.Disconnect,
                             ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
                             ArgsType = ArgsType.Connection,
-                            Reader = connection.Reader,
-                            Writer = connection.Writer,
+                            Reader = connectionUnauth.Reader,
+                            Writer = connectionUnauth.Writer,
                         });
                         return false;
                     }
 
-                    var identity = ConnectionManager.AddConnectionAuthorized(userId, connection.Client, connection.Reader, connection.Writer);
+                    var identity = ConnectionManager.AddConnectionAuthorized(userId, connectionUnauth.Client, connectionUnauth.Reader, connectionUnauth.Writer);
 
                     await _handler.SendRawAsync(Parameters.ConnectionSuccessString, identity.GetConnection(args.Client));
 
                     FireEvent(this, new TcpSSLConnectionAuthEventArgs
                     {
                         Client = args.Client,
-                        Reader = connection.Reader,
-                        Writer = connection.Writer,
+                        Reader = connectionUnauth.Reader,
+                        Writer = connectionUnauth.Writer,
                         ConnectionType = TcpSSLConnectionType.Connected,
                         ConnectionEventType = ConnectionEventType.Connected,
                         ConnectionAuthType = TcpSSLConnectionAuthType.Authorized,
@@ -628,22 +628,6 @@ namespace Tcp.NET.Server.SSL.Auth
             catch
             { }
 
-            if (connection != null)
-            {
-                await _handler.SendRawAsync(Parameters.UnauthorizedString, connection);
-                args.Client.Close();
-
-                FireEvent(this, new TcpSSLConnectionAuthEventArgs
-                {
-                    Client = args.Client,
-                    ConnectionType = TcpSSLConnectionType.Disconnect,
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    ConnectionAuthType = TcpSSLConnectionAuthType.Unauthorized,
-                    ArgsType = ArgsType.Connection,
-                    Reader = connection.Reader,
-                    Writer = connection.Writer
-                });
-            }
             return false;
         }
 

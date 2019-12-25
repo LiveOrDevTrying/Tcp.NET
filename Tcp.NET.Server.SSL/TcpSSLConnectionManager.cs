@@ -1,9 +1,9 @@
-﻿using Tcp.NET.Server.Models;
+﻿using Tcp.NET.Server.SSL.Models;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Net.Sockets;
 
-namespace Tcp.NET.Server
+namespace Tcp.NET.Server.SSL
 {
     public class TcpSSLConnectionManager : ITcpSSLConnectionManager
     {
