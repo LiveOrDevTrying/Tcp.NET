@@ -10,14 +10,14 @@
     <projectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</projectUrl>
     <icon>Logo.png</icon>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>The client module for a Tcp Server with Authorization and Client implementation.</description>
+    <description>The client module for a SSL Tcp Server with Authorization and Client implementation.</description>
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2019</copyright>
-    <tags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</tags>
+    <tags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 SSL authorization auth</tags>
     <dependencies>
       <group targetFramework="netcoreapp2.1">
         <dependency id="Microsoft.NETCore.App" version="[2.1,3]" />
-        <dependency id="Tcp.NET.Core" version="[1.1.5,2]" />
+        <dependency id="Tcp.NET.Core" version="[1.1.6,2]" />
         <dependency id="IdentityModel" version="[3.10.10,4]" />
       </group>
     </dependencies>

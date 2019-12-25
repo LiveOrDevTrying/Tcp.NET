@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <Version>1.1.3</Version>
+    <Version>1.1.4</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server module with Authorization for a simple Tcp Server and Client implementation</Description>
@@ -13,7 +13,7 @@
     <PackageIconUrl />
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
-    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0</PackageTags>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 SSL authorization auth</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,8 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\PHS.Core\PHS.Core.csproj" />
-    <ProjectReference Include="..\Tcp.NET.Server\Tcp.NET.Server.csproj" />
+    <PackageReference Include="Tcp.NET.Server" Version="1.1.4" />
   </ItemGroup>
 
 </Project>

@@ -8,14 +8,15 @@ using System.Net.Sockets;
 using System.Threading.Tasks;
 using Tcp.NET.Core.SSL.Enums;
 using Tcp.NET.Core.SSL.Events.Args;
-using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Client.SSL
 {
     public class TcpNETClientSSL : CoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>,
         ITcpNETClientSSL
     {
-        private ConnectionTcpClientSSLDTO _connection;
+        private TcpClient _client;
+        private StreamReader _reader;
+        private StreamWriter _writer;
         private bool _isClientRunning;
 
         public virtual void Connect(string host, int port, string endOfLineCharacters)
@@ -43,12 +44,9 @@ namespace Tcp.NET.Client.SSL
                     NewLine = endOfLineCharacters
                 };
 
-                _connection = new ConnectionTcpClientSSLDTO
-                {
-                    Client = client,
-                    Reader = reader,
-                    Writer = writer
-                };
+                _client = client;
+                _reader = reader;
+                _writer = writer;
 
                 FireEvent(this, new TcpSSLConnectionEventArgs
                 {
@@ -73,23 +71,25 @@ namespace Tcp.NET.Client.SSL
         {
             try
             {
-                if (_connection != null &&
-                    _connection.Client.Connected)
+                if (_client != null &&
+                    _client.Connected)
                 {
                     FireEvent(this, new TcpSSLConnectionEventArgs
                     {
                         ConnectionEventType = ConnectionEventType.Disconnect,
                         ArgsType = ArgsType.Connection,
-                        Client = _connection.Client,
+                        Client = _client,
                         ConnectionType = TcpSSLConnectionType.Disconnect,
-                        Reader = _connection.Reader,
-                        Writer = _connection.Writer
+                        Reader = _reader,
+                        Writer = _writer
                     });
 
-                    _connection.Writer.Dispose();
-                    _connection.Reader.Dispose();
-                    _connection.Client.Close();
-                    _connection = null;
+                    _writer.Dispose();
+                    _reader.Dispose();
+                    _client.Close();
+                    _client = null;
+                    _reader = null;
+                    _writer = null;
                     return true;
                 }
             }
@@ -105,11 +105,11 @@ namespace Tcp.NET.Client.SSL
             Task.Run(async () =>
             {
                 while (_isClientRunning &&
-                    _connection != null)
+                    _client != null)
                 {
                     try
                     {
-                        var content = await _connection.Reader.ReadLineAsync();
+                        var content = await _reader.ReadLineAsync();
 
                         if (!string.IsNullOrWhiteSpace(content))
                         {
@@ -127,7 +127,7 @@ namespace Tcp.NET.Client.SSL
                                     FireEvent(this, new TcpSSLMessageEventArgs
                                     {
                                         MessageEventType = MessageEventType.Receive,
-                                        Client = _connection.Client,
+                                        Client = _client,
                                         Message = packet.Data,
                                         ArgsType = ArgsType.Message,
                                         Packet = packet
@@ -138,7 +138,7 @@ namespace Tcp.NET.Client.SSL
                                     FireEvent(this, new TcpSSLMessageEventArgs
                                     {
                                         MessageEventType = MessageEventType.Receive,
-                                        Client = _connection.Client,
+                                        Client = _client,
                                         Message = content,
                                         ArgsType = ArgsType.Message,
                                         Packet = new PacketDTO
@@ -161,13 +161,13 @@ namespace Tcp.NET.Client.SSL
         {
             try
             {
-                if (_connection != null &&
-                    _connection.Client.Connected)
+                if (_client != null &&
+                    _client.Connected)
                 {
                     FireEvent(this, new TcpSSLMessageEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
-                        Client = _connection.Client,
+                        Client = _client,
                         Message = message,
                         Packet = new PacketDTO
                         {
@@ -178,7 +178,7 @@ namespace Tcp.NET.Client.SSL
                         ArgsType = ArgsType.Message,
                     });
 
-                    await _connection.Writer.WriteLineAsync(message);
+                    await _writer.WriteLineAsync(message);
                     return true;
                 }
             }
@@ -192,21 +192,21 @@ namespace Tcp.NET.Client.SSL
         {
             try
             {
-                if (_connection != null &&
-                    _connection.Client.Connected)
+                if (_client != null &&
+                    _client.Connected)
                 {
                     var message = JsonConvert.SerializeObject(packet);
 
                     FireEvent(this, new TcpSSLMessageEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
-                        Client = _connection.Client,
+                        Client = _client,
                         Packet = packet,
                         Message = packet.Data,
                         ArgsType = ArgsType.Message,
                     });
 
-                    await _connection.Writer.WriteLineAsync(message);
+                    await _writer.WriteLineAsync(message);
                     return true;
                 }
             }
@@ -222,7 +222,7 @@ namespace Tcp.NET.Client.SSL
         {
             get
             {
-                return _connection != null && _connection.Client.Connected;
+                return _client != null && _client.Connected;
             }
         }
 
@@ -230,7 +230,7 @@ namespace Tcp.NET.Client.SSL
         {
             get
             {
-                return _connection != null ? _connection.Client : null;
+                return _client;
             }
         }
     }

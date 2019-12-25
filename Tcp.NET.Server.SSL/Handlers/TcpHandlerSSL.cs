@@ -13,6 +13,7 @@ using Tcp.NET.Core.SSL;
 using Tcp.NET.Core.SSL.Enums;
 using Tcp.NET.Server.Models;
 using System.Security.Cryptography.X509Certificates;
+using Tcp.NET.Core.SSL.Helpers;
 
 namespace Tcp.NET.Server.Handlers
 {

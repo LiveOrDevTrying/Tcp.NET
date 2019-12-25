@@ -1,7 +1,7 @@
 ﻿using System.Net.Security;
 using System.Security.Cryptography.X509Certificates;
 
-namespace Tcp.NET.Core.SSL
+namespace Tcp.NET.Core.SSL.Helpers
 {
     public static class SSLHelper
     {

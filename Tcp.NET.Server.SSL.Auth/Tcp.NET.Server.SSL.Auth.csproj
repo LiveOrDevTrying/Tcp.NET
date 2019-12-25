@@ -2,10 +2,28 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <Authors>Rob Engel - LiveOrDevTrying</Authors>
+    <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
+    <Description>The SSL server module with Authorization for a simple Tcp Server and Client implementation</Description>
+    <Copyright>Copyright 2019</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
+    <PackageIcon>Logo.png</PackageIcon>
+    <PackageIconUrl />
+    <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
+    <RepositoryType>Github Public</RepositoryType>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 authorization auth</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tcp.NET.Server.SSL\Tcp.NET.Server.SSL.csproj" />
+    <PackageReference Include="Tcp.NET.Server.SSL" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
