@@ -32,7 +32,7 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return default;
         }
-        public IUserConnectionTcpClientSSLDTO GetConnectionAuthorized(TcpClient client)
+        public IUserConnectionTcpClientSSLDTO GetClientAuthorized(TcpClient client)
         {
             if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode())))
             {
@@ -41,7 +41,7 @@ namespace Tcp.NET.Server.SSL.Auth
 
             return default;
         }
-        public ConnectionTcpClientSSLDTO GetConnectionUnauthorized(TcpClient client)
+        public ConnectionTcpClientSSLDTO GetClientUnauthorized(TcpClient client)
         {
             if (_clientsUnauthorized.ContainsKey(client.GetHashCode()))
             {
@@ -131,11 +131,11 @@ namespace Tcp.NET.Server.SSL.Auth
             }
         }
 
-        public bool IsConnectionUnauthorized(TcpClient client)
+        public bool IsClientUnauthorized(TcpClient client)
         {
-            return !IsConnectionAuthorized(client) ? _clientsUnauthorized.ContainsKey(client.GetHashCode()) : false;
+            return !IsClientAuthorized(client) ? _clientsUnauthorized.ContainsKey(client.GetHashCode()) : false;
         }
-        public bool IsConnectionAuthorized(TcpClient client)
+        public bool IsClientAuthorized(TcpClient client)
         {
             return _clientsAuthorized.Values.Any(s => s.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode()));
         }

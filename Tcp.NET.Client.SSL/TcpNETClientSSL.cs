@@ -19,10 +19,6 @@ namespace Tcp.NET.Client.SSL
         private StreamWriter _writer;
         private bool _isClientRunning;
 
-        public virtual void Connect(string host, int port, string endOfLineCharacters)
-        {
-            Connect(host, port, endOfLineCharacters, host);
-        }
         public virtual void Connect(string host, int port, string endOfLineCharacters, string certificateIssuedTo)
         {
             _endOfLineCharacters = endOfLineCharacters;

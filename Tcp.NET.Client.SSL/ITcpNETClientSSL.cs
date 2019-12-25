@@ -10,7 +10,6 @@ namespace Tcp.NET.Client.SSL
         ICoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>, 
         INetworkClient
     {
-        void Connect(string url, int port, string endOfLineCharacters);
         void Connect(string url, int port, string endOfLineCharacters, string certificateIssuedTo);
         bool Disconnect();
 

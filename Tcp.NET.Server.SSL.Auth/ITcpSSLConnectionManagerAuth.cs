@@ -13,12 +13,12 @@ namespace Tcp.NET.Server.SSL.Auth
         bool AddClientUnauthorized(TcpClient client, StreamReader reader, StreamWriter writer);
         ICollection<IUserConnectionTcpClientSSLDTO> GetAllIdentitiesAuthorized();
         ICollection<ConnectionTcpClientSSLDTO> GetAllClientsUnauthorized();
-        IUserConnectionTcpClientSSLDTO GetConnectionAuthorized(TcpClient client);
-        ConnectionTcpClientSSLDTO GetConnectionUnauthorized(TcpClient client);
+        IUserConnectionTcpClientSSLDTO GetClientAuthorized(TcpClient client);
+        ConnectionTcpClientSSLDTO GetClientUnauthorized(TcpClient client);
         IUserConnectionTcpClientSSLDTO GetIdentity(Guid userId);
         IUserConnectionTcpClientSSLDTO GetIdentity(TcpClient client);
-        bool IsConnectionAuthorized(TcpClient client);
-        bool IsConnectionUnauthorized(TcpClient client);
+        bool IsClientAuthorized(TcpClient client);
+        bool IsClientUnauthorized(TcpClient client);
         bool IsUserConnected(Guid userId);
         void RemoveConnectionAuthorized(ConnectionTcpClientSSLDTO connection);
         void RemoveClientUnauthorized(ConnectionTcpClientSSLDTO client, bool isDisconnect);
