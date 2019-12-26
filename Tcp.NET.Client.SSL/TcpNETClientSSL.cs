@@ -3,6 +3,7 @@ using PHS.Core.Enums;
 using PHS.Core.Models;
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ namespace Tcp.NET.Client.SSL
             try
             {
                 // Establish the remote endpoint for the socket.  
+                System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
                 var client = new TcpClient(host, port);
 
                 var sslStream = new SslStream(client.GetStream());

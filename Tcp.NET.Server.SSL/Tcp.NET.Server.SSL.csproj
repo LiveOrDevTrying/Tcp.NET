@@ -17,14 +17,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Core.SSL" Version="1.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tcp.NET.Core.SSL\Tcp.NET.Core.SSL.csproj" />
   </ItemGroup>
 
 </Project>

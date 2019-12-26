@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Core.SSL" Version="1.0.0" />
+    <ProjectReference Include="..\Tcp.NET.Core.SSL\Tcp.NET.Core.SSL.csproj" />
   </ItemGroup>
 
 </Project>

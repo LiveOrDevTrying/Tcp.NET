@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Core" Version="1.1.6" />
+    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
   </ItemGroup>
 
 </Project>
