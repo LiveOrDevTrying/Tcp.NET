@@ -665,7 +665,7 @@ namespace Tcp.NET.Server.SSL.Auth
             base.Dispose();
         }
 
-        public new ITcpSSLConnectionManager ConnectionManager
+        public new ITcpSSLConnectionManagerAuth ConnectionManager
         {
             get
             {

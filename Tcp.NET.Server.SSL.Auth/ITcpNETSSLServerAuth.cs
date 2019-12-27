@@ -9,7 +9,7 @@ namespace Tcp.NET.Server.SSL.Auth
 {
     public interface ITcpNETSSLServerAuth : ITcpNETSSLServer
     {
-        new ITcpSSLConnectionManager ConnectionManager { get; }
+        new ITcpSSLConnectionManagerAuth ConnectionManager { get; }
         Task<bool> BroadcastToAllAuthorizedUsersAsync(PacketDTO packet);
         Task<bool> BroadcastToAllAuthorizedUsersAsync(PacketDTO packet, TcpClient client);
         Task<bool> BroadcastToAllAuthorizedUsersRawAsync(string message);
