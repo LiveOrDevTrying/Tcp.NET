@@ -643,7 +643,7 @@ namespace Tcp.NET.Server.SSL.Auth
 
             foreach (var item in _connectionManager.GetAllIdentitiesAuthorized())
             {
-                foreach (var connection in item.Connections)
+                foreach (var connection in item.Connections.ToList())
                 {
                     _connectionManager.RemoveConnectionAuthorized(connection);
                 }
