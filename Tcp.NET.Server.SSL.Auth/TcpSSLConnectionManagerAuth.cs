@@ -34,21 +34,13 @@ namespace Tcp.NET.Server.SSL.Auth
         }
         public IUserConnectionTcpClientSSLDTO GetClientAuthorized(TcpClient client)
         {
-            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode())))
-            {
-                return _clientsAuthorized.Values.FirstOrDefault(s => s.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode()));
-            }
-
-            return default;
+            return _clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode()))
+                ? _clientsAuthorized.Values.FirstOrDefault(s => s.Connections.Any(t => t.Client.GetHashCode() == client.GetHashCode()))
+                : (default);
         }
         public ConnectionTcpClientSSLDTO GetClientUnauthorized(TcpClient client)
         {
-            if (_clientsUnauthorized.ContainsKey(client.GetHashCode()))
-            {
-                return _clientsUnauthorized.Values.FirstOrDefault(s => s.Client.GetHashCode() == client.GetHashCode());
-            }
-
-            return default;
+            return _clientsUnauthorized.TryGetValue(client.GetHashCode(), out var clientUnauth) ? clientUnauth : (default);
         }
         public ICollection<ConnectionTcpClientSSLDTO> GetAllClientsUnauthorized()
         {
@@ -70,13 +62,7 @@ namespace Tcp.NET.Server.SSL.Auth
         }
         public IUserConnectionTcpClientSSLDTO AddConnectionAuthorized(Guid userId, TcpClient client, StreamReader reader, StreamWriter writer)
         {
-            IUserConnectionTcpClientSSLDTO userConnection;
-
-            if (_clientsAuthorized.ContainsKey(userId))
-            {
-                userConnection = _clientsAuthorized.First(s => s.Key == userId).Value;
-            }
-            else
+            if (_clientsAuthorized.TryGetValue(userId, out var userConnection))
             {
                 userConnection = new UserConnectionTcpClientSSLDTO
                 {
@@ -113,9 +99,9 @@ namespace Tcp.NET.Server.SSL.Auth
         }
         public void RemoveConnectionAuthorized(ConnectionTcpClientSSLDTO connection)
         {
-            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.GetHashCode() == connection.GetHashCode())))
+            if (_clientsAuthorized.Any(p => p.Value.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode())))
             {
-                var client = _clientsAuthorized.First(s => s.Value.Connections.Any(t => t.GetHashCode() == connection.GetHashCode())).Value;
+                var client = _clientsAuthorized.First(s => s.Value.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode())).Value;
                 var instance = client.Connections.First(s => s.GetHashCode() == connection.GetHashCode());
                 client.Connections.Remove(instance);
 

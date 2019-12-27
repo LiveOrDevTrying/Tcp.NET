@@ -84,8 +84,6 @@ namespace Tcp.NET.Server.SSL.Handlers
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(cert);
 
-                    Console.WriteLine("Server authenticated)");
-
                     var reader = new StreamReader(sslStream);
                     var writer = new StreamWriter(sslStream)
                     {
@@ -105,10 +103,8 @@ namespace Tcp.NET.Server.SSL.Handlers
 
                     StartListeningForMessages(reader, client);
                 }
-                catch (Exception ex)
-                { 
-                    Console.WriteLine(ex.Message);
-                }
+                catch
+                { }
 
             }
         }

@@ -274,8 +274,6 @@ namespace Tcp.NET.Server.SSL
         {
             if (_connectionManager.IsConnectionOpen(args.Client))
             {
-                var identity = _connectionManager.GetConnection(args.Client);
-
                 FireEvent(this, new TcpSSLErrorEventArgs
                 {
                     Exception = args.Exception,
