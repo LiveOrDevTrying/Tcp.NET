@@ -17,7 +17,6 @@ namespace Tcp.NET.Server.Handlers
         ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs> 
     {
         private Thread _tcpServerThread;
-        private string _url;
         private volatile bool _isServerRunning;
         private int _port;
         private int _numberOfConnections;
@@ -25,14 +24,13 @@ namespace Tcp.NET.Server.Handlers
 
         private readonly ManualResetEvent _allDone = new ManualResetEvent(false);
 
-        public void Start(string url, int port, string endOfLineCharacters)
+        public void Start(int port, string endOfLineCharacters)
         {
             if (!_isServerRunning)
             {
                 _isServerRunning = true;
                 _endOfLineCharacters = endOfLineCharacters;
                 _port = port;
-                _url = url;
 
                 if (_tcpServerThread != null)
                 {
@@ -47,49 +45,43 @@ namespace Tcp.NET.Server.Handlers
         private void ServerThread()
         {
             // Establish the local endpoint for the socket.  
-            var hostInfo = Dns.GetHostEntry(_url);
-
-            foreach (var address in hostInfo.AddressList)
+            try
             {
-                try
+                var localEndPoint = new IPEndPoint(IPAddress.Any, _port);
+
+                // Create a TCP/IP socket.  
+                _connectionSocket = new Socket(AddressFamily.InterNetwork,
+                    SocketType.Stream, ProtocolType.Tcp);
+
+                // Bind the socket to the local endpoint and listen for incoming connections.  
+                _connectionSocket.Bind(localEndPoint);
+                _connectionSocket.Listen(100);      // Microsoft starts backlog at 100
+
+                _isServerRunning = true;
+
+                FireEvent(this, new TcpConnectionEventArgs
                 {
-                    var localEndPoint = new IPEndPoint(address, _port);
+                    ConnectionEventType = ConnectionEventType.ServerStart,
+                    ArgsType = ArgsType.Connection,
+                    Socket = _connectionSocket,
+                    ConnectionType = TcpConnectionType.ServerStart
+                });
 
-                    // Create a TCP/IP socket.  
-                    _connectionSocket = new Socket(AddressFamily.InterNetwork,
-                        SocketType.Stream, ProtocolType.Tcp);
-
-                    // Bind the socket to the local endpoint and listen for incoming connections.  
-                    _connectionSocket.Bind(localEndPoint);
-                    _connectionSocket.Listen(100);      // Microsoft starts backlog at 100
-
-                    _isServerRunning = true;
-
-                    FireEvent(this, new TcpConnectionEventArgs
-                    {
-                        ConnectionEventType = ConnectionEventType.ServerStart,
-                        ArgsType = ArgsType.Connection,
-                        Socket = _connectionSocket,
-                        ConnectionType = TcpConnectionType.ServerStart
-                    });
-
-                    while (_isServerRunning)
-                    {
-                        // Set the event to nonsignaled state.  
-                        _allDone.Reset();
-
-                        _connectionSocket.BeginAccept(
-                            new AsyncCallback(AcceptCallback),
-                            _connectionSocket);
-
-                        // Wait until a connection is made before continuing.  
-                        _allDone.WaitOne();
-                    }
-                    break;
-                }
-                catch
+                while (_isServerRunning)
                 {
+                    // Set the event to nonsignaled state.  
+                    _allDone.Reset();
+
+                    _connectionSocket.BeginAccept(
+                        new AsyncCallback(AcceptCallback),
+                        _connectionSocket);
+
+                    // Wait until a connection is made before continuing.  
+                    _allDone.WaitOne();
                 }
+            }
+            catch
+            {
             }
         }
         public void Stop()

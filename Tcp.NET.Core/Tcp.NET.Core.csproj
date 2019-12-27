@@ -13,7 +13,7 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 ssl authorization auth</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.6</Version>
+    <Version>1.1.8</Version>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 

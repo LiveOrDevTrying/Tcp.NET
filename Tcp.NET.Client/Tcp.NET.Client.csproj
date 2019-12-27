@@ -13,12 +13,13 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 SSL authorization auth</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.5</Version>
+    <Version>1.1.6</Version>
     <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="IdentityModel" Version="3.10.10" />
+    <PackageReference Include="Tcp.NET.Core" Version="1.1.8" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,10 +31,6 @@
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
   </ItemGroup>
 
 </Project>

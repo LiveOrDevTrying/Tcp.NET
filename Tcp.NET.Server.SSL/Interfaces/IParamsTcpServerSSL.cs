@@ -6,6 +6,5 @@
         int IntervalReconnectSec { get; set; }
         int PingIntervalSec { get; set; }
         int Port { get; set; }
-        string Url { get; set; }
     }
 }

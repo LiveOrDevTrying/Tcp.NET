@@ -4,7 +4,6 @@ namespace Tcp.NET.Server.SSL.Auth.Models
 {
     public struct ParamsTcpSSLAuthServer : IParamsTcpSSLAuthServer
     {
-        public string Url { get; set; }
         public int Port { get; set; }
         public string EndOfLineCharacters { get; set; }
         public int PingIntervalSec { get; set; }

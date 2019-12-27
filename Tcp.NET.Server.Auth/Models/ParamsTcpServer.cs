@@ -4,7 +4,6 @@ namespace Tcp.NET.Server.Auth.Models
 {
     public struct ParamsTcpAuthServer : IParamsTcpAuthServer
     {
-        public string Url { get; set; }
         public int Port { get; set; }
         public string EndOfLineCharacters { get; set; }
         public int PingIntervalSec { get; set; }

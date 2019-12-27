@@ -409,8 +409,8 @@ namespace Tcp.NET.Server.SSL.Auth
 
                     Thread.Sleep(5000);
                     _handler = _serverCertificate != null
-                        ? new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _serverCertificate)
-                        : new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _certificateIssuedTo, _storeLocation);
+                        ? new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters, _serverCertificate)
+                        : new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters, _certificateIssuedTo, _storeLocation);
                     _handler.ConnectionEvent += OnConnectionEvent;
                     _handler.MessageEvent += OnMessageEventAsync;
                     _handler.ErrorEvent += OnErrorEvent;

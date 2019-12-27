@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 authorization auth</PackageTags>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tcp.NET.Server.SSL\Tcp.NET.Server.SSL.csproj" />
+    <PackageReference Include="Tcp.NET.Server.SSL" Version="1.0.4" />
   </ItemGroup>
 
 </Project>

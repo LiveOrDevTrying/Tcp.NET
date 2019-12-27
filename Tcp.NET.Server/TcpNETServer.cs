@@ -33,7 +33,7 @@ namespace Tcp.NET.Server
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
-            _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
+            _handler.Start(_parameters.Port, _parameters.EndOfLineCharacters);
         }
 
         public virtual bool SendToConnection(PacketDTO packet, Socket socket)
@@ -164,7 +164,7 @@ namespace Tcp.NET.Server
                     });
 
                     Thread.Sleep(5000);
-                    _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
+                    _handler.Start(_parameters.Port, _parameters.EndOfLineCharacters);
                     break;
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpConnectionEventArgs

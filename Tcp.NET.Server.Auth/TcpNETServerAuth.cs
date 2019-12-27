@@ -370,7 +370,7 @@ namespace Tcp.NET.Server.Auth
                     });
 
                     Thread.Sleep(5000);
-                    _handler.Start(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters);
+                    _handler.Start(_parameters.Port, _parameters.EndOfLineCharacters);
                     break;
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpConnectionAuthEventArgs

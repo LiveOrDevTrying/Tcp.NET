@@ -36,7 +36,7 @@ namespace Tcp.NET.Server.SSL
             _connectionManager = connectionManager;
             _serverCertificate = serverCertificate;
 
-            _handler = new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, serverCertificate);
+            _handler = new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters, serverCertificate);
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
@@ -52,7 +52,7 @@ namespace Tcp.NET.Server.SSL
             _certificateIssuedTo = certificateIssuedTo;
             _storeLocation = storeLocation;
 
-            _handler = new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters,certificateIssuedTo, storeLocation);
+            _handler = new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters,certificateIssuedTo, storeLocation);
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
@@ -192,8 +192,8 @@ namespace Tcp.NET.Server.SSL
                     Thread.Sleep(5000);
 
                     _handler = _serverCertificate != null
-                        ? new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _serverCertificate)
-                        : new TcpHandlerSSL(_parameters.Url, _parameters.Port, _parameters.EndOfLineCharacters, _certificateIssuedTo, _storeLocation);
+                        ? new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters, _serverCertificate)
+                        : new TcpHandlerSSL(_parameters.Port, _parameters.EndOfLineCharacters, _certificateIssuedTo, _storeLocation);
                     break;
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpSSLConnectionEventArgs

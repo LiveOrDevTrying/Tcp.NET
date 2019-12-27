@@ -19,32 +19,29 @@ namespace Tcp.NET.Server.SSL.Handlers
         CoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs>, 
         ICoreNetworking<TcpSSLConnectionEventArgs, TcpSSLMessageEventArgs, TcpSSLErrorEventArgs> 
     {
-        private string _url;
         private volatile bool _isServerRunning;
         private int _port;
         private int _numberOfConnections;
         private TcpListener _server;
 
-        public TcpHandlerSSL(string url, int port, string endOfLineCharacters, X509Certificate certificate)
+        public TcpHandlerSSL(int port, string endOfLineCharacters, X509Certificate certificate)
         {
             if (!_isServerRunning)
             {
                 _isServerRunning = true;
                 _endOfLineCharacters = endOfLineCharacters;
                 _port = port;
-                _url = url;
 
                 StartServer(certificate);
             }
         }
-        public TcpHandlerSSL(string url, int port, string endOfLineCharacters, string certificateIssuedTo, StoreLocation storeLocation)
+        public TcpHandlerSSL(int port, string endOfLineCharacters, string certificateIssuedTo, StoreLocation storeLocation)
         {
             if (!_isServerRunning)
             {
                 _isServerRunning = true;
                 _endOfLineCharacters = endOfLineCharacters;
                 _port = port;
-                _url = url;
 
                 var serverCertificate = SSLHelper.GetServerCert(certificateIssuedTo, storeLocation);
                 StartServer(serverCertificate);
@@ -52,34 +49,27 @@ namespace Tcp.NET.Server.SSL.Handlers
         }
         private void StartServer(X509Certificate cert)
         {
-            var hostInfo = Dns.GetHostEntry(_url);
-
-            foreach (var address in hostInfo.AddressList)
+            try
             {
-                try
+                _server = new TcpListener(IPAddress.Any, _port);
+                _server.Start();
+
+                FireEvent(this, new TcpSSLConnectionEventArgs
                 {
-                    var localEndPoint = new IPEndPoint(address, _port);
+                    ConnectionEventType = ConnectionEventType.ServerStart,
+                    ArgsType = ArgsType.Connection,
+                    ConnectionType = TcpSSLConnectionType.ServerStart
+                });
 
-                    _server = new TcpListener(localEndPoint);
-                    _server.Start();
+                Task.Run(async () =>
+                {
+                    await ListenForConnectionsAsync(cert);
+                });
 
-                    FireEvent(this, new TcpSSLConnectionEventArgs
-                    {
-                        ConnectionEventType = ConnectionEventType.ServerStart,
-                        ArgsType = ArgsType.Connection,
-                        ConnectionType = TcpSSLConnectionType.ServerStart
-                    });
-
-                    Task.Run(async () =>
-                    {
-                        await ListenForConnectionsAsync(cert);
-                    });
-
-                    return;
-                }
-                catch
-                { }
+                return;
             }
+            catch
+            { }
         }
 
 
@@ -93,6 +83,8 @@ namespace Tcp.NET.Server.SSL.Handlers
                     var client = await _server.AcceptTcpClientAsync();
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(cert);
+
+                    Console.WriteLine("Server authenticated)");
 
                     var reader = new StreamReader(sslStream);
                     var writer = new StreamWriter(sslStream)
@@ -113,8 +105,10 @@ namespace Tcp.NET.Server.SSL.Handlers
 
                     StartListeningForMessages(reader, client);
                 }
-                catch
-                { }
+                catch (Exception ex)
+                { 
+                    Console.WriteLine(ex.Message);
+                }
 
             }
         }
