@@ -20,7 +20,7 @@ namespace Tcp.NET.Client.SSL
         private StreamWriter _writer;
         private bool _isClientRunning;
 
-        public virtual void Connect(string host, int port, string endOfLineCharacters, string certificateIssuedTo)
+        public virtual void Connect(string host, int port, string endOfLineCharacters)
         {
             _endOfLineCharacters = endOfLineCharacters;
 
@@ -33,7 +33,7 @@ namespace Tcp.NET.Client.SSL
 
                 var sslStream = new SslStream(client.GetStream());
 
-                sslStream.AuthenticateAsClient(certificateIssuedTo);
+                sslStream.AuthenticateAsClient(host);
 
                 var reader = new StreamReader(sslStream);
                 var writer = new StreamWriter(sslStream)
