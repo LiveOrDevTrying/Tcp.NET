@@ -20,7 +20,7 @@
         <dependency id="Tcp.NET.Client" version="[1.1.6,2)" />
         <dependency id="Tcp.NET.Client.SSL" version="[1.0.4,2)" />
         <dependency id="Tcp.NET.Server.Auth" version="[1.1.6,2)" />
-        <dependency id="Tcp.NET.Server.SSL.Auth" version="[1.0.7,2)" />
+        <dependency id="Tcp.NET.Server.SSL.Auth" version="[1.0.8,2)" />
       </group>
     </dependencies>
   </metadata>

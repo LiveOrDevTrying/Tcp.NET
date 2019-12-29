@@ -31,6 +31,8 @@ namespace Tcp.NET.Server.SSL.Auth
             X509Certificate certificate)
             : base(parameters, connectionManager, certificate)
         {
+            _parameters = parameters;
+            _connectionManager = connectionManager;
             _userService = userService;
         }
 
@@ -41,6 +43,8 @@ namespace Tcp.NET.Server.SSL.Auth
            StoreLocation storeLocation)
            : base(parameters, connectionManager, certificateIssuedTo, storeLocation)
         {
+            _parameters = parameters;
+            _connectionManager = connectionManager;
             _userService = userService;
         }
 
