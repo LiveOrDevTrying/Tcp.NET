@@ -1,13 +1,11 @@
-﻿using PHS.Core.Events.Args.NetworkEventArgs;
-using PHS.Core.Models;
-using System.Net.Sockets;
+﻿using PHS.Networking.Events.Args;
+using PHS.Networking.Models;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Core.Events.Args
 {
-    public class TcpMessageEventArgs : MessageEventArgs
+    public class TcpMessageEventArgs<T> : MessageEventArgs where T : IConnection
     {
-        public Socket Socket { get; set; }
-        public PacketDTO Packet { get; set; }
+        public T Connection { get; set; }
     }
 }

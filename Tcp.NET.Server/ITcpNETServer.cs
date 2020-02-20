@@ -1,18 +1,26 @@
-﻿using PHS.Core.Models;
+﻿using PHS.Networking.Events;
+using PHS.Networking.Models;
+using PHS.Networking.Server.Events.Args;
+using PHS.Networking.Services;
 using System.Net.Sockets;
-using Tcp.NET.Core.Events.Args;
-using Tcp.NET.Server.Handlers;
+using System.Threading.Tasks;
+using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
 {
-    public interface ITcpNETServer : ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>
+    public interface ITcpNETServer : ICoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>
     {
         bool IsServerRunning { get; }
-        Socket Socket { get; }
-        TcpHandler TcpHandler { get; }
-        bool SendToConnection(PacketDTO packet, Socket socket);
-        bool SendToConnectionRaw(string message, Socket socket);
-        bool DisconnectClient(Socket socket);
+        TcpListener Server { get; }
+
+        Task<bool> SendToConnectionAsync<T>(T packet, IConnectionServer connection) where T : IPacket;
+        Task<bool> SendToConnectionAsync(string message, IConnectionServer connection);
+        Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection);
+        bool DisconnectConnection(IConnectionServer connection);
+
+        IConnectionServer[] Connections { get; }
+
+        event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }
 }

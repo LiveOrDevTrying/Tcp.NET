@@ -4,17 +4,18 @@
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
-    <Description>The core module for a simple SSL Tcp Server with Authorization and Client implementation.</Description>
-    <Copyright>Copyright 2019</Copyright>
+    <Description>The core module for a simple SSL or non-SSL async await Tcp Server and Client with authentication. This package is used by both Tcp.NET.Client and Tcp.NET.Server.</Description>
+    <Copyright>Copyright 2020</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
     <PackageIconUrl></PackageIconUrl>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
-    <PackageTags>Tcp server client Tcp.NET TcpNET async TcpSharp dotnet net 2.1 2.0 ssl authorization auth</PackageTags>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSLauthorization auth authentication liveordevtrying async await</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.1.8</Version>
+    <Version>1.3.5</Version>
     <PackageIcon>Logo.png</PackageIcon>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="PHS.Core" Version="1.0.5" />
+    <PackageReference Include="PHS.Networking" Version="1.2.2" />
   </ItemGroup>
 
 </Project>

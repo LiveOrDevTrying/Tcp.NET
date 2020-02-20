@@ -1,308 +1,326 @@
 ﻿using Newtonsoft.Json;
-using PHS.Core.Enums;
-using PHS.Core.Models;
+using PHS.Networking.Enums;
+using PHS.Networking.Models;
+using PHS.Networking.Services;
 using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using Tcp.NET.Core.Events.Args;
+using System.Threading.Tasks;
+using Tcp.NET.Client.Events.Args;
+using Tcp.NET.Client.Models;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
 {
-    public class TcpNETClient : 
-        CoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
+    public class TcpNETClient : CoreNetworking<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs>,
         ITcpNETClient
     {
-        // ManualResetEvent instances signal completion.  
-        protected ManualResetEvent _connectDone = new ManualResetEvent(false);
-        protected ManualResetEvent _sendDone = new ManualResetEvent(false);
-        protected ManualResetEvent _receiveDone = new ManualResetEvent(false);
+        protected readonly IParamsTcpClient _parameters;
+        protected readonly string _oauthToken;
+        protected IConnection _connection;
+        protected bool _isClientRunning;
 
-        protected Socket _connectionSocket;
-
-        public virtual void Connect(string host, int port, string endOfLineCharacters)
+        public TcpNETClient(IParamsTcpClient parameters, string oauthToken = "")
         {
-            _endOfLineCharacters = endOfLineCharacters;
-
-            var hostInfo = Dns.GetHostEntry(host);
-            var canBreakOut = false;
-
-            foreach (var item in hostInfo.AddressList)
+            _parameters = parameters;
+            _oauthToken = oauthToken;
+        }
+        public virtual async Task ConnectAsync()
+        {
+            // Connect to a remote device.  
+            try
             {
-                if (!canBreakOut)
+                if (_parameters.IsSSL)
                 {
-                    // Connect to a remote device.  
-                    try
-                    {
-                        // Establish the remote endpoint for the socket.  
-                        var remoteEP = new IPEndPoint(item, port);
-                        // Create a TCP/IP socket.  
-                        _connectionSocket = new Socket(AddressFamily.InterNetwork,
-                                SocketType.Stream, ProtocolType.Tcp);
-
-                        // Connect to the remote endpoint.  
-                        _connectionSocket.BeginConnect(remoteEP,
-                            new AsyncCallback(ConnectCallback), _connectionSocket);
-                        canBreakOut = true;
-                        _connectDone.WaitOne();
-                    }
-                    catch
-                    {
-                        //throw new ArgumentException("Start client error", ex);
-                    }
+                    CreateSSLConnection();
                 }
-            }
-        }
-        public virtual bool SendToServer(string message)
-        {
-            try
-            {
-                var byteData = Encoding.UTF8.GetBytes(string.Format("{0}{1}", message, _endOfLineCharacters));
-
-                FireEvent(this, new TcpMessageEventArgs
+                else
                 {
-                    MessageEventType = MessageEventType.Sent,
-                    Socket = _connectionSocket,
-                    Message = message,
-                    Packet = new PacketDTO
-                    {
-                        Data = message,
-                        Action = (int)ActionType.SendToServer,
-                        Timestamp = DateTime.UtcNow
-                    },
-                    ArgsType = ArgsType.Message,
+                    CreateConnection();
+                }
+
+                FireEvent(this, new TcpConnectionClientEventArgs
+                {
+                    ConnectionEventType = ConnectionEventType.Connected,
+                    Connection = _connection,
                 });
 
-                // Begin sending the data to the remote device.  
-                _connectionSocket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), _connectionSocket);
-                return true;
-            }
-            catch
-            {
-            }
+                _isClientRunning = true;
 
-            return false;
-        }
-        public virtual bool SendToServer(PacketDTO packet)
-        {
-            try
-            {
-                var message = JsonConvert.SerializeObject(packet);
-                var byteData = Encoding.UTF8.GetBytes(string.Format("{0}{1}", message, _endOfLineCharacters));
-
-                FireEvent(this, new TcpMessageEventArgs
+                if (!string.IsNullOrWhiteSpace(_oauthToken))
                 {
-                    MessageEventType = MessageEventType.Sent,
-                    Socket = _connectionSocket,
-                    Packet = packet,
-                    Message = packet.Data,
-                    ArgsType = ArgsType.Message,
-                });
+                    await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}");
+                }
 
-                // Begin sending the data to the remote device.  
-                _connectionSocket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), _connectionSocket);
-
-                return true;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                StartListeningForMessagesAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             }
-            catch
+            catch (Exception ex)
             {
+                FireEvent(this, new TcpErrorClientEventArgs
+                {
+                    Exception = ex,
+                    Connection = _connection,
+                    Message = ex.Message
+                });
             }
-
-            return false;
         }
         public virtual bool Disconnect()
         {
             try
             {
-                FireEvent(this, new TcpConnectionEventArgs
+                if (_connection != null)
                 {
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = _connectionSocket,
-                    ArgsType = ArgsType.Connection,
+                    FireEvent(this, new TcpConnectionClientEventArgs
+                    {
+                        ConnectionEventType = ConnectionEventType.Disconnect,
+                        Connection = _connection
+                    });
+
+                    if (_connection.Writer != null)
+                    {
+                        _connection.Writer.Dispose();
+                    }
+
+                    if (_connection.Reader != null)
+                    {
+                        _connection.Reader.Dispose();
+                    }
+
+                    if (_connection.Client != null)
+                    {
+                        _connection.Client.Close();
+                        _connection.Client.Dispose();
+                    }
+
+                    _connection = null;
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorClientEventArgs
+                {
+                    Connection = _connection,
+                    Exception = ex,
+                    Message = ex.Message
+                });
+            }
+
+            return false;
+        }
+        
+        protected virtual void CreateConnection()
+        {
+            // Establish the remote endpoint for the socket.  
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            var client = new TcpClient(_parameters.Uri, _parameters.Port);
+
+            var reader = new StreamReader(client.GetStream());
+            var writer = new StreamWriter(client.GetStream())
+            {
+                AutoFlush = true,
+                NewLine = _parameters.EndOfLineCharacters
+            };
+
+            _connection = new Connection
+            {
+                Client = client,
+                Reader = reader,
+                Writer = writer
+            };
+        }
+        protected virtual void CreateSSLConnection()
+        {
+            // Establish the remote endpoint for the socket.  
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            var client = new TcpClient(_parameters.Uri, _parameters.Port);
+
+            var sslStream = new SslStream(client.GetStream());
+
+            sslStream.AuthenticateAsClient(_parameters.Uri);
+
+            var reader = new StreamReader(sslStream);
+            var writer = new StreamWriter(sslStream)
+            {
+                AutoFlush = true,
+                NewLine = _parameters.EndOfLineCharacters
+            };
+
+            _connection = new Connection
+            {
+                Client = client,
+                Reader = reader,
+                Writer = writer
+            };
+        }
+        protected virtual async Task StartListeningForMessagesAsync()
+        {
+            while (_isClientRunning &&
+                _connection != null)
+            {
+                try
+                {
+                    var content = await _connection.Reader.ReadLineAsync();
+
+                    if (!string.IsNullOrWhiteSpace(content))
+                    {
+                        // Digest the ping first
+                        if (content.Trim().ToLower() == "ping")
+                        {
+                            await SendToServerRawAsync("pong");
+                        }
+                        else
+                        {
+                            try
+                            {
+                                var packet = JsonConvert.DeserializeObject<Packet>(content);
+
+                                if (string.IsNullOrWhiteSpace(packet.Data))
+                                {
+                                    packet = new Packet
+                                    {
+                                        Data = content,
+                                        Timestamp = DateTime.UtcNow
+                                    };
+                                }
+
+                                FireEvent(this, new TcpMessageClientEventArgs
+                                {
+                                    MessageEventType = MessageEventType.Receive,
+                                    Message = packet.Data,
+                                    Packet = packet,
+                                    Connection = _connection
+                                });
+                            }
+                            catch
+                            {
+                                FireEvent(this, new TcpMessageClientEventArgs
+                                {
+                                    MessageEventType = MessageEventType.Receive,
+                                    Connection = _connection,
+                                    Message = content,
+                                    Packet = new Packet
+                                    {
+                                        Data = content,
+                                        Timestamp = DateTime.UtcNow
+                                    },
+                                });
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    FireEvent(this, new TcpErrorClientEventArgs
+                    {
+                        Connection = _connection,
+                        Exception = ex,
+                        Message = ex.Message
+                    });
+
+                    Disconnect();
+                }
+            }
+        }
+        
+        public virtual async Task<bool> SendToServerAsync<T>(T packet) where T : IPacket
+        {
+            try
+            {
+                if (_connection != null &&
+                    _connection.Client.Connected)
+                {
+                    var message = JsonConvert.SerializeObject(packet);
+
+                    FireEvent(this, new TcpMessageClientEventArgs
+                    {
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = _connection,
+                        Packet = packet,
+                        Message = packet.Data,
+                    });
+
+                    await _connection.Writer.WriteLineAsync(message);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorClientEventArgs
+                {
+                    Connection = _connection,
+                    Exception = ex,
+                    Message = ex.Message
                 });
 
-                _connectionSocket.Shutdown(SocketShutdown.Both);
-                _connectionSocket.Close();
-                return true;
+                Disconnect();
             }
-            catch
+
+            return false;
+        }
+        public virtual async Task<bool> SendToServerAsync(string message)
+        {
+            return await SendToServerAsync(new Packet
             {
+                Data = message,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+        public virtual async Task<bool> SendToServerRawAsync(string message)
+        {
+            try
+            {
+                if (_connection != null &&
+                    _connection.Client.Connected)
+                {
+                    FireEvent(this, new TcpMessageClientEventArgs
+                    {
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = _connection,
+                        Message = message,
+                        Packet = new Packet
+                        {
+                            Data = message,
+                            Timestamp = DateTime.UtcNow
+                        },
+                    });
+
+                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorClientEventArgs
+                {
+                    Connection = _connection,
+                    Exception = ex,
+                    Message = ex.Message
+                });
+
+                Disconnect();
             }
 
             return false;
         }
 
-        protected virtual void ConnectCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.  
-                var client = (Socket)ar.AsyncState;
-
-                // Complete the connection.  
-                client.EndConnect(ar);
-
-                // Signal that the connection has been made.  
-                _connectDone.Set();
-
-                FireEvent(this, new TcpConnectionEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.Connected,
-                    ArgsType = ArgsType.Connection,
-                    Socket = client
-                });
-
-                Receive(client);
-
-                _receiveDone.WaitOne();
-            }
-            catch
-            {
-            }
-        }
-        protected virtual void Receive(Socket client)
-        {
-            try
-            {
-                // Create the state object.  
-                var state = new StateObject
-                {
-                    WorkSocket = client
-                };
-
-                // Begin receiving the data from the remote device.  
-                client.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReceiveCallback), state);
-            }
-            catch
-            {
-            }
-        }
-        protected virtual void ReceiveCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the state object and the client socket   
-                // from the asynchronous state object.  
-                var state = (StateObject)ar.AsyncState;
-                var handler = state.WorkSocket;
-
-                // Read data from the remote device.  
-                var bytesRead = handler.EndReceive(ar);
-
-                if (bytesRead > 0)
-                {
-                    // There  might be more data, so store the data received so far.  
-                    state.Sb.Append(Encoding.UTF8.GetString(
-                        state.Buffer, 0, bytesRead));
-
-                    // Check for end-of-file tag. If it is not there, read   
-                    // more data.  
-                    while (state.Sb.ToString().IndexOf(_endOfLineCharacters) > -1)
-                    {
-                        var content = state.Sb.ToString().Substring(0, state.Sb.ToString().IndexOf(_endOfLineCharacters));
-                        state.Sb.Remove(0, content.Length + _endOfLineCharacters.Length);
-                        // All the data has been read from the   
-                        // client. Display it on the console.  
-
-                        if (!string.IsNullOrWhiteSpace(content))
-                        {
-                            // Digest the ping first
-                            if (content.Trim().ToLower() == "ping")
-                            {
-                                SendToServer("pong");
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    var packet = JsonConvert.DeserializeObject<PacketDTO>(content);
-
-                                    FireEvent(this, new TcpMessageEventArgs
-                                    {
-                                        MessageEventType = MessageEventType.Receive,
-                                        Socket = handler,
-                                        Message = packet.Data,
-                                        ArgsType = ArgsType.Message,
-                                        Packet = packet
-                                    });
-                                }
-                                catch
-                                {
-                                    FireEvent(this, new TcpMessageEventArgs
-                                    {
-                                        MessageEventType = MessageEventType.Receive,
-                                        Socket = handler,
-                                        Message = content,
-                                        ArgsType = ArgsType.Message,
-                                        Packet = new PacketDTO
-                                        {
-                                            Action = (int)ActionType.SendToClient,
-                                            Data = content,
-                                            Timestamp = DateTime.UtcNow
-                                        }
-                                    });
-                                }
-                            }
-                        }
-                    }
-                }
-
-                handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReceiveCallback), state);
-            }
-            catch
-            {
-                var state = (StateObject)ar.AsyncState;
-                var handler = state.WorkSocket;
-
-                FireEvent(this, new TcpConnectionEventArgs()
-                {
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = handler,
-                    ArgsType = ArgsType.Connection
-                });
-            }
-        }
-        protected virtual void SendCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the socket from the state object.  
-                var client = (Socket)ar.AsyncState;
-
-                // Complete sending the data to the remote device.  
-                var bytesSent = client.EndSend(ar);
-
-                // Signal that all bytes have been sent.  
-                _sendDone.Set();
-
-                // Receive(client);
-                // _receiveDone.WaitOne();
-            }
-            catch
-            {
-            }
-        }
-
-
         public bool IsRunning
         {
             get
             {
-                return _connectionSocket != null && _connectionSocket.Connected;
+                return _connection != null && _connection.Client.Connected;
             }
         }
-
-        public Socket Socket
+        public IConnection Connection
         {
             get
             {
-                return _connectionSocket;
+                return _connection;
             }
         }
     }

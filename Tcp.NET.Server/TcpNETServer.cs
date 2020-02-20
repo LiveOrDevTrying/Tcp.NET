@@ -1,179 +1,235 @@
 ﻿using Newtonsoft.Json;
-using PHS.Core.Enums;
-using PHS.Core.Models;
-using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Server.Models;
 using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Core.Enums;
 using Tcp.NET.Server.Handlers;
+using Tcp.NET.Server.Managers;
+using System.Security.Cryptography.X509Certificates;
+using PHS.Networking.Models;
+using PHS.Networking.Server.Events.Args;
+using PHS.Networking.Services;
+using PHS.Networking.Events;
+using PHS.Networking.Server.Enums;
+using PHS.Networking.Enums;
+using Tcp.NET.Server.Events.Args;
 
 namespace Tcp.NET.Server
 {
     public class TcpNETServer : 
-        CoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
+        CoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>, 
         ITcpNETServer
     {
-        protected readonly TcpHandler _handler;
-        protected readonly ITcpConnectionManager _connectionManager;
-        protected readonly IParamsTcpServer _parameters;
+        private readonly TcpHandler _handler;
+        private readonly IParamsTcpServer _parameters;
+        private readonly TcpConnectionManager _connectionManager;
 
-        protected Timer _timerPing;
+        private const int PING_INTERVAL_SEC = 120;
 
-        public TcpNETServer(IParamsTcpServer parameters,
-            ITcpConnectionManager connectionManager)
+        private Timer _timerPing;
+        private volatile bool _isPingRunning;
+
+        private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
+
+        public TcpNETServer(IParamsTcpServer parameters, TcpHandler handler = null)
         {
             _parameters = parameters;
-            _connectionManager = connectionManager;
+            _connectionManager = new TcpConnectionManager();
 
-            _handler = new TcpHandler();
+            _handler = handler ?? new TcpHandler(_parameters);
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
-            _handler.Start(_parameters.Port, _parameters.EndOfLineCharacters);
+            _handler.ServerEvent += OnServerEvent;
+            _handler.Start();
+        }
+        public TcpNETServer(IParamsTcpServer parameters,
+            X509Certificate certificate, 
+            TcpHandler handler = null)
+        {
+            _parameters = parameters;
+            _connectionManager = new TcpConnectionManager();
+
+            _handler = handler ?? new TcpHandler(_parameters, certificate);
+            _handler.ConnectionEvent += OnConnectionEvent;
+            _handler.MessageEvent += OnMessageEventAsync;
+            _handler.ErrorEvent += OnErrorEvent;
+            _handler.ServerEvent += OnServerEvent;
+            _handler.Start();
+        }
+        public TcpNETServer(IParamsTcpServer parameters,
+            string certificateIssuedTo,
+            StoreLocation storeLocation, 
+            TcpHandler handler = null)
+        {
+            _parameters = parameters;
+            _connectionManager = new TcpConnectionManager();
+
+            var store = new X509Store(StoreName.My, storeLocation);
+            store.Open(OpenFlags.ReadOnly);
+            X509Certificate certificate = null;
+
+            foreach (var currentCertificate
+                in store.Certificates)
+            {
+                if (currentCertificate.IssuerName.Name != null && currentCertificate.Subject.Equals(certificateIssuedTo))
+                {
+                    certificate = currentCertificate;
+                    break;
+                }
+            }
+
+            if (certificate == null)
+            {
+                throw new Exception("Could not locate certificate in the Windows Certificate store");
+            }
+
+            _handler = handler ?? new TcpHandler(_parameters, certificate);
+            _handler.ConnectionEvent += OnConnectionEvent;
+            _handler.MessageEvent += OnMessageEventAsync;
+            _handler.ErrorEvent += OnErrorEvent;
+            _handler.ServerEvent += OnServerEvent;
+            _handler.Start();
         }
 
-        public virtual bool SendToConnection(PacketDTO packet, Socket socket)
+        public async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    socket.Connected)
+                    _connectionManager.IsConnectionOpen(connection))
                 {
-                    _handler.Send(packet, socket);
+                    await _handler.SendAsync(packet, connection);
 
-                    FireEvent(this, new TcpMessageEventArgs
+                    FireEvent(this, new TcpMessageServerEventArgs
                     {
                         Message = JsonConvert.SerializeObject(packet),
                         MessageEventType = MessageEventType.Sent,
-                        ArgsType = ArgsType.Message,
                         Packet = packet,
-                        Socket = socket
+                        Connection = connection,
                     });
 
                     return true;
                 }
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Connection = connection,
+                    Exception = ex,
+                    Message = ex.Message
+                });
+            }
 
             return false;
         }
-        public virtual bool SendToConnectionRaw(string message, Socket socket)
+        public async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
+        {
+            return await SendToConnectionAsync(new Packet
+            {
+                Data = message,
+                Timestamp = DateTime.UtcNow
+            }, connection);
+        }
+        public async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
         {
             try
             {
                 if (_handler != null &&
                     _handler.IsServerRunning &&
-                    socket.Connected)
+                    _connectionManager.IsConnectionOpen(connection))
                 {
-                    if (_connectionManager.IsConnectionOpen(socket))
+                    await _handler.SendRawAsync(message, connection);
+
+                    FireEvent(this, new TcpMessageServerEventArgs
                     {
-                        _handler.SendRaw(message, socket);
-
-                        FireEvent(this, new TcpMessageEventArgs
+                        Message = message,
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = connection,
+                        Packet = new Packet
                         {
-                            Message = message,
-                            MessageEventType = MessageEventType.Sent,
-                            Socket = socket,
-                            ArgsType = ArgsType.Message,
-                            Packet = new PacketDTO
-                            {
-                                Action = (int)ActionType.SendToClient,
-                                Data = message,
-                                Timestamp = DateTime.UtcNow
-                            },
-                        });
+                            Data = message,
+                            Timestamp = DateTime.UtcNow
+                        },
+                    });
 
-                        return true;
-                    }
+                    return true;
                 }
             }
-            catch
-            { }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Connection = connection,
+                    Exception = ex,
+                    Message = ex.Message
+                });
+            }
 
             return false;
         }
 
-        public virtual bool DisconnectClient(Socket socket)
+        public bool DisconnectConnection(IConnectionServer connection)
         {
-            return _handler.DisconnectClient(socket);
+            return _handler.DisconnectClient(connection);
         }
 
-        protected virtual Task OnConnectionEvent(object sender, TcpConnectionEventArgs args)
+        private Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
         {
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:
-                    if (_connectionManager.AddConnection(args.Socket))
-                    {
-                        FireEvent(this, new TcpConnectionEventArgs
-                        {
-                            ConnectionType = TcpConnectionType.Connected,
-                            ConnectionEventType = args.ConnectionEventType,
-                            Socket = args.Socket,
-                            ArgsType = ArgsType.Connection,
-                        });
-                    }
+                    _connectionManager.AddConnection(args.Connection);
                     break;
                 case ConnectionEventType.Disconnect:
-                    _connectionManager.RemoveConnection(args.Socket, true);
+                    _connectionManager.RemoveConnection(args.Connection, true);
 
-                    FireEvent(this, new TcpConnectionEventArgs
-                    {
-                        Socket = args.Socket,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.Disconnect,
-                        ArgsType = ArgsType.Connection,
-                    });
                     break;
-                case ConnectionEventType.ServerStart:
+                case ConnectionEventType.Connecting:
+                    break;
+                default:
+                    break;
+            }
+
+            FireEvent(this, args);
+
+            return Task.CompletedTask;
+        }
+        private Task OnServerEvent(object sender, ServerEventArgs args)
+        {
+            switch (args.ServerEventType)
+            {
+                case ServerEventType.Start:
+                    FireEvent(this, new ServerEventArgs
+                    {
+                        ServerEventType = ServerEventType.Start,
+                    });
+
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
                     }
 
-                    _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
-
-                    FireEvent(this, new TcpConnectionEventArgs
-                    {
-                        Socket = args.Socket,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.ServerStart,
-                        ArgsType = ArgsType.Connection
-                    });
+                    _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
                     break;
-                case ConnectionEventType.ServerStop:
+                case ServerEventType.Stop:
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
                     }
 
-                    FireEvent(this, new TcpConnectionEventArgs
+                    FireEvent(this, new ServerEventArgs
                     {
-                        Socket = args.Socket,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.ServerStop,
-                        ArgsType = ArgsType.Connection,
+                        ServerEventType = ServerEventType.Stop,
                     });
 
                     Thread.Sleep(5000);
-                    _handler.Start(_parameters.Port, _parameters.EndOfLineCharacters);
-                    break;
-                case ConnectionEventType.Connecting:
-                    FireEvent(this, new TcpConnectionEventArgs
-                    {
-                        Socket = args.Socket,
-                        ConnectionEventType = args.ConnectionEventType,
-                        ConnectionType = TcpConnectionType.Connecting,
-                        ArgsType = ArgsType.Connection
-                    });
+                    _handler.Start();
                     break;
                 default:
                     break;
@@ -181,58 +237,24 @@ namespace Tcp.NET.Server
 
             return Task.CompletedTask;
         }
-        protected virtual Task OnMessageEventAsync(object sender, TcpMessageEventArgs args)
+        private Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
         {
             switch (args.MessageEventType)
             {
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    if (_connectionManager.IsConnectionOpen(args.Socket))
+                    if (_connectionManager.IsConnectionOpen(args.Connection))
                     {
-                        var connection = _connectionManager.GetConnection(args.Socket);
-
                         // Digest the pong first
                         if (args.Message.ToLower().Trim() == "pong" ||
-                            args.Packet.Data.Trim().ToLower() == "pong")
+                            (args.Packet.Data != null && args.Packet.Data.Trim().ToLower() == "pong"))
                         {
-                            connection.HasBeenPinged = false;
+                            args.Connection.HasBeenPinged = false;
                         }
                         else
                         {
-                            if (!string.IsNullOrWhiteSpace(args.Message))
-                            {
-
-                                try
-                                {
-                                    var packet = JsonConvert.DeserializeObject<PacketDTO>(args.Message);
-
-                                    FireEvent(this, new TcpMessageEventArgs
-                                    {
-                                        Message = packet.Data,
-                                        MessageEventType = MessageEventType.Receive,
-                                        ArgsType = ArgsType.Message,
-                                        Socket = args.Socket,
-                                        Packet = packet
-                                    });
-                                }
-                                catch
-                                {
-                                    FireEvent(this, new TcpMessageEventArgs
-                                    {
-                                        Message = args.Message,
-                                        MessageEventType = MessageEventType.Receive,
-                                        ArgsType = ArgsType.Message,
-                                        Packet = new PacketDTO
-                                        {
-                                            Action = (int)ActionType.SendToServer,
-                                            Data = args.Message,
-                                            Timestamp = DateTime.UtcNow
-                                        },
-                                        Socket = Socket
-                                    });
-                                }
-                            }
+                            FireEvent(this, args);
                         }
                     }
                     break;
@@ -242,81 +264,62 @@ namespace Tcp.NET.Server
 
             return Task.CompletedTask;
         }
-        protected virtual Task OnErrorEvent(object sender, TcpErrorEventArgs args)
+        private Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
         {
-            if (_connectionManager.IsConnectionOpen(args.Socket))
-            {
-                var identity = _connectionManager.GetConnection(args.Socket);
-
-                FireEvent(this, new TcpErrorEventArgs
-                {
-                    Exception = args.Exception,
-                    Message = args.Message,
-                    Socket = args.Socket,
-                    ArgsType = ArgsType.Error,
-                });
-            }
+            FireEvent(this, args);
             return Task.CompletedTask;
         }
-        protected virtual void OnTimerPingTick(object state)
+        private void OnTimerPingTick(object state)
         {
-            foreach (var connection in _connectionManager.GetAllConnections())
+            if (!_isPingRunning)
             {
-                var connectionsToRemove = new List<ConnectionSocketDTO>();
+                _isPingRunning = true;
 
-                if (connection.HasBeenPinged)
+                Task.Run(async () =>
                 {
-                    // Already been pinged, no response, disconnect
-                    connectionsToRemove.Add(connection);
-                }
-                else
-                {
-                    connection.HasBeenPinged = true;
-                    _handler.Send("Ping", connection.Socket);
-                }
+                    foreach (var connection in _connectionManager.GetAllConnections())
+                    {
+                        try
+                        {
+                            if (connection.HasBeenPinged)
+                            {
+                                // Already been pinged, no response, disconnect
+                                await SendToConnectionRawAsync("No ping response - disconnected.", connection);
+                                _connectionManager.RemoveConnection(connection, true);
+                                _handler.DisconnectClient(connection);
+                            }
+                            else
+                            {
+                                connection.HasBeenPinged = true;
+                                await SendToConnectionRawAsync("Ping", connection);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            FireEvent(this, new TcpErrorServerEventArgs
+                            {
+                                Connection = connection,
+                                Exception = ex,
+                                Message = ex.Message,
+                            });
+                        }
+                    }
 
-                foreach (var connectionToRemove in connectionsToRemove)
-                {
-                    _connectionManager.RemoveConnection(connectionToRemove.Socket, true);
-                    _handler.SendRaw("No ping response - disconnected.", connectionToRemove.Socket);
-                    _handler.DisconnectClient(connectionToRemove.Socket);
-                }
+                    _isPingRunning = false;
+                });
             }
         }
 
-        protected virtual int GetRateLimit()
+        private void FireEvent(object sender, ServerEventArgs args)
         {
-            // 15000 messages each 30000 MS with 80% of total time to buffer
-            return Convert.ToInt32(Math.Ceiling(30000f / 15000f * 0.8f));
-        }
-
-        public Socket Socket
-        {
-            get
-            {
-                return _handler?.Socket;
-            }
-        }
-        public bool IsServerRunning
-        {
-            get
-            {
-                return _handler != null ? _handler.IsServerRunning : false;
-            }
-        }
-        public TcpHandler TcpHandler
-        {
-            get
-            {
-                return _handler;
-            }
+            _serverEvent?.Invoke(sender, args);
         }
 
         public override void Dispose()
         {
-            foreach (var item in _connectionManager.GetAllConnections())
+            foreach (var connection in _connectionManager.GetAllConnections())
             {
-                _connectionManager.RemoveConnection(item.Socket, true);
+                _connectionManager.RemoveConnection(connection, true);
             }
 
             if (_handler != null)
@@ -324,6 +327,7 @@ namespace Tcp.NET.Server
                 _handler.ConnectionEvent -= OnConnectionEvent;
                 _handler.MessageEvent -= OnMessageEventAsync;
                 _handler.ErrorEvent -= OnErrorEvent;
+                _handler.ServerEvent -= OnServerEvent;
                 _handler.Dispose();
             }
 
@@ -333,6 +337,40 @@ namespace Tcp.NET.Server
                 _timerPing = null;
             }
             base.Dispose();
+        }
+
+        public TcpListener Server
+        {
+            get
+            {
+                return _handler != null ? _handler.Server : null;
+            }
+        }
+        public bool IsServerRunning
+        {
+            get
+            {
+                return _handler != null ? _handler.IsServerRunning : false;
+            }
+        }
+        public IConnectionServer[] Connections
+        {
+            get
+            {
+                return _connectionManager.GetAllConnections();
+            }
+        }
+
+        public event NetworkingEventHandler<ServerEventArgs> ServerEvent
+        {
+            add
+            {
+                _serverEvent += value;
+            }
+            remove
+            {
+                _serverEvent -= value;
+            }
         }
     }
 }

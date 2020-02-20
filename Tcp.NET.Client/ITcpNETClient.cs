@@ -1,19 +1,22 @@
-﻿using PHS.Core.Models;
-using PHS.Core.Networking;
-using System.Net.Sockets;
-using Tcp.NET.Core.Events.Args;
+﻿using PHS.Networking.Models;
+using PHS.Networking.Services;
+using System.Threading.Tasks;
+using Tcp.NET.Client.Events.Args;
+using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
 {
     public interface ITcpNETClient : 
-        ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
-        INetworkClient
+        ICoreNetworking<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs>
     {
-        void Connect(string url, int port, string endOfLineCharacters);
+        Task ConnectAsync();
         bool Disconnect();
 
-        bool SendToServer(PacketDTO packet);
-        bool SendToServer(string message);
-        Socket Socket { get; }
+        Task<bool> SendToServerAsync<T>(T packet) where T : IPacket;
+        Task<bool> SendToServerAsync(string message);
+        Task<bool> SendToServerRawAsync(string message);
+
+        IConnection Connection { get; }
+        bool IsRunning { get; }
     }
 }

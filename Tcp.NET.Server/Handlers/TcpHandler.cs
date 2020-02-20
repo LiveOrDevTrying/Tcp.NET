@@ -1,386 +1,388 @@
 ﻿using Newtonsoft.Json;
-using PHS.Core.Enums;
-using PHS.Core.Models;
-using Tcp.NET.Core.Models;
+using PHS.Networking.Enums;
+using PHS.Networking.Events;
+using PHS.Networking.Models;
+using PHS.Networking.Server.Enums;
+using PHS.Networking.Server.Events.Args;
+using PHS.Networking.Services;
 using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using Tcp.NET.Core.Events.Args;
-using Tcp.NET.Core.Enums;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
+using Tcp.NET.Server.Events.Args;
+using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Handlers
 {
-    public sealed class TcpHandler : 
-        CoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs>, 
-        ICoreNetworking<TcpConnectionEventArgs, TcpMessageEventArgs, TcpErrorEventArgs> 
+    public class TcpHandler : 
+        CoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>, 
+        ICoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs> 
     {
-        private Thread _tcpServerThread;
-        private volatile bool _isServerRunning;
-        private int _port;
-        private int _numberOfConnections;
-        private Socket _connectionSocket;
+        protected readonly X509Certificate _certificate;
+        protected readonly IParamsTcpServer _parameters;
+        protected int _numberOfConnections;
+        protected TcpListener _server;
+        protected volatile bool _isRunning;
 
-        private readonly ManualResetEvent _allDone = new ManualResetEvent(false);
+        private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
-        public void Start(int port, string endOfLineCharacters)
+        public TcpHandler(IParamsTcpServer parameters)
         {
-            if (!_isServerRunning)
-            {
-                _isServerRunning = true;
-                _endOfLineCharacters = endOfLineCharacters;
-                _port = port;
-
-                if (_tcpServerThread != null)
-                {
-                    _tcpServerThread.Abort();
-                    _tcpServerThread = null;
-                }
-
-                _tcpServerThread = new Thread(new ThreadStart(ServerThread));
-                _tcpServerThread.Start();
-            }
+            _isRunning = true;
+            _parameters = parameters;
         }
-        private void ServerThread()
+        public TcpHandler(IParamsTcpServer parameters, X509Certificate certificate)
         {
-            // Establish the local endpoint for the socket.  
+            _isRunning = true;
+            _parameters = parameters;
+            _certificate = certificate;
+        }
+
+        public void Start()
+        {
             try
             {
-                var localEndPoint = new IPEndPoint(IPAddress.Any, _port);
-
-                // Create a TCP/IP socket.  
-                _connectionSocket = new Socket(AddressFamily.InterNetwork,
-                    SocketType.Stream, ProtocolType.Tcp);
-
-                // Bind the socket to the local endpoint and listen for incoming connections.  
-                _connectionSocket.Bind(localEndPoint);
-                _connectionSocket.Listen(100);      // Microsoft starts backlog at 100
-
-                _isServerRunning = true;
-
-                FireEvent(this, new TcpConnectionEventArgs
+                if (_server != null)
                 {
-                    ConnectionEventType = ConnectionEventType.ServerStart,
-                    ArgsType = ArgsType.Connection,
-                    Socket = _connectionSocket,
-                    ConnectionType = TcpConnectionType.ServerStart
+                    Stop();
+                }
+
+                _server = new TcpListener(IPAddress.Any, _parameters.Port);
+                _server.Start();
+
+                FireEvent(this, new ServerEventArgs
+                {
+                    ServerEventType = ServerEventType.Start
                 });
 
-                while (_isServerRunning)
+                if (_certificate == null)
                 {
-                    // Set the event to nonsignaled state.  
-                    _allDone.Reset();
-
-                    _connectionSocket.BeginAccept(
-                        new AsyncCallback(AcceptCallback),
-                        _connectionSocket);
-
-                    // Wait until a connection is made before continuing.  
-                    _allDone.WaitOne();
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ListenForConnectionsAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
+                else
+                {
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ListenForConnectionsSSLAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+                }
+                return;
             }
-            catch
+            catch (Exception ex)
             {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                });
             }
         }
         public void Stop()
         {
-            try
+            _isRunning = false;
+
+            if (_server != null)
             {
-                if (!_isServerRunning) { return; }
+                _server.Stop();
 
-                _isServerRunning = false;
-
-                if (_connectionSocket != null &&
-                    _connectionSocket.Connected)
+                FireEvent(this, new ServerEventArgs
                 {
-                    _connectionSocket.Shutdown(SocketShutdown.Both);
-                    _connectionSocket.Close();
-                }
-
-                FireEvent(this, new TcpConnectionEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.ServerStop,
-                    ArgsType = ArgsType.Connection,
-                    Socket = _connectionSocket
+                    ServerEventType = ServerEventType.Stop
                 });
 
-                if (_tcpServerThread != null)
-                {
-                    _isServerRunning = false;
-                }
+                _server = null;
             }
-            catch
-            {
-                _isServerRunning = false;
-            }
+
+            _numberOfConnections = 0;
         }
 
-        public bool Send(PacketDTO packet, Socket socket)
+        private async Task ListenForConnectionsAsync()
         {
-            try
+            while (_isRunning)
             {
-                if (!_isServerRunning) { return false; }
-
-                var message = JsonConvert.SerializeObject(packet);
-
-                // Convert the string data to byte data using UTF8  encoding.  
-                var nextMessage = string.Format("{0}{1}", message, _endOfLineCharacters);
-                var byteData = Encoding.UTF8.GetBytes(nextMessage);
-
-                FireEvent(this, new TcpMessageEventArgs
+                try
                 {
-                    MessageEventType = MessageEventType.Sent,
-                    Message = message,
-                    ArgsType = ArgsType.Message,
-                    Packet = packet,
-                    Socket = socket
-                });
-
-                // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
-                return true;
-            }
-            catch
-            {
-                DisconnectClient(socket);
-            }
-
-            return false;
-        }
-        public bool Send(string message, Socket socket)
-        {
-            try
-            {
-                if (!_isServerRunning) { return false; }
-
-                var packet = new PacketDTO
-                {
-                    Action = (int)ActionType.SendToClient,
-                    Data = message,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                var payload = JsonConvert.SerializeObject(packet);
-
-                // Convert the string data to byte data using UTF8  encoding.  
-                var nextMessage = $"{payload}{_endOfLineCharacters}";
-                var byteData = Encoding.UTF8.GetBytes(nextMessage);
-
-                // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
-
-                FireEvent(this, new TcpMessageEventArgs
-                {
-                    MessageEventType = MessageEventType.Sent,
-                    Message = payload,
-                    ArgsType = ArgsType.Message,
-                    Packet = packet,
-                    Socket = socket
-                });
-
-                return true;
-            }
-            catch
-            {
-                DisconnectClient(socket);
-            }
-
-            return false;
-        }
-        public bool SendRaw(string message, Socket socket)
-        {
-            try
-            {
-                if (!_isServerRunning) { return false; }
-
-                // Convert the string data to byte data using UTF8  encoding.  
-                var nextMessage = string.Format("{0}{1}", message, _endOfLineCharacters);
-                var byteData = Encoding.UTF8.GetBytes(nextMessage);
-
-                // Begin sending the data to the remote device.  
-                socket.BeginSend(byteData, 0, byteData.Length, 0,
-                    new AsyncCallback(SendCallback), socket);
-
-                FireEvent(this, new TcpMessageEventArgs
-                {
-                    MessageEventType = MessageEventType.Sent,
-                    Socket = socket,
-                    Message = message,
-                    ArgsType = ArgsType.Message,
-                    Packet = new PacketDTO
+                    var client = await _server.AcceptTcpClientAsync();
+                    var stream = client.GetStream();
+                    var reader = new StreamReader(stream);
+                    var writer = new StreamWriter(stream)
                     {
-                        Action = (int)ActionType.SendToClient,
-                        Data = message,
-                        Timestamp = DateTime.UtcNow
-                    }
-                });
+                        AutoFlush = true,
+                        NewLine = _parameters.EndOfLineCharacters
+                    };
 
-                return true;
-            }
-            catch
-            {
-                DisconnectClient(socket);
-            }
-
-            return false;
-         }
-
-        public bool DisconnectClient(Socket socket)
-        {
-            try
-            {
-                FireEvent(this, new TcpConnectionEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    ArgsType = ArgsType.Connection,
-                    ConnectionType = TcpConnectionType.Disconnect,
-                    Socket = socket
-                });
-
-                if (socket.Connected)
-                {
-                    _numberOfConnections--;
-
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Close();
-                }
-                return true;
-            }
-            catch
-            { }
-            return false;
-        }
-
-        private void AcceptCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Signal the main thread to continue.  
-                _allDone.Set();
-
-                // Get the socket that handles the client request.  
-                var listener = (Socket)ar.AsyncState;
-                var handler = listener.EndAccept(ar);
-
-                _numberOfConnections++;
-
-                // Create the state object.  
-                var state = new StateObject
-                {
-                    WorkSocket = handler
-                };
-
-                FireEvent(this, new TcpConnectionEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.Connected,
-                    Socket = handler,
-                    ArgsType = ArgsType.Connection,
-                    ConnectionType = TcpConnectionType.Connected
-                });
-
-                handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
-            }
-            catch
-            {
-            }
-        }
-        private void ReadCallback(IAsyncResult ar)
-        {
-            try
-            {
-                // Retrieve the state object and the handler socket  
-                // from the asynchronous state object.  
-                var state = (StateObject)ar.AsyncState;
-                var handler = state.WorkSocket;
-
-                // Read data from the client socket.   
-                var bytesRead = handler.EndReceive(ar);
-
-                if (bytesRead > 0)
-                {
-                    // There  might be more data, so store the data received so far.  
-                    state.Sb.Append(Encoding.UTF8.GetString(
-                        state.Buffer, 0, bytesRead));
-
-                    // Check for end-of-file tag. If it is not there, read   
-                    // more data.  
-                    while (state.Sb.ToString().IndexOf(_endOfLineCharacters) > -1)
+                    var connection = new ConnectionServer
                     {
-                        var content = state.Sb.ToString().Substring(0, state.Sb.ToString().IndexOf(_endOfLineCharacters));
-                        state.Sb.Remove(0, content.Length + _endOfLineCharacters.Length);
-                        // All the data has been read from the   
-                        // client. Display it on the console.  
+                        Client = client,
+                        Reader = reader,
+                        Writer = writer,
+                        ConnectionId = Guid.NewGuid().ToString()
+                    };
 
-                        if (!string.IsNullOrWhiteSpace(content))
+                    FireEvent(this, new TcpConnectionServerEventArgs
+                    {
+                        ConnectionEventType = ConnectionEventType.Connected,
+                        Connection = connection,
+                    });
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    StartListeningForMessagesAsync(connection);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    
+                    _numberOfConnections++;
+                }
+                catch (Exception ex)
+                {
+                    FireEvent(this, new TcpErrorServerEventArgs
+                    {
+                        Exception = ex,
+                        Message = ex.Message,
+                    });
+                }
+
+            }
+        }
+        private async Task ListenForConnectionsSSLAsync()
+        {
+            while (_isRunning)
+            {
+                try
+                {
+                    var client = await _server.AcceptTcpClientAsync();
+                    var sslStream = new SslStream(client.GetStream());
+                    await sslStream.AuthenticateAsServerAsync(_certificate);
+
+                    var reader = new StreamReader(sslStream);
+                    var writer = new StreamWriter(sslStream)
+                    {
+                        AutoFlush = true,
+                        NewLine = _parameters.EndOfLineCharacters
+                    };
+
+                    var connection = new ConnectionServer
+                    {
+                        Client = client,
+                        Reader = reader,
+                        Writer = writer,
+                        ConnectionId = Guid.NewGuid().ToString()
+                    };
+
+                    FireEvent(this, new TcpConnectionServerEventArgs
+                    {
+                        ConnectionEventType = ConnectionEventType.Connected,
+                        Connection = connection,
+                    });
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    StartListeningForMessagesAsync(connection);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
+                    _numberOfConnections++;
+                }
+                catch (Exception ex)
+                {
+                    FireEvent(this, new TcpErrorServerEventArgs
+                    {
+                        Exception = ex,
+                        Message = ex.Message,
+                    });
+                }
+
+            }
+        }
+        private async Task StartListeningForMessagesAsync(IConnectionServer connection)
+        {
+            while (true)
+            {
+                try
+                {
+                    var line = await connection.Reader.ReadLineAsync();
+
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        var packet = MessageReceived(line, connection);
+
+                        if (packet != null)
                         {
-                            PacketDTO packet;
-
-                            try
-                            {
-                                packet = JsonConvert.DeserializeObject<PacketDTO>(content);
-                            }
-                            catch
-                            {
-                                packet = new PacketDTO
-                                {
-                                    Action = (int)ActionType.SendToServer,
-                                    Data = content,
-                                    Timestamp = DateTime.UtcNow
-                                };
-                            }
-
-                            FireEvent(this, new TcpMessageEventArgs
+                            FireEvent(this, new TcpMessageServerEventArgs
                             {
                                 MessageEventType = MessageEventType.Receive,
-                                Socket = handler,
-                                Message = content,
-                                ArgsType = ArgsType.Message,
-                                Packet = packet
+                                Message = line,
+                                Packet = packet,
+                                Connection = connection
                             });
                         }
                     }
                 }
-
-                handler.BeginReceive(state.Buffer, 0, StateObject.BufferSize, 0,
-                    new AsyncCallback(ReadCallback), state);
-            }
-            catch (Exception)
-            {
-                var state = (StateObject)ar.AsyncState;
-                var handler = state.WorkSocket;
-
-                FireEvent(this, new TcpConnectionEventArgs()
+                catch (Exception ex)
                 {
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    Socket = handler,
-                    ArgsType = ArgsType.Connection,
-                    ConnectionType = TcpConnectionType.Disconnect,
-                });
+                    FireEvent(this, new TcpErrorServerEventArgs
+                    {
+                        Connection = connection,
+                        Exception = ex,
+                        Message = ex.Message,
+                    });
 
-                DisconnectClient(handler);
+                    DisconnectClient(connection);
+                    return;
+                }
             }
         }
-        private void SendCallback(IAsyncResult ar)
+        protected virtual IPacket MessageReceived(string message, IConnectionServer connection)
         {
+            Packet packet;
+
             try
             {
-                // Retrieve the socket from the state object.  
-                var socket = (Socket)ar.AsyncState;
+                packet = JsonConvert.DeserializeObject<Packet>(message);
 
-                // Complete sending the data to the remote device.  
-                int bytesSent = socket.EndSend(ar);
+                if (string.IsNullOrWhiteSpace(packet.Data))
+                {
+                    packet = new Packet
+                    {
+                        Data = message,
+                        Timestamp = DateTime.UtcNow
+                    };
+                }
             }
             catch
             {
-                var socket = (Socket)ar.AsyncState;
-
-                DisconnectClient(socket);
+                packet = new Packet
+                {
+                    Data = message,
+                    Timestamp = DateTime.UtcNow
+                };
             }
+
+            return packet;
+        }
+
+        public async Task<bool> SendAsync<S>(S packet, IConnectionServer connection) where S : IPacket
+        {
+            try
+            {
+                if (!_isRunning) { return false; }
+
+                var message = JsonConvert.SerializeObject(packet);
+
+                await connection.Writer.WriteLineAsync(message);
+
+                FireEvent(this, new TcpMessageServerEventArgs
+                {
+                    MessageEventType = MessageEventType.Sent,
+                    Message = message,
+                    Packet = packet,
+                    Connection = connection
+                });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                });
+
+                DisconnectClient(connection);
+            }
+
+            return false;
+        }
+        public async Task<bool> SendAsync(string message, IConnectionServer connection)
+        {
+            return await SendAsync(new Packet
+            {
+                Data = message,
+                Timestamp = DateTime.UtcNow
+            }, connection);
+        }
+        public async Task<bool> SendRawAsync(string message, IConnectionServer connection)
+        {
+            try
+            {
+                if (!_isRunning) { return false; }
+
+                await connection.Writer.WriteLineAsync(message);
+
+                FireEvent(this, new TcpMessageServerEventArgs
+                {
+                    MessageEventType = MessageEventType.Sent,
+                    Message = message,
+                    Connection = connection,
+                    Packet = new Packet
+                    {
+                        Data = message,
+                        Timestamp = DateTime.UtcNow
+                    },
+                });
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                });
+
+                DisconnectClient(connection);
+            }
+
+            return false;
+        }
+
+        public bool DisconnectClient(IConnectionServer connection)
+        {
+            try
+            {
+                _numberOfConnections--;
+                
+                FireEvent(this, new TcpConnectionServerEventArgs
+                {
+                    ConnectionEventType = ConnectionEventType.Disconnect,
+                    Connection = connection
+                });
+
+                if (connection.Client.Connected)
+                {
+                    connection.Client.Close();
+                    connection.Client.Dispose();
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorServerEventArgs
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                });
+            }
+
+            return false;
+        }
+
+        protected void FireEvent(object sender, ServerEventArgs args)
+        {
+            _serverEvent?.Invoke(sender, args);
+        }
+
+        public override void Dispose()
+        {
+            Stop();
+
+            base.Dispose();
         }
 
         public int NumberOfConnections
@@ -390,26 +392,30 @@ namespace Tcp.NET.Server.Handlers
                 return _numberOfConnections;
             }
         }
+        public TcpListener Server
+        {
+            get
+            {
+                return _server;
+            }
+        }
         public bool IsServerRunning
         {
             get
             {
-                return _isServerRunning;
+                return _isRunning;
             }
         }
-        public Socket Socket
+        public event NetworkingEventHandler<ServerEventArgs> ServerEvent
         {
-            get
+            add
             {
-                return _connectionSocket;
+                _serverEvent += value;
             }
-        }
-
-        public override void Dispose()
-        {
-            Stop();
-            _allDone.Dispose();
-            base.Dispose();
+            remove
+            {
+                _serverEvent -= value;
+            }
         }
     }
 }

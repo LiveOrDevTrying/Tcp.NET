@@ -1,11 +1,10 @@
-﻿using PHS.Core.Events.Args.NetworkEventArgs;
-using System.Net.Sockets;
+﻿using PHS.Networking.Events.Args;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Core.Events.Args
 {
-    public class TcpErrorEventArgs : ErrorEventArgs
+    public class TcpErrorEventArgs<T> : ErrorEventArgs where T : IConnection
     {
-        public Socket Socket { get; set; }
+        public T Connection { get; set; }
     }
 }

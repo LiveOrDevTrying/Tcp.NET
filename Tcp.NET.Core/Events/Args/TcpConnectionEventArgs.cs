@@ -1,12 +1,10 @@
-﻿using PHS.Core.Events.Args.NetworkEventArgs;
-using System.Net.Sockets;
-using Tcp.NET.Core.Enums;
+﻿using PHS.Networking.Events.Args;
+using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Core.Events.Args
 {
-    public class TcpConnectionEventArgs : ConnectionEventArgs
+    public class TcpConnectionEventArgs<T> : ConnectionEventArgs where T : IConnection
     {
-        public Socket Socket { get; set; }
-        public TcpConnectionType ConnectionType { get; set; }
+        public T Connection { get; set; }
     }
 }
