@@ -22,27 +22,9 @@ namespace Tcp.NET.Server.Managers
         {
             return !_connections.ContainsKey(connection.Client.GetHashCode()) ? _connections.TryAdd(connection.Client.GetHashCode(), connection) : false;
         }
-        public virtual void RemoveConnection(IConnectionServer connection, bool disconnectConnection)
-        { 
-            if (_connections.TryRemove(connection.Client.GetHashCode(), out var instance) &&
-                disconnectConnection)
-            {
-                if (instance.Reader != null)
-                {
-                    instance.Reader.Dispose();
-                }
-
-                if (instance.Writer != null)
-                {
-                    instance.Writer.Dispose();
-                }
-
-                if (instance.Client != null)
-                {
-                    instance.Client.Close();
-                    instance.Client.Dispose();
-                }
-            }
+        public virtual void RemoveConnection(IConnectionServer connection)
+        {
+            _connections.TryRemove(connection.Client.GetHashCode(), out var instance);
         }
         public virtual bool IsConnectionOpen(IConnectionServer connection)
         {

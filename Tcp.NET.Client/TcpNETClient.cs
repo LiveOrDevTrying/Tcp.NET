@@ -114,7 +114,7 @@ namespace Tcp.NET.Client
             return false;
         }
         
-        protected virtual void CreateConnection()
+        private void CreateConnection()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
@@ -134,7 +134,7 @@ namespace Tcp.NET.Client
                 Writer = writer
             };
         }
-        protected virtual void CreateSSLConnection()
+        private void CreateSSLConnection()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
@@ -158,59 +158,34 @@ namespace Tcp.NET.Client
                 Writer = writer
             };
         }
-        protected virtual async Task StartListeningForMessagesAsync()
+        private async Task StartListeningForMessagesAsync()
         {
             while (_isClientRunning &&
                 _connection != null)
             {
                 try
                 {
-                    var content = await _connection.Reader.ReadLineAsync();
+                    var message = await _connection.Reader.ReadLineAsync();
 
-                    if (!string.IsNullOrWhiteSpace(content))
+                    if (!string.IsNullOrWhiteSpace(message))
                     {
                         // Digest the ping first
-                        if (content.Trim().ToLower() == "ping")
+                        if (message.Trim().ToLower() == "ping")
                         {
                             await SendToServerRawAsync("pong");
                         }
                         else
                         {
-                            try
-                            {
-                                var packet = JsonConvert.DeserializeObject<Packet>(content);
+                            var packet = MessageReceived(message);
 
-                                if (string.IsNullOrWhiteSpace(packet.Data))
-                                {
-                                    packet = new Packet
-                                    {
-                                        Data = content,
-                                        Timestamp = DateTime.UtcNow
-                                    };
-                                }
-
-                                FireEvent(this, new TcpMessageClientEventArgs
-                                {
-                                    MessageEventType = MessageEventType.Receive,
-                                    Message = packet.Data,
-                                    Packet = packet,
-                                    Connection = _connection
-                                });
-                            }
-                            catch
+                            FireEvent(this, new TcpMessageClientEventArgs
                             {
-                                FireEvent(this, new TcpMessageClientEventArgs
-                                {
-                                    MessageEventType = MessageEventType.Receive,
-                                    Connection = _connection,
-                                    Message = content,
-                                    Packet = new Packet
-                                    {
-                                        Data = content,
-                                        Timestamp = DateTime.UtcNow
-                                    },
-                                });
-                            }
+                                MessageEventType = MessageEventType.Receive,
+                                Message = packet.Data,
+                                Packet = packet,
+                                Connection = _connection
+                            });
+                            
                         }
                     }
                 }
@@ -227,7 +202,34 @@ namespace Tcp.NET.Client
                 }
             }
         }
-        
+        protected virtual IPacket MessageReceived(string message)
+        {
+            IPacket packet;
+            try
+            {
+                packet = JsonConvert.DeserializeObject<Packet>(message);
+
+                if (string.IsNullOrWhiteSpace(packet.Data))
+                {
+                    packet = new Packet
+                    {
+                        Data = message,
+                        Timestamp = DateTime.UtcNow
+                    };
+                }
+            }
+            catch
+            {
+                packet = new Packet
+                {
+                    Data = message,
+                    Timestamp = DateTime.UtcNow
+                };
+            }
+
+            return packet;
+        }
+
         public virtual async Task<bool> SendToServerAsync<T>(T packet) where T : IPacket
         {
             try

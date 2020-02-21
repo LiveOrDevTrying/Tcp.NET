@@ -22,9 +22,9 @@ namespace Tcp.NET.Server
     public class TcpNETServerAuth<T> : CoreNetworking<TcpConnectionServerAuthEventArgs<T>, TcpMessageServerAuthEventArgs<T>, TcpErrorServerAuthEventArgs<T>>, 
         ITcpNETServerAuth<T>
     {
-        private readonly TcpHandler _handler;
-        private readonly IUserService<T> _userService;
-        private readonly IParamsTcpServerAuth _parameters;
+        protected readonly TcpHandler _handler;
+        protected readonly IUserService<T> _userService;
+        protected readonly IParamsTcpServerAuth _parameters;
         private readonly TcpConnectionManagerAuth<T> _connectionManager;
         private Timer _timerPing;
         private volatile bool _isPingRunning;
@@ -102,20 +102,20 @@ namespace Tcp.NET.Server
             _handler.Start();
         }
 
-        public async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket
         {
             if (_handler.IsServerRunning)
             {
-                foreach (var identity in _connectionManager.GetAllIdentitiesAuthorized())
+                foreach (var identity in _connectionManager.GetAllIdentities())
                 {
                     foreach (var connection in identity.Connections.ToList())
                     {
-                        await SendToConnectionAsync(packet, connection, identity.Id);
+                        await SendToConnectionAsync(packet, connection);
                     }
                 }
             }
         }
-        public async Task BroadcastToAllAuthorizedUsersAsync(string message)
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync(string message)
         {
             await BroadcastToAllAuthorizedUsersAsync(new Packet
             {
@@ -123,24 +123,24 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             });
         }
-        public async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionServer connectionSending) where S : IPacket
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionServer connectionSending) where S : IPacket
         {
             if (_handler != null &&
                 _handler.IsServerRunning)
             {
-                foreach (var identity in _connectionManager.GetAllIdentitiesAuthorized())
+                foreach (var identity in _connectionManager.GetAllIdentities())
                 {
                     foreach (var connection in identity.Connections.ToList())
                     {
                         if (connection.Client.GetHashCode() != connection.Client.GetHashCode())
                         {
-                            await SendToConnectionAsync(packet, connection, identity.Id);
+                            await SendToConnectionAsync(packet, connection);
                         }
                     }
                 }
             }
         }
-        public async Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionServer connectionSending)
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionServer connectionSending)
         {
             await BroadcastToAllAuthorizedUsersAsync(new Packet
             {
@@ -148,23 +148,23 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             }, connectionSending);
         }
-
-        public async Task BroadcastToAllAuthorizedUsersRawAsync(string message)
+                
+        public virtual async Task BroadcastToAllAuthorizedUsersRawAsync(string message)
         {
             if (_handler != null &&
                 _handler.IsServerRunning)
             {
-                foreach (var identity in _connectionManager.GetAllIdentitiesAuthorized())
+                foreach (var identity in _connectionManager.GetAllIdentities())
                 {
                     foreach (var connection in identity.Connections.ToList())
                     {
-                        await SendToConnectionRawAsync(message, connection, identity.Id);
+                        await SendToConnectionRawAsync(message, connection);
                     }
                 }
             }
         }
 
-        public async Task SendToUserAsync<S>(S packet, T userId) where S : IPacket
+        public virtual async Task SendToUserAsync<S>(S packet, T userId) where S : IPacket
         {
             if (_handler != null &&
                 _handler.IsServerRunning &&
@@ -174,11 +174,11 @@ namespace Tcp.NET.Server
 
                 foreach (var connection in user.Connections.ToList())
                 {
-                    await SendToConnectionAsync(packet, connection, userId);
+                    await SendToConnectionAsync(packet, connection);
                 }
             }
         }
-        public async Task SendToUserAsync(string message, T userId)
+        public virtual async Task SendToUserAsync(string message, T userId)
         {
             await SendToUserAsync(new Packet
             {
@@ -186,7 +186,7 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             }, userId);
         }
-        public async Task SendToUserRawAsync(string message, T userId)
+        public virtual async Task SendToUserRawAsync(string message, T userId)
         {
             if (_handler != null &&
                 _handler.IsServerRunning &&
@@ -196,15 +196,14 @@ namespace Tcp.NET.Server
 
                 foreach (var connection in user.Connections)
                 {
-                    await SendToConnectionRawAsync(message, connection, userId);
+                    await SendToConnectionRawAsync(message, connection);
                 }
             }
         }
 
-        public async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection, T userId) where S : IPacket
+        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
         {
-            if (_handler != null &&
-                _handler.IsServerRunning)
+            if (_handler.IsServerRunning)
             {
                 if (_connectionManager.IsConnectionOpen(connection))
                 {
@@ -218,7 +217,7 @@ namespace Tcp.NET.Server
                             MessageEventType = MessageEventType.Sent,
                             Connection = connection,
                             Packet = packet,
-                            UserId = userId
+                            UserId = default
                         });
                         return true;
                     }
@@ -229,7 +228,7 @@ namespace Tcp.NET.Server
                             Connection = connection,
                             Exception = ex,
                             Message = ex.Message,
-                            UserId = userId
+                            UserId = default
                         });
 
                         DisconnectConnection(connection);
@@ -240,120 +239,53 @@ namespace Tcp.NET.Server
 
                 if (_connectionManager.IsConnectionAuthorized(connection))
                 {
-                    try
+                    var identity = _connectionManager.GetAllIdentities().FirstOrDefault(s => s.Connections.Any(t => t.ConnectionId == connection.ConnectionId));
+                    if (identity != null)
                     {
-                        await _handler.SendAsync(packet, connection);
-
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        try
                         {
-                            Message = JsonConvert.SerializeObject(packet),
-                            MessageEventType = MessageEventType.Sent,
-                            Packet = packet,
-                            UserId = userId,
-                            Connection = connection
-                        });
+                            await _handler.SendAsync(packet, connection);
 
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                            {
+                                Message = JsonConvert.SerializeObject(packet),
+                                MessageEventType = MessageEventType.Sent,
+                                Packet = packet,
+                                UserId = identity.Id,
+                                Connection = connection
+                            });
+
+                            return true;
+                        }
+                        catch (Exception ex)
                         {
-                            Connection = connection,
-                            Exception = ex,
-                            Message = ex.Message,
-                            UserId = userId
-                        });
+                            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            {
+                                Connection = connection,
+                                Exception = ex,
+                                Message = ex.Message,
+                                UserId = identity.Id
+                            });
 
-                        DisconnectConnection(connection);
+                            DisconnectConnection(connection);
 
-                        return false;
+                            return false;
+                        }
                     }
                 }
             }
 
             return false;
         }
-        public async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection, T userId)
+        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
         {
-            if (_handler != null &&
-                _handler.IsServerRunning)
+            return await SendToConnectionAsync(new Packet
             {
-                var packet = new Packet
-                {
-                    Data = message,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                if (_connectionManager.IsConnectionOpen(connection))
-                {
-                    try
-                    {
-                        await _handler.SendAsync(packet, connection);
-
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
-                        {
-                            Message = JsonConvert.SerializeObject(packet),
-                            MessageEventType = MessageEventType.Sent,
-                            Connection = connection,
-                            Packet = packet,
-                            UserId = userId,
-                        });
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
-                        {
-                            Connection = connection,
-                            Exception = ex,
-                            Message = ex.Message,
-                            UserId = userId
-                        });
-
-                        DisconnectConnection(connection);
-
-                        return false;
-                    }
-                }
-
-                if (_connectionManager.IsConnectionAuthorized(connection))
-                {
-                    try
-                    {
-                        await _handler.SendAsync(packet, connection);
-
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
-                        {
-                            Message = JsonConvert.SerializeObject(packet),
-                            MessageEventType = MessageEventType.Sent,
-                            Packet = packet,
-                            UserId = userId,
-                            Connection = connection
-                        });
-
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
-                        {
-                            Connection = connection,
-                            Exception = ex,
-                            Message = ex.Message,
-                            UserId = userId
-                        });
-
-                        DisconnectConnection(connection);
-
-                        return false;
-                    }
-                }
-            }
-
-            return false;
+                Data = message,
+                Timestamp = DateTime.UtcNow
+            }, connection);
         }
-        public async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection, T userId)
+        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
         {
             if (_handler != null &&
                 _handler.IsServerRunning)
@@ -374,7 +306,7 @@ namespace Tcp.NET.Server
                                 Timestamp = DateTime.UtcNow
                             },
                             Connection = connection,
-                            UserId = userId
+                            UserId = default
                         });
 
                         return true;
@@ -386,54 +318,60 @@ namespace Tcp.NET.Server
                             Connection = connection,
                             Exception = ex,
                             Message = ex.Message,
-                            UserId = userId
+                            UserId = default
                         });
 
                         DisconnectConnection(connection);
+
+                        return false;
                     }
                 }
 
                 if (_connectionManager.IsConnectionAuthorized(connection))
                 {
-                    try
+                    var identity = _connectionManager.GetAllIdentities().FirstOrDefault(s => s.Connections.Any(t => t.ConnectionId == connection.ConnectionId));
+                    if (identity != null)
                     {
-                        await _handler.SendAsync(message, connection);
-
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        try
                         {
-                            Message = message,
-                            Packet = new Packet
+                            await _handler.SendRawAsync(message, connection);
+
+                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
                             {
-                                Data = message,
-                                Timestamp = DateTime.UtcNow
-                            },
-                            UserId = userId,
-                            Connection = connection,
-                            MessageEventType = MessageEventType.Sent,
-                        });
+                                Message = message,
+                                Packet = new Packet
+                                {
+                                    Data = message,
+                                    Timestamp = DateTime.UtcNow
+                                },
+                                UserId = identity.Id,
+                                Connection = connection,
+                                MessageEventType = MessageEventType.Sent,
+                            });
 
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            return true;
+                        }
+                        catch (Exception ex)
                         {
-                            Connection = connection,
-                            Exception = ex,
-                            Message = ex.Message,
-                            UserId = userId
-                        });
+                            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            {
+                                Connection = connection,
+                                Exception = ex,
+                                Message = ex.Message,
+                                UserId = identity.Id
+                            });
 
-                        DisconnectConnection(connection);
+                            DisconnectConnection(connection);
+                        }
                     }
                 }
             }
 
             return false;
         }
-        public bool DisconnectConnection(IConnectionServer connection)
+        public virtual bool DisconnectConnection(IConnectionServer connection)
         {
-            return _handler.DisconnectClient(connection);
+            return _handler.DisconnectConnection(connection);
         }
 
         private Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
@@ -456,7 +394,7 @@ namespace Tcp.NET.Server
                 case ConnectionEventType.Disconnect:
                     if (_connectionManager.IsConnectionOpen(args.Connection))
                     {
-                        _connectionManager.RemoveConnection(args.Connection, true);
+                        _connectionManager.RemoveConnection(args.Connection);
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                         {
@@ -468,7 +406,7 @@ namespace Tcp.NET.Server
                     if (_connectionManager.IsConnectionAuthorized(args.Connection))
                     {
                         var identity = _connectionManager.GetIdentity(args.Connection);
-                        _connectionManager.RemoveConnectionAuthorized(args.Connection, true);
+                        _connectionManager.RemoveUserConnection(args.Connection);
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                         {
@@ -478,7 +416,6 @@ namespace Tcp.NET.Server
                         });
                     }
                     break;
-               
                 case ConnectionEventType.Connecting:
                     FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                     {
@@ -505,25 +442,16 @@ namespace Tcp.NET.Server
                     }
                     else if (_connectionManager.IsConnectionAuthorized(args.Connection))
                     {
-                        // Digest the pong first
-                        if (args.Message.ToLower().Trim() == "pong" ||
-                            args.Packet.Data.Trim().ToLower() == "pong")
-                        {
-                            args.Connection.HasBeenPinged = false;
-                        }
-                        else
-                        {
-                            var identity = _connectionManager.GetIdentity(args.Connection);
+                        var identity = _connectionManager.GetIdentity(args.Connection);
 
-                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
-                            {
-                                Message = args.Message,
-                                MessageEventType = MessageEventType.Receive,
-                                Packet = args.Packet,
-                                UserId = identity.Id,
-                                Connection = args.Connection,
-                            });
-                        }
+                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        {
+                            Message = args.Message,
+                            MessageEventType = MessageEventType.Receive,
+                            Packet = args.Packet,
+                            UserId = identity.Id,
+                            Connection = args.Connection,
+                        });
                     }
                     break;
                 default:
@@ -535,11 +463,6 @@ namespace Tcp.NET.Server
             switch (args.ServerEventType)
             {
                 case ServerEventType.Start:
-                    FireEvent(this, new ServerEventArgs
-                    {
-                        ServerEventType = ServerEventType.Start,
-                    });
-
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
@@ -590,23 +513,22 @@ namespace Tcp.NET.Server
 
                 Task.Run(async () =>
                 {
-                    foreach (var identity in _connectionManager.GetAllIdentitiesAuthorized())
+                    foreach (var identity in _connectionManager.GetAllIdentities())
                     {
-                        foreach (var connection in identity.Connections)
+                        foreach (var connection in identity.Connections.ToList())
                         {
                             try
                             {
                                 if (connection.HasBeenPinged)
                                 {
                                     // Already been pinged, no response, disconnect
-                                    await SendToConnectionRawAsync("No ping response - disconnected.", connection, identity.Id);
-                                    _connectionManager.RemoveConnectionAuthorized(connection, true);
-                                    _handler.DisconnectClient(connection);
+                                    await SendToConnectionRawAsync("No ping response - disconnected.", connection);
+                                    DisconnectConnection(connection);
                                 }
                                 else
                                 {
                                     connection.HasBeenPinged = true;
-                                    await SendToConnectionRawAsync("Ping", connection, identity.Id);
+                                    await SendToConnectionRawAsync("Ping", connection);
                                 }
                             }
                             catch (Exception ex)
@@ -634,12 +556,12 @@ namespace Tcp.NET.Server
                 // Check for token here
                 if (_connectionManager.IsConnectionOpen(args.Connection))
                 {
-                    _connectionManager.RemoveConnection(args.Connection, false);
+                    _connectionManager.RemoveConnection(args.Connection);
 
                     if (args.Message.Length < "oauth:".Length ||
                         !args.Message.ToLower().StartsWith("oauth:"))
                     {
-                        await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection, default);
+                        await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
                         DisconnectConnection(args.Connection);
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
@@ -656,7 +578,7 @@ namespace Tcp.NET.Server
 
                     if (userId == null)
                     {
-                        await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection, default);
+                        await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
                         DisconnectConnection(args.Connection);
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
@@ -667,9 +589,9 @@ namespace Tcp.NET.Server
                         return false;
                     }
 
-                    var identity = _connectionManager.AddConnectionAuthorized(userId, args.Connection);
+                    var identity = _connectionManager.AddUserConnection(userId, args.Connection);
 
-                    await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection, userId);
+                    await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection);
 
                     FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                     {
@@ -691,7 +613,7 @@ namespace Tcp.NET.Server
                 });
             }
 
-            await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection, default);
+            await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
             DisconnectConnection(args.Connection);
 
             FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
@@ -702,7 +624,7 @@ namespace Tcp.NET.Server
             return false;
         }
         
-        protected virtual void FireEvent(object sender, ServerEventArgs args)
+        private void FireEvent(object sender, ServerEventArgs args)
         {
             _serverEvent?.Invoke(sender, args);
         }
@@ -711,14 +633,14 @@ namespace Tcp.NET.Server
         {
             foreach (var item in _connectionManager.GetAllConnections())
             {
-                _connectionManager.RemoveConnection(item, true);
+                _connectionManager.RemoveConnection(item);
             }
 
-            foreach (var item in _connectionManager.GetAllIdentitiesAuthorized())
+            foreach (var item in _connectionManager.GetAllIdentities())
             {
-                foreach (var connection in item.Connections)
+                foreach (var connection in item.Connections.ToList())
                 {
-                    _connectionManager.RemoveConnectionAuthorized(connection, true);
+                    DisconnectConnection(connection);
                 }
             }
 
@@ -764,7 +686,7 @@ namespace Tcp.NET.Server
         {
             get
             {
-                return _connectionManager.GetAllIdentitiesAuthorized();
+                return _connectionManager.GetAllIdentities();
             }
         }
 

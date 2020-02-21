@@ -93,7 +93,7 @@ namespace Tcp.NET.Server
             _handler.Start();
         }
 
-        public async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
+        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
         {
             try
             {
@@ -126,7 +126,7 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
         {
             return await SendToConnectionAsync(new Packet
             {
@@ -134,7 +134,7 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             }, connection);
         }
-        public async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
         {
             try
             {
@@ -172,9 +172,9 @@ namespace Tcp.NET.Server
             return false;
         }
 
-        public bool DisconnectConnection(IConnectionServer connection)
+        public virtual bool DisconnectConnection(IConnectionServer connection)
         {
-            return _handler.DisconnectClient(connection);
+            return _handler.DisconnectConnection(connection);
         }
 
         private Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
@@ -185,8 +185,7 @@ namespace Tcp.NET.Server
                     _connectionManager.AddConnection(args.Connection);
                     break;
                 case ConnectionEventType.Disconnect:
-                    _connectionManager.RemoveConnection(args.Connection, true);
-
+                    _connectionManager.RemoveConnection(args.Connection);
                     break;
                 case ConnectionEventType.Connecting:
                     break;
@@ -203,16 +202,13 @@ namespace Tcp.NET.Server
             switch (args.ServerEventType)
             {
                 case ServerEventType.Start:
-                    FireEvent(this, new ServerEventArgs
-                    {
-                        ServerEventType = ServerEventType.Start,
-                    });
-
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
                     }
+
+                    FireEvent(sender, args);
 
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
                     break;
@@ -223,10 +219,7 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    FireEvent(this, new ServerEventArgs
-                    {
-                        ServerEventType = ServerEventType.Stop,
-                    });
+                    FireEvent(sender, args);
 
                     Thread.Sleep(5000);
                     _handler.Start();
@@ -239,29 +232,7 @@ namespace Tcp.NET.Server
         }
         private Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
         {
-            switch (args.MessageEventType)
-            {
-                case MessageEventType.Sent:
-                    break;
-                case MessageEventType.Receive:
-                    if (_connectionManager.IsConnectionOpen(args.Connection))
-                    {
-                        // Digest the pong first
-                        if (args.Message.ToLower().Trim() == "pong" ||
-                            (args.Packet.Data != null && args.Packet.Data.Trim().ToLower() == "pong"))
-                        {
-                            args.Connection.HasBeenPinged = false;
-                        }
-                        else
-                        {
-                            FireEvent(this, args);
-                        }
-                    }
-                    break;
-                default:
-                    break;
-            }
-
+            FireEvent(sender, args);
             return Task.CompletedTask;
         }
         private Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
@@ -285,8 +256,7 @@ namespace Tcp.NET.Server
                             {
                                 // Already been pinged, no response, disconnect
                                 await SendToConnectionRawAsync("No ping response - disconnected.", connection);
-                                _connectionManager.RemoveConnection(connection, true);
-                                _handler.DisconnectClient(connection);
+                                DisconnectConnection(connection);
                             }
                             else
                             {
@@ -319,7 +289,7 @@ namespace Tcp.NET.Server
         {
             foreach (var connection in _connectionManager.GetAllConnections())
             {
-                _connectionManager.RemoveConnection(connection, true);
+                DisconnectConnection(connection);
             }
 
             if (_handler != null)

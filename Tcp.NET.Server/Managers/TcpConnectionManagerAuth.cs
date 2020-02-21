@@ -20,12 +20,12 @@ namespace Tcp.NET.Server.Managers
                 ? _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode()))
                 : (default);
         }
-        public virtual IUserConnections<T>[] GetAllIdentitiesAuthorized()
+        public virtual IUserConnections<T>[] GetAllIdentities()
         {
             return _userConnections.Values.ToArray();
         }
 
-        public virtual IUserConnections<T> AddConnectionAuthorized(T userId, IConnectionServer connection)
+        public virtual IUserConnections<T> AddUserConnection(T userId, IConnectionServer connection)
         {
             if (!_userConnections.TryGetValue(userId, out var instance))
             {
@@ -45,7 +45,7 @@ namespace Tcp.NET.Server.Managers
 
             return null;
         }
-        public virtual void RemoveConnectionAuthorized(IConnectionServer connection, bool disconnectConnection)
+        public virtual void RemoveUserConnection(IConnectionServer connection)
         {
             var userConnection = _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode()));
 
@@ -61,27 +61,6 @@ namespace Tcp.NET.Server.Managers
                     {
                         _userConnections.TryRemove(userConnection.Id, out userConnection);
                     }
-                }
-            }
-
-            if (disconnectConnection &&
-                connection != null)
-            {
-                if (connection.Reader != null)
-                {
-                    connection.Reader.Dispose();
-                }
-
-                if (connection.Writer != null)
-                {
-                    connection.Writer.Dispose();
-                }
-
-                if (connection.Client != null)
-                {
-                    connection.Client.Close();
-                    connection.Client.Dispose();
-                    connection = null;
                 }
             }
         }

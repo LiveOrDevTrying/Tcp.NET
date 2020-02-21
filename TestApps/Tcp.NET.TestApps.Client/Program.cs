@@ -13,13 +13,22 @@ namespace Tcp.NET.TestApps.Client
 
         static async Task Main(string[] args)
         {
+            //_client = new TcpNETClient(new ParamsTcpClient
+            //{
+            //    EndOfLineCharacters = "\r\n",
+            //    Port = 8989,
+            //    Uri = "localhost",
+            //    IsSSL = false,
+            //}, oauthToken: "fakeToken");
+
             _client = new TcpNETClient(new ParamsTcpClient
             {
                 EndOfLineCharacters = "\r\n",
                 Port = 8989,
                 Uri = "localhost",
                 IsSSL = false,
-            }, oauthToken: "fakeToken");
+            });
+
             _client.MessageEvent += OnMessageEvent;
             _client.ConnectionEvent += OnConnectionEvent;
             _client.ErrorEvent += OnErrorEvent;

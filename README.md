@@ -56,10 +56,11 @@ Once installed, we can create an instance of **ITcpNETClient** with the included
 #### Parameters
 * **IParamsTcpClient** - *Required* [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) includes a default struct implementation called **ParamsTcpClient** which contains the following connection detail data:
 
-    * **Uri** - *string* - The endpoint / host / url of the Tcp Server instance to connect (e.g. localhost, 192.168.1.14, connect.tcp.net).
+    * **Uri** - *string* - The endpoint / host / url of the Tcp Server instance to connect (e.g. localhost, 192.168.1.14, [connect.tcp.net](#)).
     * **Port** - *int* - The port of the Tcp Server instance to connect (e.g. 6660, 7210, 6483).
     * **EndOfLineCharacters** - *string* - Tcp does not automatically include line termination symbols, however it has become common practice in many applications that the end-of-line symbol is **"\r\n"** which represents an Enter key for many operating systems. We recommend you use **"\r\n"** as the line termination symbol.
     * **IsSSL** - *bool* - Flag specifying if the connection should be made using SSL encryption for the connection to the server.
+* **OAuth Token** - *Optional* - Optional parameter used by the [Tcp.NET Auth Server](https://www.nuget.org/packages/Tcp.NET.Server/) for authenticating a user.
 
 #### Events
 3 events are exposed on the **ITcpNETClient** interface: `MessageEvent`, `ConnectionEvent`, and `ErrorEvent`. These event signatures are below:
@@ -80,10 +81,14 @@ To connect to a Tcp Server, invoke the function `ConnectAsync()`.
 
         await client.ConnectAsync());
         
-*Note: Connection parameters were input with the constructors of **ITcpClient**.*
+*Note: Connection parameters were input with the constructors of **ITcpNETClient**.*
+
+#### OAuth Token
+If you are using **TcpNETClient**, an optional parameters is included in the constructor for your OAuth Token - for more information, see **[ITcpNETClient](#itcpnetclient)**. Upon a successful connection to the server, the **OAuth Token** you specify will automatically be sent to the server properly formatted. However, if you are creating a manual Tcp connection to an instance of **TcpNETServerAuth**, you must send as the first message to the server a raw message containing your **OAuth Token**. You must add **oauth:** as the prefix for your token. This could look similar to the following:
+> oauth:yourOAuthTokenGoesHere
 
 #### SSL
-To enable SSL for [Tcp.NET.Client](https://www.nuget.org/packages/Tcp.NET.Client/), set the **IsSSL** flag in **IParamsTcpClient** to true. In order to connect successfully, the server must have a valid, non-expired SSL certificate where the certificate's issued hostname must match the Uri specified in **IParamsTcpClient**. For example, the Uri in the above examples is "connect.tcp.net", and the SSL certificate on the server must be issued to "connect.tcp.net".
+To enable SSL for [Tcp.NET.Client](https://www.nuget.org/packages/Tcp.NET.Client/), set the **IsSSL** flag in **IParamsTcpClient** to true. In order to connect successfully, the server must have a valid, non-expired SSL certificate where the certificate's issued hostname must match the Uri specified in **IParamsTcpClient**. For example, the Uri in the above examples is [connect.tcp.net](#), and the SSL certificate on the server must be issued to [connect.tcp.net](#).
 
 *Please note that a self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate.*
 
@@ -142,7 +147,48 @@ More information about **IPacket** is available [here](#ipacket).
             LastName = "FakeLastName"
         });
 
-To handle receipt of an extended packet (such as IPacketExtended we created above), see the section below [Receiving an Extended IPacket](#receiving-an-extended-ipacket).
+#### Receiving an Extended IPacket
+If you want to extend **IPacket** to include additional fields, you will need to override the **TcpNETClient** implementation to support the extended type. First define a new class that inherits **TcpNETClient**, override the protected method called `MessageReceived(string message, IConnectionServer connection)`, and deserialize into the extended **IPacket** of your choice. An example of this implementation is below:
+
+    public class TcpNETClientExtended : TcpNETClient
+    {
+        public TcpNETClient(IParamsTcpClient parameters, string oauthToken = "")
+        {
+        }
+
+        protected override IPacket MessageReceived(string message, IConnectionServer connection)
+        {
+            IPacket packet;
+
+            try
+            {
+                packet = JsonConvert.DeserializeObject<PacketExtended>(message);
+
+                if (string.IsNullOrWhiteSpace(packet.Data))
+                {
+                    packet = new PacketExtended
+                    {
+                        Data = message,
+                        Timestamp = DateTime.UtcNow,
+                        PacketExtendedType = PacketExtendedType.PacketType1
+                    };
+                }
+            }
+            catch
+            {
+                packet = new PacketExtended
+                {
+                    Data = message,
+                    Timestamp = DateTime.UtcNow,
+                    PacketExtendedType = PacketExtendedType.PacketType1
+                };
+            }
+
+            return packet;
+        }
+    }
+
+If you don’t know the type of an object ahead of time, first deserialize the message into a class or struct that contains “common” fields, such as PacketExtended with a PacketExtendedType enum field. Then use the value of PacketExtendedType and deserialize a second time into that type. Repeat until the your custom object is completely deserialized.
 
 #### Ping
 A **ITcpNETServer** will send a raw message containing **'ping'** to every client every 120 seconds to verify which connections are still alive. If a client fails to respond with a raw message containing **'pong'**, during the the next ping cycle, the connection will be severed and disposed. However, if you are using **ITcpNETClient**, the ping / pong messages are digested and handled before reaching `MessageEvent(object sender, TcpMessageServerEventArgs args)`. This means you do not need to worry about ping and pong messages if you are using **ITcpNETClient**. However, if you are creating your own Tcp connection, you should incorporate logic to listen for raw messages containing **'ping'**, and if received, immediately respond with a raw message containing **'pong'** message. 
@@ -206,16 +252,16 @@ We will now create an instance of **ITcpNETServer** with the included implementa
                 ConnectionSuccessString = "Connected Successfully",
             }, "connect.tcp.net", StoreLocation.LocalMachine);
 
-The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the serverr is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's exposed IPs).
+The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the server is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's exposed IPs).
 
 #### Parameters
 * **IParamsTcpServer** - *Required* - [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) includes a default struct implementation called **ParamsTcpServer** which contains the following connection detail data:
     * **Port** - *int* - The port where the Tcp Server will listen (e.g. 6660, 7210, 6483).
     * **EndOfLineCharacters** - *string* - Tcp does not automatically include line termination symbols, however it has become common practice in many applications that the end-of-line symbol is **"\r\n"** which represents an Enter key for many operating systems. We recommend you use **"\r\n"** as the line termination symbol.
     * **ConnectionSuccessString** - *string* - The string that will be sent to a newly connected client.
-* **TcpHandler** - *Optional* - If you want to deserialize an extended **IPacket** from a client, you can extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended Packet](#receiving-an-extended-packet)** below.
+* **TcpHandler** - *Optional* - If you want to deserialize an extended **IPacket** from a client, you can extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended IPacket](#receiving-an-extended-ipacket)** below.
 * **X509Certificate** - *Optional* - This is an object that contains the valid SSL certificate to bind to the server. See above for one implementation.
-* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is "connect.tcp.net", and the SSL certificate must be issued to "connect.tcp.net".
+* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is [connect.tcp.net](#), and the SSL certificate must be issued to [connect.tcp.net](#).
 * **StoreLocation** - *Optional - enum* - Location the certificate is in the Windows Certificate Store. Potential options are:
     * **StoreLocation.CurrentUser** - *0* - The certificate is registered to the current user
     * **StoreLocation.LocalMachine** - *1* - The certificate is registered to the local system
@@ -294,7 +340,7 @@ If you want to extend **IPacket** to include additional fields, you will need to
                     {
                         Data = message,
                         Timestamp = DateTime.UtcNow,
-                        PacketExtendedType = PacketType1
+                        PacketExtendedType = PacketExtendedType.PacketType1
                     };
                 }
             }
@@ -304,7 +350,7 @@ If you want to extend **IPacket** to include additional fields, you will need to
                 {
                     Data = message,
                     Timestamp = DateTime.UtcNow,
-                    PacketExtendedType = PacketType1
+                    PacketExtendedType = PacketExtendedType.PacketType1
                 };
             }
 
@@ -338,7 +384,7 @@ To stop the server, call the `Dispose()` method to stop listening and free all a
 ### ITcpNETServerAuth
 The second Tcp Server available is slightly more complex but includes authentication for identifying your connections. We will create an instance of **`ITcpNETServerAuth<T>`**  with the included implementation **`TcpNETServerAuth<T>`**. This object includes a generic, T, which represents the datatype of your user unique Id. For example, T could be an int, a string, a long, or a guid - this depends on the datatype of the unique Id you have set for your user. This generic allows the **`ITcpNETServerAuth<T>`** implementation to allow authentication and identification of users within many different user systems. The included implementation includes 3 constructors (for SSL or non-SSL servers):
 
-* `TcpNETServerAuth<T>(IParamsTcpServer parameters, IUserService<T> userService, TcpHandler handler = null)`
+* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, TcpHandler handler = null)`
     * The constructor for non-SSL Tcp Authentication Servers. Example instantiation is below:
  
             public class MockUserService : IUserService<long> 
@@ -352,7 +398,7 @@ The second Tcp Server available is slightly more complex but includes authentica
                 ConnectionUnauthorizedString = "Connection not authorized",
             }, new MockUserService());
 
-* `TcpNETServerAuth<T>(IParamsTcpServer parameters, IUserService<T> userService, X509Certificate certificate, TcpHandler handler = null))`
+* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, X509Certificate certificate, TcpHandler handler = null))`
     * The constructor for a SSL Tcp Server where the SSL certificate is manually specified. Example instantiation is below:
 
             public class MockUserService : IUserService<long> 
@@ -370,10 +416,10 @@ The second Tcp Server available is slightly more complex but includes authentica
                 Port = 8989,
                 EndOfLineCharacters = "\r\n",
                 ConnectionSuccessString = "Connected Successfully",
-                ConnectionUnauthorizedString = "Connection not authorized"
+                ConnectionUnauthorizedString = "Connection not authorized",
             }, new MockUserService(), cert);
 
-* `TcpNETServerAuth<T>(IParamsTcpServer parameters, IUserService<T> userService, string certificateIssuedTo, StoreLocation storeLocation, TcpHandler handler = null))`
+* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, string certificateIssuedTo, StoreLocation storeLocation, TcpHandler handler = null))`
     * The constructor for a SSL Tcp Server where the SSL certificate is registered to and obtained from the Windows Certificate Store. Example instantiation is below:
             
             public class MockUserService : IUserService<long> 
@@ -384,7 +430,7 @@ The second Tcp Server available is slightly more complex but includes authentica
                 Port = 8989,
                 EndOfLineCharacters = "\r\n",
                 ConnectionSuccessString = "Connected Successfully",
-                ConnectionUnauthorizedString = "Connection not authorized"
+                ConnectionUnauthorizedString = "Connection not authorized",
             }, new MockUserService(), "connect.tcp.net", StoreLocation.LocalMachine);
 
 The [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the server is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's IP).
@@ -393,18 +439,17 @@ The [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Serve
 * **IParamsTcpServerAuth** - *Required*. [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) includes a default struct implementation called **ParamsTcpServerAuth** which contains the following connection detail data:
     * **Port** - *int* - The port where the Tcp Server will listen (e.g. 6660, 7210, 6483).
     * **EndOfLineCharacters** - *string* - Tcp does not automatically include line termination symbols, however it has become common practice in many applications that the end-of-line symbol is **"\r\n"** which represents an Enter key for many operating systems. We recommend you use **"\r\n"** as the line termination symbol.
-    * **ConnectionSuccessString** - *string* - The string that will be sent to a newly connected client.
     * **ConnectionUnauthorizedString** - *string* - The string that will be sent to a connected client when they fail authentication.
 * **`IUserService<T>`** - *Required* - This is an interface for a UserService class that will need to be implemented. This interface specifies 1 function, `GetIdAsync(string token)`, which will be invoked when the server receives an **OAuth Token** from a new connection. For more information regarding the User Service class, please see **[`IUserService<T>`](#userservice<T>)** below.
-* **TcpHandler** - *Optional*. This is an object that can be passed in optionally. If you want to deserialize an extended **IPacket** from a client, you would extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended Packet](#receiving-an-extended-packet)** below.
+* **TcpHandler** - *Optional*. This is an object that can be passed in optionally. If you want to deserialize an extended **IPacket** from a client, you would extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended IPacket](#receiving-an-extended-ipacket)** below.
 * **X509Certificate** - *Optional* - This is an object that contains the valid SSL certificate to bind to the server. See above for one implementation.
-* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is "connect.tcp.net", and the SSL certificate must be issued to "connect.tcp.net".
+* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is [connect.tcp.net](#), and the SSL certificate must be issued to [connect.tcp.net](#).
 * **StoreLocation** - *Optional - enum* - Location the certificate is in the Windows Certificate Store. Potential options are:
     * **StoreLocation.CurrentUser** - *0* - The certificate is registered to the current user
     * **StoreLocation.LocalMachine** - *1* - The certificate is registered to the local system
 
 #### `IUserService<T>`
-**`IUserService<T>`** is an interface contained in [PHS.Networking.Server](https://www.nuget.org/packages/PHS.Networking.Server/). When creating a [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Server/), this inteface **`IUserService<T>`** will need to be instantiated into a concrete class. A default implementation is *not* included with Tcp.NET. An example implementation is shown below:
+This is an interface contained in [PHS.Networking.Server](https://www.nuget.org/packages/PHS.Networking.Server/). When creating a **`TcpNETServerAuth<T>`**, this inteface **`IUserService<T>`** will need to be instantiated into a concrete class. A default implementation is *not* included with [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net). An example implementation is shown below:
 
     public class UserServiceImplementation : IUserService<long>
     {
@@ -438,11 +483,11 @@ Because you are responsible for filling the logic in `GetIdAsync(string oauthTok
         server.ErrorEvent += OnErrorEvent;
         server.ServerEvent += OnServerEvent;
 
-* `Task OnMessageEvent(object sender, TcpMessageServerEventArgs args);`
+* `Task OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<T> args);`
     * Invoked when a message is sent or received
-* `Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args);`
+* `Task OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<T> args);`
     * Invoked when a Tcp client is connecting, connects, or disconnects from the server
-* `Task OnErrorEvent(object sender, TcpErrorServerEventArgs args);`
+* `Task OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<T> args);`
     * Wraps all internal logic with try catch statements and outputs the specific error(s)
 * `Task OnServerEvent(object sender, ServerEventArgs args);`
     * Invoked when the Tcp server starts or stops
@@ -471,11 +516,11 @@ To send messages to a client, 11 functions are exposed:
     * Transform the message into a **Packet** and send the to the specified User and their connections currently logged into the server
 * `SendToUserRawAsync(string message, T userId)`
     * Send the message directly to the designated User and their connections without transforming the message into a **Packet**
-* `SendToConnectionAsync<S>(S packet, IConnectionServer connection, T userId) where S : IPacket`
+* `SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket`
     * Send the designated packet to the designated User's connection currently logged into the server
-* `SendToConnectionAsync(string message, IConnectionServer connection, T userId)`
+* `SendToConnectionAsync(string message, IConnectionServer connection)`
     * Transform the message into a **Packet** and send to the designated User's connection currently logged into the server
-* `SendToConnectionRawAsync(string message, IConnectionServer connection, T userId)`
+* `SendToConnectionRawAsync(string message, IConnectionServer connection)`
     * Send the message directly to the designated User's connection currently logged into the server without transforming the message into a **Packet**
 
 More information about **IPacket** is available [here](#ipacket).
@@ -490,7 +535,7 @@ An example call to send a message to a client could be:
         {
             Data = "YourDataPayload",
             DateTime = 2020-02-18 11:54:32.4324
-        }, userConnections[0].Connections[0], userConnections[0]);
+        }, userConnections[0].Connections[0]);
 
 #### Receiving an Extended IPacket
 If you want to extend **IPacket** to include additional fields, you will need to add the optional parameter **TcpHandler** that can be included with each constructor. The included **TcpHandler** has logic which is specific to deserialize messages of type **Packet**, but to receive your own extended **IPacket**, we will need to inherit / extend **TcpHandler** with your own class. Once **TcpHandler** has been extended, override the protected method called `MessageReceived(string message, IConnectionServer connection)` and deserialize into the extended **IPacket** of your choice. An example of this implementation is below:
@@ -538,7 +583,7 @@ If you want to extend **IPacket** to include additional fields, you will need to
 
 If you don’t know the type of an object ahead of time, first deserialize the message into a class or struct that contains “common” fields, such as PacketExtended with a PacketExtendedType enum field. Then use the value of PacketExtendedType and deserialize a second time into that type. Repeat until the your custom object is completely deserialized.
 
-Finally, when constructing **`ITcpNETServerAuth<T>`**, pass in your new **TcpHandler** extended class you created. An example is as follows:
+Finally, when constructing **`TcpNETServerAuth<T>`**, pass in your new **TcpHandler** extended class you created. An example is as follows:
 
     IParamsTcpServerAuth parameters = new ParamsTcpServerAuth 
     {
@@ -564,5 +609,5 @@ To stop the server, call the `Dispose()` method to stop listening and free all a
 ***
 
 ### Additional Information
-[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [LiveOrDevTrying](https://www.liveordevtrying.com) and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). Tcp.NET is currently implemented in (but not limited to) the following projects: [Allie.Chat](https://allie.chat), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), and [The Monitaur](https://www.themonitaur.com).  
+[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [LiveOrDevTrying](https://www.liveordevtrying.com) and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [Allie.Chat](https://allie.chat), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), and [The Monitaur](https://www.themonitaur.com).  
 ![Pixel Horror Studios Logo](https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/PHS.png)

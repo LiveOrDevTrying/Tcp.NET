@@ -197,7 +197,9 @@ namespace Tcp.NET.Server.Handlers
         }
         private async Task StartListeningForMessagesAsync(IConnectionServer connection)
         {
-            while (true)
+            var isRunning = true;
+
+            do
             {
                 try
                 {
@@ -205,17 +207,24 @@ namespace Tcp.NET.Server.Handlers
 
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        var packet = MessageReceived(line, connection);
-
-                        if (packet != null)
+                        if (line.Trim().ToLower() == "pong")
                         {
-                            FireEvent(this, new TcpMessageServerEventArgs
+                            connection.HasBeenPinged = false;
+                        }
+                        else
+                        {
+                            var packet = MessageReceived(line, connection);
+
+                            if (packet != null)
                             {
-                                MessageEventType = MessageEventType.Receive,
-                                Message = line,
-                                Packet = packet,
-                                Connection = connection
-                            });
+                                FireEvent(this, new TcpMessageServerEventArgs
+                                {
+                                    MessageEventType = MessageEventType.Receive,
+                                    Message = line,
+                                    Packet = packet,
+                                    Connection = connection
+                                });
+                            }
                         }
                     }
                 }
@@ -228,14 +237,17 @@ namespace Tcp.NET.Server.Handlers
                         Message = ex.Message,
                     });
 
-                    DisconnectClient(connection);
+                    isRunning = false;
+
+                    DisconnectConnection(connection);
                     return;
                 }
-            }
+            } while (isRunning);
         }
+
         protected virtual IPacket MessageReceived(string message, IConnectionServer connection)
         {
-            Packet packet;
+            IPacket packet;
 
             try
             {
@@ -262,7 +274,7 @@ namespace Tcp.NET.Server.Handlers
             return packet;
         }
 
-        public async Task<bool> SendAsync<S>(S packet, IConnectionServer connection) where S : IPacket
+        public async Task<bool> SendAsync<T>(T packet, IConnectionServer connection) where T : IPacket
         {
             try
             {
@@ -291,7 +303,7 @@ namespace Tcp.NET.Server.Handlers
                     Connection = connection
                 });
 
-                DisconnectClient(connection);
+                DisconnectConnection(connection);
             }
 
             return false;
@@ -335,28 +347,41 @@ namespace Tcp.NET.Server.Handlers
                     Connection = connection
                 });
 
-                DisconnectClient(connection);
+                DisconnectConnection(connection);
             }
 
             return false;
         }
 
-        public bool DisconnectClient(IConnectionServer connection)
+        public bool DisconnectConnection(IConnectionServer connection)
         {
             try
             {
                 _numberOfConnections--;
-                
-                FireEvent(this, new TcpConnectionServerEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.Disconnect,
-                    Connection = connection
-                });
 
-                if (connection.Client.Connected)
+                if (connection != null)
                 {
-                    connection.Client.Close();
-                    connection.Client.Dispose();
+                    if (connection.Reader != null)
+                    {
+                        connection.Reader.Dispose();
+                    }
+
+                    if (connection.Writer != null)
+                    {
+                        connection.Writer.Dispose();
+                    }
+
+                    if (connection.Client != null)
+                    {
+                        connection.Client.Close();
+                        connection.Client.Dispose();
+                    }
+
+                    FireEvent(this, new TcpConnectionServerEventArgs
+                    {
+                        ConnectionEventType = ConnectionEventType.Disconnect,
+                        Connection = connection
+                    });
                 }
                 return true;
             }
@@ -406,6 +431,7 @@ namespace Tcp.NET.Server.Handlers
                 return _isRunning;
             }
         }
+
         public event NetworkingEventHandler<ServerEventArgs> ServerEvent
         {
             add
