@@ -68,12 +68,6 @@ namespace Tcp.NET.Client
             {
                 if (_connection != null)
                 {
-                    FireEvent(this, new TcpConnectionClientEventArgs
-                    {
-                        ConnectionEventType = ConnectionEventType.Disconnect,
-                        Connection = _connection
-                    });
-
                     if (_connection != null &&
                         _connection.Writer != null)
                     {
@@ -92,6 +86,12 @@ namespace Tcp.NET.Client
                         _connection.Client.Close();
                         _connection.Client.Dispose();
                     }
+
+                    FireEvent(this, new TcpConnectionClientEventArgs
+                    {
+                        ConnectionEventType = ConnectionEventType.Disconnect,
+                        Connection = _connection
+                    });
 
                     _connection = null;
 
@@ -234,6 +234,7 @@ namespace Tcp.NET.Client
                     _connection.Client.Connected)
                 {
                     var message = JsonConvert.SerializeObject(packet);
+                    await _connection.Writer.WriteLineAsync(message);
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
@@ -242,8 +243,6 @@ namespace Tcp.NET.Client
                         Packet = packet,
                         Message = packet.Data,
                     });
-
-                    await _connection.Writer.WriteLineAsync(message);
                     return true;
                 }
             }
@@ -276,6 +275,8 @@ namespace Tcp.NET.Client
                 if (_connection != null &&
                     _connection.Client.Connected)
                 {
+                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
+
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
@@ -286,9 +287,7 @@ namespace Tcp.NET.Client
                             Data = message,
                             Timestamp = DateTime.UtcNow
                         },
-                    });
-
-                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
+                    }); 
                     return true;
                 }
             }
