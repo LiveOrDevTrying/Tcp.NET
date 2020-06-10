@@ -405,15 +405,18 @@ namespace Tcp.NET.Server
 
                     if (_connectionManager.IsConnectionAuthorized(args.Connection))
                     {
-                        var identity = _connectionManager.GetIdentity(args.Connection);
                         _connectionManager.RemoveUserConnection(args.Connection);
 
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                        var identity = _connectionManager.GetIdentity(args.Connection);
+                        if (identity != null)
                         {
-                            Connection = args.Connection,
-                            ConnectionEventType = args.ConnectionEventType,
-                            UserId = identity.Id,
-                        });
+                            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                            {
+                                Connection = args.Connection,
+                                ConnectionEventType = args.ConnectionEventType,
+                                UserId = identity.Id,
+                            });
+                        }
                     }
                     break;
                 case ConnectionEventType.Connecting:
@@ -444,14 +447,17 @@ namespace Tcp.NET.Server
                     {
                         var identity = _connectionManager.GetIdentity(args.Connection);
 
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        if (identity != null)
                         {
-                            Message = args.Message,
-                            MessageEventType = MessageEventType.Receive,
-                            Packet = args.Packet,
-                            UserId = identity.Id,
-                            Connection = args.Connection,
-                        });
+                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                            {
+                                Message = args.Message,
+                                MessageEventType = MessageEventType.Receive,
+                                Packet = args.Packet,
+                                UserId = identity.Id,
+                                Connection = args.Connection,
+                            });
+                        }
                     }
                     break;
                 default:
@@ -495,13 +501,17 @@ namespace Tcp.NET.Server
             {
                 var identity = _connectionManager.GetIdentity(args.Connection);
 
-                FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+
+                if (identity != null)
                 {
-                    Exception = args.Exception,
-                    Message = args.Message,
-                    UserId = identity.Id,
-                    Connection = args.Connection
-                });
+                    FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                    {
+                        Exception = args.Exception,
+                        Message = args.Message,
+                        UserId = identity.Id,
+                        Connection = args.Connection
+                    });
+                }
             }
             return Task.CompletedTask;
         }

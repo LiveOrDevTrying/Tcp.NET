@@ -41,12 +41,6 @@ namespace Tcp.NET.Client
                     CreateConnection();
                 }
 
-                FireEvent(this, new TcpConnectionClientEventArgs
-                {
-                    ConnectionEventType = ConnectionEventType.Connected,
-                    Connection = _connection,
-                });
-
                 _isClientRunning = true;
 
                 if (!string.IsNullOrWhiteSpace(_oauthToken))
@@ -80,17 +74,20 @@ namespace Tcp.NET.Client
                         Connection = _connection
                     });
 
-                    if (_connection.Writer != null)
+                    if (_connection != null &&
+                        _connection.Writer != null)
                     {
                         _connection.Writer.Dispose();
                     }
 
-                    if (_connection.Reader != null)
+                    if (_connection != null && 
+                        _connection.Reader != null)
                     {
                         _connection.Reader.Dispose();
                     }
 
-                    if (_connection.Client != null)
+                    if (_connection != null &&
+                        _connection.Client != null)
                     {
                         _connection.Client.Close();
                         _connection.Client.Dispose();
@@ -185,7 +182,6 @@ namespace Tcp.NET.Client
                                 Packet = packet,
                                 Connection = _connection
                             });
-                            
                         }
                     }
                 }

@@ -16,8 +16,8 @@ namespace Tcp.NET.Server.Managers
         }
         public virtual IUserConnections<T> GetIdentity(IConnectionServer connection)
         {
-            return _userConnections.Any(p => p.Value.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode()))
-                ? _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode()))
+            return _userConnections.Any(p => p.Value.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()))
+                ? _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()))
                 : (default);
         }
         public virtual IUserConnections<T>[] GetAllIdentities()
@@ -37,7 +37,7 @@ namespace Tcp.NET.Server.Managers
                 _userConnections.TryAdd(userId, instance);
             }
 
-            if (!instance.Connections.Any(s => s.Client.GetHashCode() == instance.GetHashCode()))
+            if (!instance.Connections.Any(s => s != null && s.Client.GetHashCode() == instance.GetHashCode()))
             {
                 instance.Connections.Add(connection);
                 return instance;
@@ -67,7 +67,7 @@ namespace Tcp.NET.Server.Managers
 
         public virtual bool IsConnectionAuthorized(IConnectionServer connection)
         {
-            return _userConnections.Values.Any(s => s.Connections.Any(t => t.Client.GetHashCode() == connection.Client.GetHashCode()));
+            return _userConnections.Values.Any(s => s.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()));
         }
         public virtual bool IsUserConnected(T userId)
         {
