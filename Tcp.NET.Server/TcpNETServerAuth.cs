@@ -381,14 +381,7 @@ namespace Tcp.NET.Server
                 case ConnectionEventType.Connected:
                     if (!_connectionManager.IsConnectionOpen(args.Connection))
                     {
-                        if (_connectionManager.AddConnection(args.Connection))
-                        {
-                            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
-                            {
-                                ConnectionEventType = args.ConnectionEventType,
-                                Connection = args.Connection
-                            });
-                        }
+                        _connectionManager.AddConnection(args.Connection);
                     }
                     break;
                 case ConnectionEventType.Disconnect:

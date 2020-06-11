@@ -1,5 +1,6 @@
 ﻿using PHS.Networking.Enums;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Tcp.NET.Client;
 using Tcp.NET.Client.Events.Args;
@@ -9,37 +10,41 @@ namespace Tcp.NET.TestApps.Client
 {
     class Program
     {
-        private static ITcpNETClient _client;
+        private static List<ITcpNETClient> _clients =
+            new List<ITcpNETClient>();
+        private static int _temp;
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
-            //_client = new TcpNETClient(new ParamsTcpClient
-            //{
-            //    EndOfLineCharacters = "\r\n",
-            //    Port = 8989,
-            //    Uri = "localhost",
-            //    IsSSL = false,
-            //}, oauthToken: "fakeToken");
-
-            _client = new TcpNETClient(new ParamsTcpClient
+            for (int i = 0; i < 10; i++)
             {
-                EndOfLineCharacters = "\r\n",
-                Port = 8989,
-                Uri = "localhost",
-                IsSSL = false,
-            });
-
-            _client.MessageEvent += OnMessageEvent;
-            _client.ConnectionEvent += OnConnectionEvent;
-            _client.ErrorEvent += OnErrorEvent;
-            await _client.ConnectAsync();
-            Console.WriteLine("Type something and press Enter to send it to the server");
+                Task.Run(async () =>
+                {
+                    for (int k = 0; k < 1000; k++)
+                    {
+                        using (var client = new TcpNETClient(new ParamsTcpClient
+                        {
+                            EndOfLineCharacters = "\r\n",
+                            Port = 8989,
+                            Uri = "localhost",
+                            IsSSL = false,
+                        }, oauthToken: "faketoken"))
+                        {
+                            client.MessageEvent += OnMessageEvent;
+                            client.ConnectionEvent += OnConnectionEvent;
+                            client.ErrorEvent += OnErrorEvent;
+                            await client.ConnectAsync();
+                            await client.SendToServerRawAsync("From client iteration: " + ++_temp);
+                            _clients.Add(client);
+                            Console.WriteLine("Iteration: " + _temp);
+                        }
+                    };
+                });
+            }
 
             while (true)
             {
-                var line = Console.ReadLine();
-
-                await _client.SendToServerRawAsync(line);
+                Console.ReadLine();
             }
         }
 
@@ -50,7 +55,6 @@ namespace Tcp.NET.TestApps.Client
 
         private static Task OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
-            Console.WriteLine(args.ConnectionEventType.ToString());
             return Task.CompletedTask;
         }
 
