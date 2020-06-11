@@ -240,7 +240,6 @@ namespace Tcp.NET.Server.Handlers
                     isRunning = false;
 
                     DisconnectConnection(connection);
-                    return;
                 }
             } while (isRunning);
         }

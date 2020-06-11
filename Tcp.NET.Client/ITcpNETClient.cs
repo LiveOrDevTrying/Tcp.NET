@@ -10,7 +10,7 @@ namespace Tcp.NET.Client
         ICoreNetworking<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs>
     {
         Task ConnectAsync();
-        bool Disconnect();
+        Task<bool> DisconnectAsync();
 
         Task<bool> SendToServerAsync<T>(T packet) where T : IPacket;
         Task<bool> SendToServerAsync(string message);

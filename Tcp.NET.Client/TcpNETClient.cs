@@ -62,7 +62,7 @@ namespace Tcp.NET.Client
                 });
             }
         }
-        public virtual bool Disconnect()
+        public virtual Task<bool> DisconnectAsync()
         {
             try
             {
@@ -95,7 +95,7 @@ namespace Tcp.NET.Client
 
                     _connection = null;
 
-                    return true;
+                    return Task.FromResult(true);
                 }
             }
             catch (Exception ex)
@@ -108,7 +108,7 @@ namespace Tcp.NET.Client
                 });
             }
 
-            return false;
+            return Task.FromResult(false);
         }
         
         private void CreateConnection()
@@ -194,7 +194,7 @@ namespace Tcp.NET.Client
                         Message = ex.Message
                     });
 
-                    Disconnect();
+                    await DisconnectAsync();
                 }
             }
         }
@@ -255,7 +255,7 @@ namespace Tcp.NET.Client
                     Message = ex.Message
                 });
 
-                Disconnect();
+                await DisconnectAsync();
             }
 
             return false;
@@ -300,7 +300,7 @@ namespace Tcp.NET.Client
                     Message = ex.Message
                 });
 
-                Disconnect();
+                await DisconnectAsync();
             }
 
             return false;
