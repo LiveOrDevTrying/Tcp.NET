@@ -98,7 +98,7 @@ namespace Tcp.NET.TestApps.Server
             return Task.CompletedTask;
         }
 
-        private static async Task OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<Guid> args)
+        private static Task OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<Guid> args)
         {
             switch (args.MessageEventType)
             {
@@ -110,6 +110,8 @@ namespace Tcp.NET.TestApps.Server
                 default:
                     break;
             }
+
+            return Task.CompletedTask;
         }
     }
 }

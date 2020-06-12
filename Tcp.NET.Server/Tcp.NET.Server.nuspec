@@ -19,7 +19,7 @@
         <dependency id="Microsoft.NETCore.App" version="2.1" />
 		<dependency id="Newtonsoft.Json" version="12.0.2" />
 		<dependency id="Tcp.NET.Core" version="1.3.7" />
-        <dependency id="PHS.Networking.Server" version="1.2.2" />
+        <dependency id="PHS.Networking.Server" version="1.2.3" />
       </group>
     </dependencies>
   </metadata>

@@ -577,32 +577,35 @@ namespace Tcp.NET.Server
 
                     var token = args.Message.Substring("oauth:".Length);
 
-                    var userId = await _userService.GetIdAsync(token);
-
-                    if (userId == null)
+                    if (await _userService.IsValidTokenAsync(token))
                     {
-                        await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
-                        DisconnectConnection(args.Connection);
+                        var userId = await _userService.GetIdAsync(token);
+
+                        if (userId == null)
+                        {
+                            await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
+                            DisconnectConnection(args.Connection);
+
+                            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                            {
+                                ConnectionEventType = ConnectionEventType.Disconnect,
+                                Connection = args.Connection
+                            });
+                            return false;
+                        }
+
+                        var identity = _connectionManager.AddUserConnection(userId, args.Connection);
+
+                        await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection);
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                         {
-                            ConnectionEventType = ConnectionEventType.Disconnect,
-                            Connection = args.Connection
+                            ConnectionEventType = ConnectionEventType.Connected,
+                            UserId = identity.Id,
+                            Connection = args.Connection,
                         });
-                        return false;
+                        return true;
                     }
-
-                    var identity = _connectionManager.AddUserConnection(userId, args.Connection);
-
-                    await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection);
-
-                    FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
-                    {
-                        ConnectionEventType = ConnectionEventType.Connected,
-                        UserId = identity.Id,
-                        Connection = args.Connection,
-                    });
-                    return true;
                 }
             }
             catch (Exception ex)
