@@ -13,5 +13,10 @@ namespace Tcp.NET.TestApps.Server
         public void Dispose()
         {
         }
+
+        public Task<bool> IsValidTokenAsync(string token)
+        {
+            return Task.FromResult(true);
+        }
     }
 }

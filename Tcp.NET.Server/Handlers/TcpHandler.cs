@@ -21,7 +21,8 @@ namespace Tcp.NET.Server.Handlers
         CoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>, 
         ICoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs> 
     {
-        protected readonly X509Certificate _certificate;
+        protected readonly byte[] _certificate;
+        protected readonly string _certificatePassword;
         protected readonly IParamsTcpServer _parameters;
         protected int _numberOfConnections;
         protected TcpListener _server;
@@ -34,11 +35,12 @@ namespace Tcp.NET.Server.Handlers
             _isRunning = true;
             _parameters = parameters;
         }
-        public TcpHandler(IParamsTcpServer parameters, X509Certificate certificate)
+        public TcpHandler(IParamsTcpServer parameters, byte[] certificate, string certificatePassword)
         {
             _isRunning = true;
             _parameters = parameters;
             _certificate = certificate;
+            _certificatePassword = certificatePassword;
         }
 
         public void Start()
@@ -155,34 +157,37 @@ namespace Tcp.NET.Server.Handlers
                 {
                     var client = await _server.AcceptTcpClientAsync();
                     var sslStream = new SslStream(client.GetStream());
-                    await sslStream.AuthenticateAsServerAsync(_certificate);
+                    await sslStream.AuthenticateAsServerAsync(new X509Certificate(_certificate, _certificatePassword));
 
-                    var reader = new StreamReader(sslStream);
-                    var writer = new StreamWriter(sslStream)
+                    if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
-                        AutoFlush = true,
-                        NewLine = _parameters.EndOfLineCharacters
-                    };
+                        var reader = new StreamReader(sslStream);
+                        var writer = new StreamWriter(sslStream)
+                        {
+                            AutoFlush = true,
+                            NewLine = _parameters.EndOfLineCharacters
+                        };
 
-                    var connection = new ConnectionServer
-                    {
-                        Client = client,
-                        Reader = reader,
-                        Writer = writer,
-                        ConnectionId = Guid.NewGuid().ToString()
-                    };
+                        var connection = new ConnectionServer
+                        {
+                            Client = client,
+                            Reader = reader,
+                            Writer = writer,
+                            ConnectionId = Guid.NewGuid().ToString()
+                        };
 
-                    FireEvent(this, new TcpConnectionServerEventArgs
-                    {
-                        ConnectionEventType = ConnectionEventType.Connected,
-                        Connection = connection,
-                    });
+                        FireEvent(this, new TcpConnectionServerEventArgs
+                        {
+                            ConnectionEventType = ConnectionEventType.Connected,
+                            Connection = connection,
+                        });
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    StartListeningForMessagesAsync(connection);
+                        StartListeningForMessagesAsync(connection);
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
-                    _numberOfConnections++;
+                        _numberOfConnections++;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -360,9 +365,10 @@ namespace Tcp.NET.Server.Handlers
 
                 if (connection != null)
                 {
-                    if (connection.Reader != null)
+                    if (connection.Client != null)
                     {
-                        connection.Reader.Dispose();
+                        connection.Client.Close();
+                        connection.Client.Dispose();
                     }
 
                     if (connection.Writer != null)
@@ -370,10 +376,9 @@ namespace Tcp.NET.Server.Handlers
                         connection.Writer.Dispose();
                     }
 
-                    if (connection.Client != null)
+                    if (connection.Reader != null)
                     {
-                        connection.Client.Close();
-                        connection.Client.Dispose();
+                        connection.Reader.Dispose();
                     }
 
                     FireEvent(this, new TcpConnectionServerEventArgs

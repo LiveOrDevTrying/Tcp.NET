@@ -9,7 +9,6 @@ using PHS.Networking.Services;
 using System;
 using System.Linq;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
@@ -50,58 +49,21 @@ namespace Tcp.NET.Server
         }
         public TcpNETServerAuth(IParamsTcpServerAuth parameters,
             IUserService<T> userService,
-            X509Certificate certificate,
+            byte[] certificate,
+            string certificatePassword,
             TcpHandler handler = null)
         {
             _parameters = parameters;
             _userService = userService;
             _connectionManager = new TcpConnectionManagerAuth<T>();
 
-            _handler = handler ?? new TcpHandler(_parameters, certificate);
+            _handler = handler ?? new TcpHandler(_parameters, certificate, certificatePassword);
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
             _handler.ServerEvent += OnServerEvent;
             _handler.Start();
         }
-        public TcpNETServerAuth(IParamsTcpServerAuth parameters,
-            IUserService<T> userService,
-            string certificateIssuedTo,
-            StoreLocation storeLocation,
-            TcpHandler handler = null)
-        {
-            _parameters = parameters;
-            _userService = userService;
-            _connectionManager = new TcpConnectionManagerAuth<T>();
-
-            X509Certificate certificate = null;
-
-            var store = new X509Store(StoreName.My, storeLocation);
-            store.Open(OpenFlags.ReadOnly);
-
-            foreach (var currentCertificate
-                in store.Certificates)
-            {
-                if (currentCertificate.IssuerName.Name != null && currentCertificate.Subject.Equals(certificateIssuedTo))
-                {
-                    certificate = currentCertificate;
-                    break;
-                }
-            }
-
-            if (certificate == null)
-            {
-                throw new Exception("Could not locate certificate in the Windows Certificate store");
-            }
-
-            _handler = handler ?? new TcpHandler(_parameters, certificate);
-            _handler.ConnectionEvent += OnConnectionEvent;
-            _handler.MessageEvent += OnMessageEventAsync;
-            _handler.ErrorEvent += OnErrorEvent;
-            _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
-        }
-
         public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket
         {
             if (_handler.IsServerRunning)
@@ -619,8 +581,13 @@ namespace Tcp.NET.Server
                 });
             }
 
-            await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
-            DisconnectConnection(args.Connection);
+            try
+            {
+                await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
+                DisconnectConnection(args.Connection);
+            }
+            catch
+            { }
 
             FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
             {

@@ -45,47 +45,14 @@ namespace Tcp.NET.Server
             _handler.Start();
         }
         public TcpNETServer(IParamsTcpServer parameters,
-            X509Certificate certificate, 
+            byte[] certificate,
+            string certificatePassword,
             TcpHandler handler = null)
         {
             _parameters = parameters;
             _connectionManager = new TcpConnectionManager();
 
-            _handler = handler ?? new TcpHandler(_parameters, certificate);
-            _handler.ConnectionEvent += OnConnectionEvent;
-            _handler.MessageEvent += OnMessageEventAsync;
-            _handler.ErrorEvent += OnErrorEvent;
-            _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
-        }
-        public TcpNETServer(IParamsTcpServer parameters,
-            string certificateIssuedTo,
-            StoreLocation storeLocation, 
-            TcpHandler handler = null)
-        {
-            _parameters = parameters;
-            _connectionManager = new TcpConnectionManager();
-
-            var store = new X509Store(StoreName.My, storeLocation);
-            store.Open(OpenFlags.ReadOnly);
-            X509Certificate certificate = null;
-
-            foreach (var currentCertificate
-                in store.Certificates)
-            {
-                if (currentCertificate.IssuerName.Name != null && currentCertificate.Subject.Equals(certificateIssuedTo))
-                {
-                    certificate = currentCertificate;
-                    break;
-                }
-            }
-
-            if (certificate == null)
-            {
-                throw new Exception("Could not locate certificate in the Windows Certificate store");
-            }
-
-            _handler = handler ?? new TcpHandler(_parameters, certificate);
+            _handler = handler ?? new TcpHandler(_parameters, certificate, certificatePassword);
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
