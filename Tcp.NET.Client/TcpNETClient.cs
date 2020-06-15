@@ -116,6 +116,7 @@ namespace Tcp.NET.Client
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             var client = new TcpClient(_parameters.Uri, _parameters.Port);
+            client.ReceiveTimeout = 60000;
 
             var reader = new StreamReader(client.GetStream());
             var writer = new StreamWriter(client.GetStream())
@@ -136,6 +137,7 @@ namespace Tcp.NET.Client
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             var client = new TcpClient(_parameters.Uri, _parameters.Port);
+            client.ReceiveTimeout = 60000;
 
             var sslStream = new SslStream(client.GetStream());
 

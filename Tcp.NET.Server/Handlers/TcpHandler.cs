@@ -53,6 +53,7 @@ namespace Tcp.NET.Server.Handlers
                 }
 
                 _server = new TcpListener(IPAddress.Any, _parameters.Port);
+                _server.Server.ReceiveTimeout = 60000;
                 _server.Start();
 
                 FireEvent(this, new ServerEventArgs
@@ -157,7 +158,7 @@ namespace Tcp.NET.Server.Handlers
                 {
                     var client = await _server.AcceptTcpClientAsync();
                     var sslStream = new SslStream(client.GetStream());
-                    await sslStream.AuthenticateAsServerAsync(new X509Certificate(_certificate, _certificatePassword));
+                    await sslStream.AuthenticateAsServerAsync(new X509Certificate2(_certificate, _certificatePassword));
 
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
