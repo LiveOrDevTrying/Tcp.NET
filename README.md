@@ -228,11 +228,8 @@ We will now create an instance of **ITcpNETServer** with the included implementa
 * `TcpNETServer(IParamsTcpServer parameters, X509Certificate certificate, TcpHandler handler = null)`
     * The constructor for a SSL Tcp Server where the SSL certificate is manually specified. Example instantiation is below:
 
-            // Get a path to the SSL certificate
-            var filename = Path.Combine(Environment.WebRootPath, "cert.pfx");
-        
-            // Instantiate the cert and provide the password
-            var cert = new X509Certificate2(filename, "myCertPassword");
+            // Get the SSL certificate
+            var certificate = File.ReadAllBytes("cert.pfx");
         
             // Start the server
             ITcpNETServer server = new TcpNETServer(new ParamsTcpServer 
@@ -240,17 +237,7 @@ We will now create an instance of **ITcpNETServer** with the included implementa
                 Port = 8989,
                 EndOfLineCharacters = "\r\n",
                 ConnectionSuccessString = "Connected Successfully",
-            }, cert);
-
-* `TcpNETServer(IParamsTcpServer parameters, string certificateIssuedTo, StoreLocation storeLocation, TcpHandler handler = null))`
-    * The constructor for a SSL Tcp Server where the SSL certificate is registered to and obtained from the Windows Certificate Store. Example instantiation is below:
-
-            ITcpNETServer server = new TcpNETServer(new ParamsTcpServer 
-            {
-                Port = 8989,
-                EndOfLineCharacters = "\r\n",
-                ConnectionSuccessString = "Connected Successfully",
-            }, "connect.tcp.net", StoreLocation.LocalMachine);
+            }, cert, "certificatePassword");
 
 The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the server is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's exposed IPs).
 
