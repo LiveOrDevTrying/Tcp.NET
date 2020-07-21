@@ -54,7 +54,7 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorClientEventArgs
+                await FireEventAsync(this, new TcpErrorClientEventArgs
                 {
                     Exception = ex,
                     Connection = _connection,
@@ -62,7 +62,7 @@ namespace Tcp.NET.Client
                 });
             }
         }
-        public virtual Task<bool> DisconnectAsync()
+        public virtual async Task<bool> DisconnectAsync()
         {
             try
             {
@@ -87,7 +87,7 @@ namespace Tcp.NET.Client
                         _connection.Client.Dispose();
                     }
 
-                    FireEvent(this, new TcpConnectionClientEventArgs
+                    await FireEventAsync(this, new TcpConnectionClientEventArgs
                     {
                         ConnectionEventType = ConnectionEventType.Disconnect,
                         Connection = _connection
@@ -95,12 +95,12 @@ namespace Tcp.NET.Client
 
                     _connection = null;
 
-                    return Task.FromResult(true);
+                    return true;
                 }
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorClientEventArgs
+                await FireEventAsync(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,
@@ -108,10 +108,10 @@ namespace Tcp.NET.Client
                 });
             }
 
-            return Task.FromResult(false);
+            return false;
         }
-        
-        private void CreateConnection()
+
+        protected virtual void CreateConnection()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
@@ -132,7 +132,7 @@ namespace Tcp.NET.Client
                 Writer = writer
             };
         }
-        private void CreateSSLConnection()
+        protected virtual void CreateSSLConnection()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
@@ -157,7 +157,7 @@ namespace Tcp.NET.Client
                 Writer = writer
             };
         }
-        private async Task StartListeningForMessagesAsync()
+        protected virtual async Task StartListeningForMessagesAsync()
         {
             while (_isClientRunning &&
                 _connection != null)
@@ -177,7 +177,7 @@ namespace Tcp.NET.Client
                         {
                             var packet = MessageReceived(message);
 
-                            FireEvent(this, new TcpMessageClientEventArgs
+                            await FireEventAsync(this, new TcpMessageClientEventArgs
                             {
                                 MessageEventType = MessageEventType.Receive,
                                 Message = packet.Data,
@@ -189,7 +189,7 @@ namespace Tcp.NET.Client
                 }
                 catch (Exception ex)
                 {
-                    FireEvent(this, new TcpErrorClientEventArgs
+                    await FireEventAsync(this, new TcpErrorClientEventArgs
                     {
                         Connection = _connection,
                         Exception = ex,
@@ -238,7 +238,7 @@ namespace Tcp.NET.Client
                     var message = JsonConvert.SerializeObject(packet);
                     await _connection.Writer.WriteLineAsync(message);
 
-                    FireEvent(this, new TcpMessageClientEventArgs
+                    await FireEventAsync(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
@@ -250,7 +250,7 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorClientEventArgs
+                await FireEventAsync(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,
@@ -279,7 +279,7 @@ namespace Tcp.NET.Client
                 {
                     await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
 
-                    FireEvent(this, new TcpMessageClientEventArgs
+                    await FireEventAsync(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
@@ -295,7 +295,7 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorClientEventArgs
+                await FireEventAsync(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,

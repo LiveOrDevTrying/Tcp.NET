@@ -42,7 +42,6 @@ namespace Tcp.NET.Server
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
             _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
         }
         public TcpNETServer(IParamsTcpServer parameters,
             byte[] certificate,
@@ -57,7 +56,16 @@ namespace Tcp.NET.Server
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
             _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
+        }
+
+        public virtual async Task StartAsync()
+        {
+            await _handler.StartAsync();
+        }
+
+        public virtual async Task StopAsync()
+        {
+            await _handler.StopAsync();
         }
 
         public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
@@ -70,7 +78,7 @@ namespace Tcp.NET.Server
                 {
                     await _handler.SendAsync(packet, connection);
 
-                    FireEvent(this, new TcpMessageServerEventArgs
+                    await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
                         Message = JsonConvert.SerializeObject(packet),
                         MessageEventType = MessageEventType.Sent,
@@ -83,7 +91,7 @@ namespace Tcp.NET.Server
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorServerEventArgs
+                await FireEventAsync(this, new TcpErrorServerEventArgs
                 {
                     Connection = connection,
                     Exception = ex,
@@ -111,7 +119,7 @@ namespace Tcp.NET.Server
                 {
                     await _handler.SendRawAsync(message, connection);
 
-                    FireEvent(this, new TcpMessageServerEventArgs
+                    await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
                         Message = message,
                         MessageEventType = MessageEventType.Sent,
@@ -128,7 +136,7 @@ namespace Tcp.NET.Server
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorServerEventArgs
+                await FireEventAsync(this, new TcpErrorServerEventArgs
                 {
                     Connection = connection,
                     Exception = ex,
@@ -139,12 +147,12 @@ namespace Tcp.NET.Server
             return false;
         }
 
-        public virtual bool DisconnectConnection(IConnectionServer connection)
+        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
         {
-            return _handler.DisconnectConnection(connection);
+            return await _handler.DisconnectConnectionAsync(connection);
         }
 
-        private Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
+        protected virtual async Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
         {
             switch (args.ConnectionEventType)
             {
@@ -160,11 +168,9 @@ namespace Tcp.NET.Server
                     break;
             }
 
-            FireEvent(this, args);
-
-            return Task.CompletedTask;
+            await FireEventAsync(this, args);
         }
-        private Task OnServerEvent(object sender, ServerEventArgs args)
+        protected virtual async Task OnServerEvent(object sender, ServerEventArgs args)
         {
             switch (args.ServerEventType)
             {
@@ -175,7 +181,7 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    FireEvent(sender, args);
+                    await FireEventAsync(sender, args);
 
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
                     break;
@@ -186,26 +192,24 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    FireEvent(sender, args);
+                    await StopAsync();
+
+                    await FireEventAsync(sender, args);
 
                     Thread.Sleep(5000);
-                    _handler.Start();
+                    await StartAsync();
                     break;
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
-        private Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
+        protected virtual async Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
         {
-            FireEvent(sender, args);
-            return Task.CompletedTask;
+            await FireEventAsync(sender, args);
         }
-        private Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
+        protected virtual async Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
         {
-            FireEvent(this, args);
-            return Task.CompletedTask;
+            await FireEventAsync(this, args);
         }
         private void OnTimerPingTick(object state)
         {
@@ -223,7 +227,7 @@ namespace Tcp.NET.Server
                             {
                                 // Already been pinged, no response, disconnect
                                 await SendToConnectionRawAsync("No ping response - disconnected.", connection);
-                                DisconnectConnection(connection);
+                                await DisconnectConnectionAsync(connection);
                             }
                             else
                             {
@@ -233,7 +237,7 @@ namespace Tcp.NET.Server
                         }
                         catch (Exception ex)
                         {
-                            FireEvent(this, new TcpErrorServerEventArgs
+                            await FireEventAsync(this, new TcpErrorServerEventArgs
                             {
                                 Connection = connection,
                                 Exception = ex,
@@ -247,16 +251,16 @@ namespace Tcp.NET.Server
             }
         }
 
-        private void FireEvent(object sender, ServerEventArgs args)
+        protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
         {
-            _serverEvent?.Invoke(sender, args);
+            await _serverEvent?.Invoke(sender, args);
         }
 
         public override void Dispose()
         {
             foreach (var connection in _connectionManager.GetAllConnections())
             {
-                DisconnectConnection(connection);
+                DisconnectConnectionAsync(connection).Wait();
             }
 
             if (_handler != null)

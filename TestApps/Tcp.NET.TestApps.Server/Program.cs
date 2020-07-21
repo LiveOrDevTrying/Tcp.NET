@@ -14,7 +14,7 @@ namespace Tcp.NET.TestApps.Server
         //private static ITcpNETServer _authServer;
         private static int _temp;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth
             {
@@ -26,7 +26,7 @@ namespace Tcp.NET.TestApps.Server
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
-
+            await _authServer.StartAsync();
             //_authServer = new TcpNETServer(new ParamsTcpServer
             //{
             //    ConnectionSuccessString = "Connected Successfully",

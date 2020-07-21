@@ -17,7 +17,7 @@ namespace Tcp.NET.Server
         Task<bool> SendToConnectionAsync<T>(T packet, IConnectionServer connection) where T : IPacket;
         Task<bool> SendToConnectionAsync(string message, IConnectionServer connection);
         Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection);
-        bool DisconnectConnection(IConnectionServer connection);
+        Task<bool> DisconnectConnectionAsync(IConnectionServer connection);
 
         IConnectionServer[] Connections { get; }
 

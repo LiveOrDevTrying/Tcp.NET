@@ -45,7 +45,6 @@ namespace Tcp.NET.Server
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
             _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
         }
         public TcpNETServerAuth(IParamsTcpServerAuth parameters,
             IUserService<T> userService,
@@ -62,8 +61,18 @@ namespace Tcp.NET.Server
             _handler.MessageEvent += OnMessageEventAsync;
             _handler.ErrorEvent += OnErrorEvent;
             _handler.ServerEvent += OnServerEvent;
-            _handler.Start();
         }
+
+        public virtual async Task StartAsync()
+        {
+            await _handler.StartAsync();
+        }
+
+        public virtual async Task StopAsync()
+        {
+            await _handler.StopAsync();
+        }
+
         public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket
         {
             if (_handler.IsServerRunning)
@@ -173,7 +182,7 @@ namespace Tcp.NET.Server
                     {
                         await _handler.SendAsync(packet, connection);
 
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
                             Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
@@ -185,7 +194,7 @@ namespace Tcp.NET.Server
                     }
                     catch (Exception ex)
                     {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                         {
                             Connection = connection,
                             Exception = ex,
@@ -193,7 +202,7 @@ namespace Tcp.NET.Server
                             UserId = default
                         });
 
-                        DisconnectConnection(connection);
+                        await DisconnectConnectionAsync(connection);
 
                         return false;
                     }
@@ -208,7 +217,7 @@ namespace Tcp.NET.Server
                         {
                             await _handler.SendAsync(packet, connection);
 
-                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
                                 Message = JsonConvert.SerializeObject(packet),
                                 MessageEventType = MessageEventType.Sent,
@@ -221,7 +230,7 @@ namespace Tcp.NET.Server
                         }
                         catch (Exception ex)
                         {
-                            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                             {
                                 Connection = connection,
                                 Exception = ex,
@@ -229,7 +238,7 @@ namespace Tcp.NET.Server
                                 UserId = identity.Id
                             });
 
-                            DisconnectConnection(connection);
+                            await DisconnectConnectionAsync(connection);
 
                             return false;
                         }
@@ -258,7 +267,7 @@ namespace Tcp.NET.Server
                     {
                         await _handler.SendRawAsync(message, connection);
 
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
                             Message = message,
                             MessageEventType = MessageEventType.Sent,
@@ -275,7 +284,7 @@ namespace Tcp.NET.Server
                     }
                     catch (Exception ex)
                     {
-                        FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                         {
                             Connection = connection,
                             Exception = ex,
@@ -283,7 +292,7 @@ namespace Tcp.NET.Server
                             UserId = default
                         });
 
-                        DisconnectConnection(connection);
+                        await DisconnectConnectionAsync(connection);
 
                         return false;
                     }
@@ -298,7 +307,7 @@ namespace Tcp.NET.Server
                         {
                             await _handler.SendRawAsync(message, connection);
 
-                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
                                 Message = message,
                                 Packet = new Packet
@@ -315,7 +324,7 @@ namespace Tcp.NET.Server
                         }
                         catch (Exception ex)
                         {
-                            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                             {
                                 Connection = connection,
                                 Exception = ex,
@@ -323,7 +332,7 @@ namespace Tcp.NET.Server
                                 UserId = identity.Id
                             });
 
-                            DisconnectConnection(connection);
+                            await DisconnectConnectionAsync(connection);
                         }
                     }
                 }
@@ -331,12 +340,12 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual bool DisconnectConnection(IConnectionServer connection)
+        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
         {
-            return _handler.DisconnectConnection(connection);
+            return await _handler.DisconnectConnectionAsync(connection);
         }
 
-        private Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
+        protected virtual async Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
         {
             switch (args.ConnectionEventType)
             {
@@ -351,7 +360,7 @@ namespace Tcp.NET.Server
                     {
                         _connectionManager.RemoveConnection(args.Connection);
 
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                         {
                             Connection = args.Connection,
                             ConnectionEventType = args.ConnectionEventType,
@@ -365,7 +374,7 @@ namespace Tcp.NET.Server
                         var identity = _connectionManager.GetIdentity(args.Connection);
                         if (identity != null)
                         {
-                            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                             {
                                 Connection = args.Connection,
                                 ConnectionEventType = args.ConnectionEventType,
@@ -375,7 +384,7 @@ namespace Tcp.NET.Server
                     }
                     break;
                 case ConnectionEventType.Connecting:
-                    FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                    await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                     {
                         ConnectionEventType = args.ConnectionEventType,
                         Connection = args.Connection,
@@ -384,10 +393,8 @@ namespace Tcp.NET.Server
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
-        private async Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
+        protected virtual async Task OnMessageEventAsync(object sender, TcpMessageServerEventArgs args)
         {
             switch (args.MessageEventType)
             {
@@ -404,7 +411,7 @@ namespace Tcp.NET.Server
 
                         if (identity != null)
                         {
-                            FireEvent(this, new TcpMessageServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
                                 Message = args.Message,
                                 MessageEventType = MessageEventType.Receive,
@@ -419,7 +426,7 @@ namespace Tcp.NET.Server
                     break;
             }
         }
-        private Task OnServerEvent(object sender, ServerEventArgs args)
+        protected virtual async Task OnServerEvent(object sender, ServerEventArgs args)
         {
             switch (args.ServerEventType)
             {
@@ -430,7 +437,7 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    FireEvent(this, args);
+                    await FireEventAsync(this, args);
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
                     break;
                 case ServerEventType.Stop:
@@ -440,17 +447,18 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    FireEvent(this, args);
+                    await StopAsync();
+
+                    await FireEventAsync(this, args);
+
                     Thread.Sleep(5000);
-                    _handler.Start();
+                    await _handler.StartAsync();
                     break;
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
-        private Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
+        protected virtual async Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
         {
             if (_connectionManager.IsConnectionAuthorized(args.Connection))
             {
@@ -459,7 +467,7 @@ namespace Tcp.NET.Server
 
                 if (identity != null)
                 {
-                    FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                    await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                     {
                         Exception = args.Exception,
                         Message = args.Message,
@@ -468,7 +476,6 @@ namespace Tcp.NET.Server
                     });
                 }
             }
-            return Task.CompletedTask;
         }
         private void OnTimerPingTick(object state)
         {
@@ -488,7 +495,7 @@ namespace Tcp.NET.Server
                                 {
                                     // Already been pinged, no response, disconnect
                                     await SendToConnectionRawAsync("No ping response - disconnected.", connection);
-                                    DisconnectConnection(connection);
+                                    await DisconnectConnectionAsync(connection);
                                 }
                                 else
                                 {
@@ -498,7 +505,7 @@ namespace Tcp.NET.Server
                             }
                             catch (Exception ex)
                             {
-                                FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                                await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                                 {
                                     Connection = connection,
                                     Exception = ex,
@@ -527,9 +534,9 @@ namespace Tcp.NET.Server
                         !args.Message.ToLower().StartsWith("oauth:"))
                     {
                         await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
-                        DisconnectConnection(args.Connection);
+                        await DisconnectConnectionAsync(args.Connection);
 
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                         {
                             ConnectionEventType = ConnectionEventType.Disconnect,
                             Connection = args.Connection
@@ -546,9 +553,9 @@ namespace Tcp.NET.Server
                         if (userId == null)
                         {
                             await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
-                            DisconnectConnection(args.Connection);
+                            await DisconnectConnectionAsync(args.Connection);
 
-                            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                            await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                             {
                                 ConnectionEventType = ConnectionEventType.Disconnect,
                                 Connection = args.Connection
@@ -560,7 +567,7 @@ namespace Tcp.NET.Server
 
                         await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection);
 
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+                        await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                         {
                             ConnectionEventType = ConnectionEventType.Connected,
                             UserId = identity.Id,
@@ -572,7 +579,7 @@ namespace Tcp.NET.Server
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
                 {
                     Connection = args.Connection,
                     Exception = ex,
@@ -584,12 +591,12 @@ namespace Tcp.NET.Server
             try
             {
                 await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
-                DisconnectConnection(args.Connection);
+                await DisconnectConnectionAsync(args.Connection);
             }
             catch
             { }
 
-            FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
+            await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
             {
                 ConnectionEventType = ConnectionEventType.Disconnect,
                 Connection = args.Connection,
@@ -597,9 +604,9 @@ namespace Tcp.NET.Server
             return false;
         }
         
-        private void FireEvent(object sender, ServerEventArgs args)
+        protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
         {
-            _serverEvent?.Invoke(sender, args);
+            await _serverEvent?.Invoke(sender, args);
         }
 
         public override void Dispose()
@@ -613,7 +620,7 @@ namespace Tcp.NET.Server
             {
                 foreach (var connection in item.Connections.ToList())
                 {
-                    DisconnectConnection(connection);
+                    DisconnectConnectionAsync(connection).Wait();
                 }
             }
 
