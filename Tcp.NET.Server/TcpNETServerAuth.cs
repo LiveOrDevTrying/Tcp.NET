@@ -616,14 +616,24 @@ namespace Tcp.NET.Server
         {
             foreach (var item in _connectionManager.GetAllConnections())
             {
-                _connectionManager.RemoveConnection(item);
+                try
+                {
+                    _connectionManager.RemoveConnection(item);
+                }
+                catch
+                { }
             }
 
             foreach (var item in _connectionManager.GetAllIdentities())
             {
                 foreach (var connection in item.Connections.ToList())
                 {
-                    DisconnectConnectionAsync(connection).Wait();
+                    try
+                    {
+                        DisconnectConnectionAsync(connection).Wait();
+                    }
+                    catch
+                    { }
                 }
             }
 
@@ -633,6 +643,8 @@ namespace Tcp.NET.Server
                 _handler.MessageEvent -= OnMessageEventAsync;
                 _handler.ErrorEvent -= OnErrorEvent;
                 _handler.ServerEvent -= OnServerEvent;
+
+
                 _handler.Dispose();
             }
 
