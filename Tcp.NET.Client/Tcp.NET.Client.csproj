@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
-    <Version>1.4.1</Version>
+    <Version>1.4.2</Version>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
   </PropertyGroup>
 
@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Tcp.NET.Core" Version="1.4.1" />
+    <PackageReference Include="Tcp.NET.Core" Version="1.4.2" />
   </ItemGroup>
 
 </Project>
