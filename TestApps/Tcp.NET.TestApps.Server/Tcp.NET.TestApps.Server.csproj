@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET" Version="1.4.0" />
+    <PackageReference Include="Tcp.NET" Version="1.4.2" />
   </ItemGroup>
 
 </Project>

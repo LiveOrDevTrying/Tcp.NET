@@ -18,7 +18,7 @@
       <group targetFramework="netcoreapp2.1">
         <dependency id="Microsoft.NETCore.App" version="2.1" />
         <dependency id="Tcp.NET.Client" version="1.4.2" />
-        <dependency id="Tcp.NET.Server" version="1.4.3" />
+        <dependency id="Tcp.NET.Server" version="1.4.4" />
       </group>
     </dependencies>
   </metadata>
