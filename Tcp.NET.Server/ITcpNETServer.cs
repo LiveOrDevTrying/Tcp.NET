@@ -14,6 +14,9 @@ namespace Tcp.NET.Server
         bool IsServerRunning { get; }
         TcpListener Server { get; }
 
+        Task StartAsync();
+        Task StopAsync();
+
         Task<bool> SendToConnectionAsync<T>(T packet, IConnectionServer connection) where T : IPacket;
         Task<bool> SendToConnectionAsync(string message, IConnectionServer connection);
         Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection);

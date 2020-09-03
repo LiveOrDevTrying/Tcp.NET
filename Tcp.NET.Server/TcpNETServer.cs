@@ -62,7 +62,6 @@ namespace Tcp.NET.Server
         {
             await _handler.StartAsync();
         }
-
         public virtual async Task StopAsync()
         {
             await _handler.StopAsync();
