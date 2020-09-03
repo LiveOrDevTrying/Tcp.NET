@@ -13,7 +13,7 @@
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
     <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.4.3</Version>
+    <Version>1.4.5</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <PackageIcon>Logo.png</PackageIcon>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
@@ -27,8 +27,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET.Client" Version="1.4.2" />
-    <PackageReference Include="Tcp.NET.Server" Version="1.4.5" />
+    <PackageReference Include="Tcp.NET.Client" Version="1.4.3" />
+    <PackageReference Include="Tcp.NET.Server" Version="1.4.7" />
   </ItemGroup>
 
 </Project>

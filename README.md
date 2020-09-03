@@ -81,7 +81,7 @@ To connect to a Tcp Server, invoke the function `ConnectAsync()`.
 
         await client.ConnectAsync());
         
-*Note: Connection parameters were input with the constructors of **ITcpNETClient**.*
+*Note: Connection parameters were provided in the constructor for **ITcpNETClient**.*
 
 #### OAuth Token
 If you are using **TcpNETClient**, an optional parameters is included in the constructor for your OAuth Token - for more information, see **[ITcpNETClient](#itcpnetclient)**. Upon a successful connection to the server, the **OAuth Token** you specify will automatically be sent to the server properly formatted. However, if you are creating a manual Tcp connection to an instance of **TcpNETServerAuth**, you must send as the first message to the server a raw message containing your **OAuth Token**. You must add **oauth:** as the prefix for your token. This could look similar to the following:
@@ -213,7 +213,7 @@ Once installed, we can create 2 different classes of Tcp Servers.
 * **[`ITcpNETServerAuth<T>`](#itcpnetserverauth<T>)**
 ***
 ### ITcpNETServer
-We will now create an instance of **ITcpNETServer** with the included implementation **TcpNETServer**. The included implementation includes 3 constructors (for SSL or non-SSL servers):
+We will now create an instance of **ITcpNETServer** with the included implementation **TcpNETServer**. The included implementation includes 2 constructors (for SSL or non-SSL servers):
 
 * `TcpNETServer(IParamsTcpServer parameters, TcpHandler handler = null)`
     * The constructor for non-SSL Tcp Servers. Example instantiation is below:
@@ -225,7 +225,7 @@ We will now create an instance of **ITcpNETServer** with the included implementa
                 ConnectionSuccessString = "Connected Successfully",
             });
 
-* `TcpNETServer(IParamsTcpServer parameters, X509Certificate certificate, TcpHandler handler = null)`
+* `TcpNETServer(IParamsTcpServer parameters, byte[] certificate, string certificatePasssword, TcpHandler handler = null)`
     * The constructor for a SSL Tcp Server where the SSL certificate is manually specified. Example instantiation is below:
 
             // Get the SSL certificate
@@ -247,11 +247,8 @@ The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not sp
     * **EndOfLineCharacters** - *string* - Tcp does not automatically include line termination symbols, however it has become common practice in many applications that the end-of-line symbol is **"\r\n"** which represents an Enter key for many operating systems. We recommend you use **"\r\n"** as the line termination symbol.
     * **ConnectionSuccessString** - *string* - The string that will be sent to a newly connected client.
 * **TcpHandler** - *Optional* - If you want to deserialize an extended **IPacket** from a client, you can extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended IPacket](#receiving-an-extended-ipacket)** below.
-* **X509Certificate** - *Optional* - This is an object that contains the valid SSL certificate to bind to the server. See above for one implementation.
-* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is [connect.tcp.net](#), and the SSL certificate must be issued to [connect.tcp.net](#).
-* **StoreLocation** - *Optional - enum* - Location the certificate is in the Windows Certificate Store. Potential options are:
-    * **StoreLocation.CurrentUser** - *0* - The certificate is registered to the current user
-    * **StoreLocation.LocalMachine** - *1* - The certificate is registered to the local system
+* **Certificate** - *Optional* - *byte[]*- This is a byte array a the valid SSL certificate to bind to the server (recommended a .pfx version of the cert). This can be acquired with **File.ReadAllBytes(pathToSertificate)**. See above for a sample implementation. The certificate MUST match the domain where the TCP Server is hosted / can be accessed,
+* **CertificatePassword** - *Optional but Required if Certificate is provided* - *string*. The password associated with the exported certificate specified in the previous parameter.
 
 #### Events
 4 events are exposed on the **ITcpNETServer** interface: `MessageEvent`, `ConnectionEvent`, `ErrorEvent`, and `ServerEvent`. These event signatures are below:
@@ -271,12 +268,12 @@ The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not sp
     * Invoked when the Tcp server starts or stops
 
 #### Starting the Tcp Server
-There is no action to start the [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) - once instantiated, the server will listen on the specified port until disposed.
+To start the [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), call the `Task StartAsync()` method to instruct the server to begin listening for messages. Likewise, you can stop the server by calling the `Task StopAsync()` method.
 
 #### SSL
-To enable SSL for [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), use one of the two provided SSL server constructors and manually specify the SSL certificate or direct the parameters to your Windows Certificate Store. In order to allow successful SSL connections, you must have a valid, non-expired SSL certificate. There are many sources for SSL certificates and some of them are opensource community driven - we recommend [Let's Encrypt](https://letsencrypt.org/).
+To enable SSL for [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), use the provided SSL server constructor and manually specify the SSL certificate and password. **The SSL Certificate MUST match the domain where the TCP Server is hosted / can be accessed or clients will not able to connect to the TCP Server.** In order to allow successful SSL connections, you must have a valid, non-expired SSL certificate. There are many sources for SSL certificates and some of them are opensource community driven - we recommend [Let's Encrypt](https://letsencrypt.org/).
 
-*Note: A self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate.*
+*Note: A self-signed certificate or one from a non-trusted certified authority (CA) is not considered a valid SSL certificate.*
 
 #### Send a Message to a Client
 3 functions are exposed to send messages to clients: 
@@ -365,7 +362,7 @@ A raw message containing **'ping'** is sent automatically every 120 seconds to e
 To disconnect from the server, invoke the function `DisconnectConnection(IConnectionServer connection)`. **IConnectionServer** is a connected client to the server. These are exposed in the `ConnectionEvent` or can be retrieved from the **Connections** inside of **ITcpNETServer**.
 
 #### Stop the Server and Disposal
-To stop the server, call the `Dispose()` method to stop listening and free all allocated memory and resources.
+To stop the server, call the 'StartAsync() method if the server may be used again, or call the `Dispose()` method when the server is to be destroyed to stop listening and free all allocated memory and resources.
 
 ***
 ### ITcpNETServerAuth
@@ -385,17 +382,14 @@ The second Tcp Server available is slightly more complex but includes authentica
                 ConnectionUnauthorizedString = "Connection not authorized",
             }, new MockUserService());
 
-* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, X509Certificate certificate, TcpHandler handler = null))`
+* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, byte[] certificate, string certificatePassword, TcpHandler handler = null))`
     * The constructor for a SSL Tcp Server where the SSL certificate is manually specified. Example instantiation is below:
 
             public class MockUserService : IUserService<long> 
             { }
 
-            // Get a path to the SSL certificate
-            var filename = Path.Combine(Environment.WebRootPath, "cert.pfx");
-        
-            // Instantiate the cert and provide the password
-            var cert = new X509Certificate2(filename, "myCertPassword");
+            // Get the SSL Certificate
+            var certificate = File.ReadAllBytes("cert.pfx");
         
             // Start the server
             ITcpNETServerAuth<long> server = new ITcpNETServerAuth<long>(new ParamsTcpServerAuth 
@@ -404,21 +398,7 @@ The second Tcp Server available is slightly more complex but includes authentica
                 EndOfLineCharacters = "\r\n",
                 ConnectionSuccessString = "Connected Successfully",
                 ConnectionUnauthorizedString = "Connection not authorized",
-            }, new MockUserService(), cert);
-
-* `TcpNETServerAuth<T>(IParamsTcpServerAuth parameters, IUserService<T> userService, string certificateIssuedTo, StoreLocation storeLocation, TcpHandler handler = null))`
-    * The constructor for a SSL Tcp Server where the SSL certificate is registered to and obtained from the Windows Certificate Store. Example instantiation is below:
-            
-            public class MockUserService : IUserService<long> 
-            { }
-
-            ITcpNETServerAuth<long> server = new TcpNETServerAuth<long>(new ParamsTcpServerAuth
-            {
-                Port = 8989,
-                EndOfLineCharacters = "\r\n",
-                ConnectionSuccessString = "Connected Successfully",
-                ConnectionUnauthorizedString = "Connection not authorized",
-            }, new MockUserService(), "connect.tcp.net", StoreLocation.LocalMachine);
+            }, new MockUserService(), certificate, "certificatePassword");
 
 The [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the server is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's IP).
 
@@ -426,14 +406,12 @@ The [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Serve
 * **IParamsTcpServerAuth** - *Required*. [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) includes a default struct implementation called **ParamsTcpServerAuth** which contains the following connection detail data:
     * **Port** - *int* - The port where the Tcp Server will listen (e.g. 6660, 7210, 6483).
     * **EndOfLineCharacters** - *string* - Tcp does not automatically include line termination symbols, however it has become common practice in many applications that the end-of-line symbol is **"\r\n"** which represents an Enter key for many operating systems. We recommend you use **"\r\n"** as the line termination symbol.
-    * **ConnectionUnauthorizedString** - *string* - The string that will be sent to a connected client when they fail authentication.
+    * **ConnectionSuccessString** - *string* - The string that will be sent to a newly connected client.
+* **ConnectionUnauthorizedString** - *string* - The string that will be sent to a connected client when they fail authentication.
 * **`IUserService<T>`** - *Required* - This is an interface for a UserService class that will need to be implemented. This interface specifies 1 function, `GetIdAsync(string token)`, which will be invoked when the server receives an **OAuth Token** from a new connection. For more information regarding the User Service class, please see **[`IUserService<T>`](#userservice<T>)** below.
 * **TcpHandler** - *Optional*. This is an object that can be passed in optionally. If you want to deserialize an extended **IPacket** from a client, you would extend **TcpHandler** in a new class and override `MessageReceived(string message, IConnectionServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended IPacket](#receiving-an-extended-ipacket)** below.
-* **X509Certificate** - *Optional* - This is an object that contains the valid SSL certificate to bind to the server. See above for one implementation.
-* **CertificateIssuedTo** - *Optional - string*. The certificate's issued hostname - for example, the Uri in the above examples is [connect.tcp.net](#), and the SSL certificate must be issued to [connect.tcp.net](#).
-* **StoreLocation** - *Optional - enum* - Location the certificate is in the Windows Certificate Store. Potential options are:
-    * **StoreLocation.CurrentUser** - *0* - The certificate is registered to the current user
-    * **StoreLocation.LocalMachine** - *1* - The certificate is registered to the local system
+* **Certificate** - *Optional* - *byte[]*- This is a byte array a the valid SSL certificate to bind to the server (recommended a .pfx version of the cert). This can be acquired with **File.ReadAllBytes(pathToSertificate)**. See above for a sample implementation. The certificate MUST match the domain where the TCP Server is hosted / can be accessed,
+* **CertificatePassword** - *Optional but Required if Certificate is provided* - *string*. The password associated with the exported certificate specified in the previous parameter.
 
 #### `IUserService<T>`
 This is an interface contained in [PHS.Networking.Server](https://www.nuget.org/packages/PHS.Networking.Server/). When creating a **`TcpNETServerAuth<T>`**, this inteface **`IUserService<T>`** will need to be instantiated into a concrete class. A default implementation is *not* included with [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net). An example implementation is shown below:
@@ -480,10 +458,12 @@ Because you are responsible for filling the logic in `GetIdAsync(string oauthTok
     * Invoked when the Tcp server starts or stops
 
 #### Start the Tcp Authentication Server
-There is no action to start the Tcp Server - once instantiated, the server will listen on the specified port until disposed.
+To start the [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), call the `Task StartAsync()` method to instruct the server to begin listening for messages. Likewise, you can stop the server by calling the `Task StopAsync()` method.
 
 #### SSL
-To enable SSL for [Tcp.NET Authentication Server](https://www.nuget.org/packages/Tcp.NET.Server/), use one of the two provided SSL server constructors and manually specify the SSL certificate or direct the parameters to your Windows Certificate store. In order to allow successful connections, the server must have a valid, non-expired SSL certificate. Please note that a self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate. There are many sources for SSL certificates - we recommend [Let's Encrypt](https://letsencrypt.org/).
+To enable SSL for [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), use the provided SSL server constructor and manually specify the SSL certificate and password. **The SSL Certificate MUST match the domain where the TCP Server is hosted / can be accessed or clients will not able to connect to the TCP Server.** In order to allow successful SSL connections, you must have a valid, non-expired SSL certificate. There are many sources for SSL certificates and some of them are opensource community driven - we recommend [Let's Encrypt](https://letsencrypt.org/).
+
+*Note: A self-signed certificate or one from a non-trusted certified authority (CA) is not considered a valid SSL certificate.*
 
 #### Send a Message to a Client
 To send messages to a client, 11 functions are exposed:
@@ -591,10 +571,10 @@ To disconnect from the server, invoke the function `DisconnectConnection(IConnec
 **IConnectionServer** is a connected client to the server. These are exposed in the `ConnectionEvent` or can be retrieved from **UserConnnections** then **Connections** inside of **`ITcpNETServeAuth<T>`**. If a logged in User disconnects from all connections, that user is automatically removed from **UserConnections**.
 
 #### Stop the Server and Disposal
-To stop the server, call the `Dispose()` method to stop listening and free all allocated memory and resources.
+To stop the server, call the 'StartAsync() method if the server may be used again, or call the `Dispose()` method when the server is to be destroyed to stop listening and free all allocated memory and resources.
 
 ***
 
 ### Additional Information
-[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [LiveOrDevTrying](https://www.liveordevtrying.com) and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [Allie.Chat](https://allie.chat), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), and [The Monitaur](https://www.themonitaur.com).  
+[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [LiveOrDevTrying](https://www.liveordevtrying.com) and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [Allie.Chat](https://allie.chat), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), [The Monitaur](https://www.themonitaur.com) and [Gem Wars](https://www.gemwarsgame.com) *(currently in development)*.  
 ![Pixel Horror Studios Logo](https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/PHS.png)

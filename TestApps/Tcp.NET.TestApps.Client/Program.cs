@@ -10,41 +10,28 @@ namespace Tcp.NET.TestApps.Client
 {
     class Program
     {
-        private static List<ITcpNETClient> _clients =
-            new List<ITcpNETClient>();
-        private static int _temp;
+        private static ITcpNETClient _client;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            for (int i = 0; i < 10; i++)
+            _client = new TcpNETClient(new ParamsTcpClient
             {
-                Task.Run(async () =>
-                {
-                    for (int k = 0; k < 1000; k++)
-                    {
-                        using (var client = new TcpNETClient(new ParamsTcpClient
-                        {
-                            EndOfLineCharacters = "\r\n",
-                            Port = 8989,
-                            Uri = "localhost",
-                            IsSSL = false,
-                        }, oauthToken: "faketoken"))
-                        {
-                            client.MessageEvent += OnMessageEvent;
-                            client.ConnectionEvent += OnConnectionEvent;
-                            client.ErrorEvent += OnErrorEvent;
-                            await client.ConnectAsync();
-                            await client.SendToServerRawAsync("From client iteration: " + ++_temp);
-                            _clients.Add(client);
-                            Console.WriteLine("Iteration: " + _temp);
-                        }
-                    };
-                });
-            }
+                EndOfLineCharacters = "\r\n",
+                Port = 8989,
+                Uri = "localhost",
+                IsSSL = false,
+            }, oauthToken: "faketoken");
+
+            _client.MessageEvent += OnMessageEvent;
+            _client.ConnectionEvent += OnConnectionEvent;
+            _client.ErrorEvent += OnErrorEvent;
+            await _client.ConnectAsync();
+            await _client.SendToServerRawAsync("Hello world");
 
             while (true)
             {
-                Console.ReadLine();
+                var line = Console.ReadLine();
+                await _client.SendToServerAsync(line);
             }
         }
 
@@ -55,6 +42,7 @@ namespace Tcp.NET.TestApps.Client
 
         private static Task OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
+            Console.WriteLine(args.ConnectionEventType.ToString());
             return Task.CompletedTask;
         }
 

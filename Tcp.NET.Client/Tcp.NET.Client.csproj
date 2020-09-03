@@ -13,7 +13,7 @@
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
     <RepositoryType>Github Public</RepositoryType>
     <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
   </PropertyGroup>
 
