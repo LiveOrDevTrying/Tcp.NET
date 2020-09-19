@@ -180,7 +180,10 @@ namespace Tcp.NET.Server
                 {
                     try
                     {
-                        await _handler.SendAsync(packet, connection);
+                        if (!await _handler.SendAsync(packet, connection))
+                        {
+                            return false;
+                        }
 
                         await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
@@ -207,15 +210,17 @@ namespace Tcp.NET.Server
                         return false;
                     }
                 }
-
-                if (_connectionManager.IsConnectionAuthorized(connection))
+                else if (_connectionManager.IsConnectionAuthorized(connection))
                 {
                     var identity = _connectionManager.GetAllIdentities().FirstOrDefault(s => s.Connections.Any(t => t.ConnectionId == connection.ConnectionId));
                     if (identity != null)
                     {
                         try
                         {
-                            await _handler.SendAsync(packet, connection);
+                            if (!await _handler.SendAsync(packet, connection))
+                            {
+                                return false;
+                            }
 
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
@@ -265,7 +270,10 @@ namespace Tcp.NET.Server
                 {
                     try
                     {
-                        await _handler.SendRawAsync(message, connection);
+                        if (!await _handler.SendRawAsync(message, connection))
+                        {
+                            return false;
+                        }
 
                         await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
@@ -305,7 +313,10 @@ namespace Tcp.NET.Server
                     {
                         try
                         {
-                            await _handler.SendRawAsync(message, connection);
+                            if (!await _handler.SendRawAsync(message, connection))
+                            {
+                                return false;
+                            }
 
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {

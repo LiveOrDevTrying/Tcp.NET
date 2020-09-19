@@ -75,7 +75,10 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    await _handler.SendAsync(packet, connection);
+                    if (!await _handler.SendAsync(packet, connection))
+                    {
+                        return false;
+                    }
 
                     await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
@@ -116,7 +119,10 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    await _handler.SendRawAsync(message, connection);
+                    if (!await _handler.SendRawAsync(message, connection))
+                    {
+                        return false;
+                    }
 
                     await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
