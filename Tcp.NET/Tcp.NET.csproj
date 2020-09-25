@@ -26,4 +26,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Tcp.NET.Client" Version="1.*" />
+    <PackageReference Include="Tcp.NET.Server" Version="1.*" />
+  </ItemGroup>
+
 </Project>

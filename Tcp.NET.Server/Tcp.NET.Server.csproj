@@ -27,11 +27,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\PHS\Public\PHS.Networking.Server\PHS.Networking.Server.csproj" />
-    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
+    <PackageReference Include="PHS.Networking.Server" Version="1.*" />
+    <PackageReference Include="Tcp.NET.Core" Version="1.*" />
   </ItemGroup>
 
 </Project>

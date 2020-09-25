@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\Tcp.NET.Server\Tcp.NET.Server.csproj" />
+    <PackageReference Include="Tcp.NET" Version="1.*" />
   </ItemGroup>
 
 </Project>
