@@ -24,11 +24,16 @@ namespace Tcp.NET.Server
         protected readonly TcpHandler _handler;
         protected readonly IUserService<T> _userService;
         protected readonly IParamsTcpServerAuth _parameters;
-        private readonly TcpConnectionManagerAuth<T> _connectionManager;
-        private Timer _timerPing;
-        private volatile bool _isPingRunning;
-
+        
+        protected Timer _timerCheckAlive;
+        protected volatile bool _isTimerCheckAliveRunning;
+        protected Timer _timerPing;
+        protected volatile bool _isPingRunning;
+        
         private const int PING_INTERVAL_SEC = 120;
+        private const float KEEP_ALIVE_INTERVAL_SEC = 0.5f;
+
+        private readonly TcpConnectionManagerAuth<T> _connectionManager;
 
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
@@ -67,7 +72,6 @@ namespace Tcp.NET.Server
         {
             await _handler.StartAsync();
         }
-
         public virtual async Task StopAsync()
         {
             await _handler.StopAsync();
@@ -380,9 +384,9 @@ namespace Tcp.NET.Server
 
                     if (_connectionManager.IsConnectionAuthorized(args.Connection))
                     {
+                        var identity = _connectionManager.GetIdentity(args.Connection);
                         _connectionManager.RemoveUserConnection(args.Connection);
 
-                        var identity = _connectionManager.GetIdentity(args.Connection);
                         if (identity != null)
                         {
                             await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
@@ -450,12 +454,19 @@ namespace Tcp.NET.Server
 
                     await FireEventAsync(this, args);
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
+                    _timerCheckAlive = new Timer(TimerCallback, null, (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000), (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000));
                     break;
                 case ServerEventType.Stop:
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
+                    }
+
+                    if (_timerCheckAlive != null)
+                    {
+                        _timerCheckAlive.Dispose();
+                        _timerCheckAlive = null;
                     }
 
                     await StopAsync();
@@ -474,7 +485,6 @@ namespace Tcp.NET.Server
             if (_connectionManager.IsConnectionAuthorized(args.Connection))
             {
                 var identity = _connectionManager.GetIdentity(args.Connection);
-
 
                 if (identity != null)
                 {
@@ -614,7 +624,32 @@ namespace Tcp.NET.Server
             });
             return false;
         }
-        
+        protected virtual void TimerCallback(object state)
+        {
+            if (!_isTimerCheckAliveRunning)
+            {
+                _isTimerCheckAliveRunning = true;
+
+                Task.Run(async () =>
+                {
+                    foreach (var connection in _connectionManager.GetAllConnections())
+                    {
+                        await _handler.SendEmptyAsync(connection);
+                    }
+
+                    foreach (var identity in _connectionManager.GetAllIdentities())
+                    {
+                        foreach (var connection in identity.Connections)
+                        {
+                            await _handler.SendEmptyAsync(connection);
+                        }
+                    }
+
+                    _isTimerCheckAliveRunning = false;
+                });
+            }
+        }
+
         protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
         {
             if (_serverEvent != null)
@@ -648,6 +683,18 @@ namespace Tcp.NET.Server
                 }
             }
 
+            if (_timerCheckAlive != null)
+            {
+                _timerCheckAlive.Dispose();
+                _timerCheckAlive = null;
+            }
+
+            if (_timerPing != null)
+            {
+                _timerPing.Dispose();
+                _timerPing = null;
+            }
+
             if (_handler != null)
             {
                 _handler.ConnectionEvent -= OnConnectionEvent;
@@ -659,11 +706,6 @@ namespace Tcp.NET.Server
                 _handler.Dispose();
             }
 
-            if (_timerPing != null)
-            {
-                _timerPing.Dispose();
-                _timerPing = null;
-            }
             base.Dispose();
         }
 

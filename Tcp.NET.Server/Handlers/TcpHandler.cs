@@ -103,7 +103,7 @@ namespace Tcp.NET.Server.Handlers
 
             _numberOfConnections = 0;
         }
-
+ 
         private async Task ListenForConnectionsAsync()
         {
             while (_isRunning)
@@ -234,13 +234,12 @@ namespace Tcp.NET.Server.Handlers
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    await FireEventAsync(this, new TcpErrorServerEventArgs
+                    await FireEventAsync(this, new TcpConnectionServerEventArgs
                     {
                         Connection = connection,
-                        Exception = ex,
-                        Message = ex.Message,
+                        ConnectionEventType = ConnectionEventType.Disconnect,
                     });
 
                     isRunning = false;
@@ -357,7 +356,24 @@ namespace Tcp.NET.Server.Handlers
 
             return false;
         }
+        public virtual async Task SendEmptyAsync(IConnectionServer connection)
+        {
+            try
+            {
+                await connection.Writer.WriteLineAsync();
+            }
+            catch (Exception ex)
+            {
+                await FireEventAsync(this, new TcpErrorServerEventArgs
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                });
 
+                await DisconnectConnectionAsync(connection);
+            }
+        }
         public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
         {
             try

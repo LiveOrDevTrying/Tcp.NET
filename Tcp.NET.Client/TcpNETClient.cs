@@ -48,10 +48,6 @@ namespace Tcp.NET.Client
                     await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}");
                 }
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                StartListeningForMessagesAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
                 if (_connection.Client.Connected)
                 {
                     await FireEventAsync(this, new TcpConnectionClientEventArgs
@@ -59,6 +55,10 @@ namespace Tcp.NET.Client
                         Connection = _connection,
                         ConnectionEventType = ConnectionEventType.Connected,
                     });
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    StartListeningForMessagesAsync();
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 };
             }
             catch (Exception ex)

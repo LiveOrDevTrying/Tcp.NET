@@ -17,7 +17,7 @@
     <dependencies>
       <group targetFramework="netcoreapp2.1">
         <dependency id="Microsoft.NETCore.App" version="2.1" />
-        <dependency id="PHS.Networking" version="1.2.5" />
+        <dependency id="PHS.Networking" version="[1,2)" />
       </group>
     </dependencies>
   </metadata>
