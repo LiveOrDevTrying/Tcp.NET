@@ -24,12 +24,19 @@ namespace Tcp.NET.TestApps.Server
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
+            _authServer.ErrorEvent += OnErrorEvent;
             await _authServer.StartAsync();
 
             while (true)
             {
                 Console.ReadLine();
             }
+        }
+
+        private static Task OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<Guid> args)
+        {
+            Console.WriteLine(args.Message);
+            return Task.CompletedTask;
         }
 
         private static Task OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<Guid> args)
