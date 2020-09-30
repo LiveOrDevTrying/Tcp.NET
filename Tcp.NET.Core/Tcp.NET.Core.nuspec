@@ -13,12 +13,9 @@
     <description>The core module for a simple SSL or non-SSL async await Tcp Server and Client with authentication. This package is used by both Tcp.NET.Client and Tcp.NET.Server.</description>
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2020</copyright>
-    <tags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 ssl authorization auth authentication liveordevtrying async await</tags>
+    <tags>Tcp server client Tcp.NET TcpNET async dotnet net ssl authorization auth authentication liveordevtrying async await</tags>
     <dependencies>
-      <group targetFramework="netcoreapp2.1">
-        <dependency id="Microsoft.NETCore.App" version="2.1" />
         <dependency id="PHS.Networking" version="[1,2)" />
-      </group>
     </dependencies>
   </metadata>
   <files>

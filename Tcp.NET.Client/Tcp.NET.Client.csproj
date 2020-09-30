@@ -1,32 +1,34 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <Version>1.6.0</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
+    <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</PackageTags>
     <Description>The client module for a simple SSL or non-SSL Tcp Client with authentication.</Description>
     <Copyright>Copyright 2020</Copyright>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
     <PackageIcon>Logo.png</PackageIcon>
-    <PackageIconUrl />
-    <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
-    <RepositoryType>Github Public</RepositoryType>
-    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
-    <Version>1.5.0</Version>
-    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <RepositoryType>GitHub</RepositoryType>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Tcp.NET.Core" Version="1.*" />
   </ItemGroup>
 
 </Project>

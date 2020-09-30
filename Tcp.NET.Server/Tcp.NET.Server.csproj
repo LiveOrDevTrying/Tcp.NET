@@ -1,34 +1,35 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <Version>1.6.0</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server module for a simple SSL or non-SSL Tcp Server with authentication.</Description>
     <Copyright>Copyright 2020</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
-    <PackageIconUrl></PackageIconUrl>
-    <RepositoryType>Github Public</RepositoryType>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
-    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
-    <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.5.0</Version>
+    <RepositoryType>GitHub</RepositoryType>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</PackageTags>
     <PackageIcon>Logo.png</PackageIcon>
-    <ApplicationIcon>Logo.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="PHS.Networking.Server" Version="1.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tcp.NET.Core\Tcp.NET.Core.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="PHS.Networking.Server" Version="1.*" />
-    <PackageReference Include="Tcp.NET.Core" Version="1.*" />
   </ItemGroup>
 
 </Project>

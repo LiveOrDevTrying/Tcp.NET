@@ -13,13 +13,10 @@
     <description>The server and client modules for a simple SSL or non-SSL Tcp Server with authentication.</description>
     <releaseNotes></releaseNotes>
     <copyright>Copyright 2020</copyright>
-    <tags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</tags>
+    <tags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</tags>
     <dependencies>
-      <group targetFramework="netcoreapp2.1">
-        <dependency id="Microsoft.NETCore.App" version="2.1" />
         <dependency id="Tcp.NET.Client" version="[1,2)" />
         <dependency id="Tcp.NET.Server" version="[1,2)" />
-      </group>
     </dependencies>
   </metadata>
   <files>
