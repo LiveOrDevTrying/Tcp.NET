@@ -1,23 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
-    <PackageId>Tcp.NET</PackageId>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <Version>1.6.0</Version>
+    <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server and client modules for a simple SSL or non-SSL Tcp Server with authentication.</Description>
     <Copyright>Copyright 2020</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
-    <PackageIconUrl></PackageIconUrl>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
-    <RepositoryType>Github Public</RepositoryType>
-    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net 2.1 2.0 SSL authorization auth authentication liveordevtrying await async</PackageTags>
-    <PackageReleaseNotes></PackageReleaseNotes>
-    <Version>1.5.0</Version>
-    <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <PackageIcon>Logo.png</PackageIcon>
-    <ApplicationIcon>Logo.ico</ApplicationIcon>
+    <RepositoryType>GitHub</RepositoryType>
+    <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Tcp.NET.Client\Tcp.NET.Client.csproj" />
+    <ProjectReference Include="..\Tcp.NET.Server\Tcp.NET.Server.csproj" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Include="Logo.png">
