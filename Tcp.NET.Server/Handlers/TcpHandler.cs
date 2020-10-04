@@ -50,6 +50,8 @@ namespace Tcp.NET.Server.Handlers
                     await StopAsync();
                 }
 
+                _isRunning = true;
+
                 _server = new TcpListener(IPAddress.Any, _parameters.Port);
                 _server.Server.ReceiveTimeout = 60000;
                 _server.Start();
@@ -72,7 +74,6 @@ namespace Tcp.NET.Server.Handlers
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
                 }
-                _isRunning = true;
                 return;
             }
             catch (Exception ex)
