@@ -32,12 +32,10 @@ namespace Tcp.NET.Server.Handlers
 
         public TcpHandler(IParamsTcpServer parameters)
         {
-            _isRunning = true;
             _parameters = parameters;
         }
         public TcpHandler(IParamsTcpServer parameters, byte[] certificate, string certificatePassword)
         {
-            _isRunning = true;
             _parameters = parameters;
             _certificate = certificate;
             _certificatePassword = certificatePassword;
@@ -74,6 +72,7 @@ namespace Tcp.NET.Server.Handlers
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
                 }
+                _isRunning = true;
                 return;
             }
             catch (Exception ex)
