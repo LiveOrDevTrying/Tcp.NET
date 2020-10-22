@@ -26,10 +26,7 @@ namespace Tcp.NET.Server
         private readonly TcpConnectionManager _connectionManager;
 
         private const int PING_INTERVAL_SEC = 120;
-        private const float KEEP_ALIVE_INTERVAL_SEC = 0.5f;
 
-        protected Timer _timerCheckAlive;
-        protected volatile bool _isTimerCheckAliveRunning;
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
 
@@ -192,19 +189,12 @@ namespace Tcp.NET.Server
                     await FireEventAsync(sender, args);
 
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
-                    _timerCheckAlive = new Timer(TimerCallback, null, (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000), (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000));
                     break;
                 case ServerEventType.Stop:
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
-                    }
-
-                    if (_timerCheckAlive != null)
-                    {
-                        _timerCheckAlive.Dispose();
-                        _timerCheckAlive = null;
                     }
 
                     await StopAsync();
@@ -266,23 +256,6 @@ namespace Tcp.NET.Server
                 });
             }
         }
-        protected virtual void TimerCallback(object state)
-        {
-            if (!_isTimerCheckAliveRunning)
-            {
-                _isTimerCheckAliveRunning = true;
-
-                Task.Run(async () =>
-                {
-                    foreach (var connection in _connectionManager.GetAllConnections())
-                    {
-                        await _handler.SendEmptyAsync(connection);
-                    }
-
-                    _isTimerCheckAliveRunning = false;
-                });
-            }
-        }
 
         protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
         {
@@ -306,12 +279,6 @@ namespace Tcp.NET.Server
                 _handler.ErrorEvent -= OnErrorEvent;
                 _handler.ServerEvent -= OnServerEvent;
                 _handler.Dispose();
-            }
-
-            if (_timerCheckAlive != null)
-            {
-                _timerCheckAlive.Dispose();
-                _timerCheckAlive = null;
             }
 
             if (_timerPing != null)

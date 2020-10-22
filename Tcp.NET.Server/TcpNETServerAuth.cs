@@ -25,13 +25,10 @@ namespace Tcp.NET.Server
         protected readonly IUserService<T> _userService;
         protected readonly IParamsTcpServerAuth _parameters;
         
-        protected Timer _timerCheckAlive;
-        protected volatile bool _isTimerCheckAliveRunning;
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
         
         private const int PING_INTERVAL_SEC = 120;
-        private const float KEEP_ALIVE_INTERVAL_SEC = 0.5f;
 
         private readonly TcpConnectionManagerAuth<T> _connectionManager;
 
@@ -454,19 +451,12 @@ namespace Tcp.NET.Server
 
                     await FireEventAsync(this, args);
                     _timerPing = new Timer(OnTimerPingTick, null, PING_INTERVAL_SEC * 1000, PING_INTERVAL_SEC * 1000);
-                    _timerCheckAlive = new Timer(TimerCallback, null, (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000), (int)Math.Ceiling(KEEP_ALIVE_INTERVAL_SEC * 1000));
                     break;
                 case ServerEventType.Stop:
                     if (_timerPing != null)
                     {
                         _timerPing.Dispose();
                         _timerPing = null;
-                    }
-
-                    if (_timerCheckAlive != null)
-                    {
-                        _timerCheckAlive.Dispose();
-                        _timerCheckAlive = null;
                     }
 
                     await StopAsync();
@@ -624,31 +614,6 @@ namespace Tcp.NET.Server
             });
             return false;
         }
-        protected virtual void TimerCallback(object state)
-        {
-            if (!_isTimerCheckAliveRunning)
-            {
-                _isTimerCheckAliveRunning = true;
-
-                Task.Run(async () =>
-                {
-                    foreach (var connection in _connectionManager.GetAllConnections())
-                    {
-                        await _handler.SendEmptyAsync(connection);
-                    }
-
-                    foreach (var identity in _connectionManager.GetAllIdentities())
-                    {
-                        foreach (var connection in identity.Connections)
-                        {
-                            await _handler.SendEmptyAsync(connection);
-                        }
-                    }
-
-                    _isTimerCheckAliveRunning = false;
-                });
-            }
-        }
 
         protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
         {
@@ -681,12 +646,6 @@ namespace Tcp.NET.Server
                     catch
                     { }
                 }
-            }
-
-            if (_timerCheckAlive != null)
-            {
-                _timerCheckAlive.Dispose();
-                _timerCheckAlive = null;
             }
 
             if (_timerPing != null)
