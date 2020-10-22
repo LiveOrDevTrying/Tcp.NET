@@ -356,24 +356,6 @@ namespace Tcp.NET.Server.Handlers
 
             return false;
         }
-        public virtual async Task SendEmptyAsync(IConnectionServer connection)
-        {
-            try
-            {
-                await connection.Writer.WriteLineAsync();
-            }
-            catch (Exception ex)
-            {
-                await FireEventAsync(this, new TcpErrorServerEventArgs
-                {
-                    Exception = ex,
-                    Message = ex.Message,
-                    Connection = connection
-                });
-
-                await DisconnectConnectionAsync(connection);
-            }
-        }
         public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
         {
             try
