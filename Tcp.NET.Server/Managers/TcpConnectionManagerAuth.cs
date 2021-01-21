@@ -7,7 +7,7 @@ namespace Tcp.NET.Server.Managers
 {
     public class TcpConnectionManagerAuth<T> : TcpConnectionManager
     {
-        internal ConcurrentDictionary<T, IUserConnections<T>> _userConnections =
+        protected ConcurrentDictionary<T, IUserConnections<T>> _userConnections =
             new ConcurrentDictionary<T, IUserConnections<T>>();
 
         public IUserConnections<T> GetIdentity(T userId)
