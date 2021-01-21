@@ -31,7 +31,7 @@ namespace Tcp.NET.Server.Managers
             {
                 instance = new UserConnections<T>
                 {
-                    Id = userId,
+                    UserId = userId,
                     Connections = new List<IConnectionServer>()
                 };
                 _userConnections.TryAdd(userId, instance);
@@ -59,7 +59,7 @@ namespace Tcp.NET.Server.Managers
 
                     if (!userConnection.Connections.Where(s => s != null).Any())
                     {
-                        _userConnections.TryRemove(userConnection.Id, out userConnection);
+                        _userConnections.TryRemove(userConnection.UserId, out userConnection);
                     }
                 }
             }

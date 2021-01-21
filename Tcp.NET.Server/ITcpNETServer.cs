@@ -5,6 +5,7 @@ using PHS.Networking.Services;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
+using Tcp.NET.Server.Managers;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
@@ -23,6 +24,7 @@ namespace Tcp.NET.Server
         Task<bool> DisconnectConnectionAsync(IConnectionServer connection);
 
         IConnectionServer[] Connections { get; }
+        TcpConnectionManager ConnectionManager { get; }
 
         event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }
