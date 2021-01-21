@@ -7,7 +7,7 @@ namespace Tcp.NET.Server.Managers
 {
     public class TcpConnectionManager
     {
-        internal ConcurrentDictionary<int, IConnectionServer> _connections =
+        protected ConcurrentDictionary<int, IConnectionServer> _connections =
             new ConcurrentDictionary<int, IConnectionServer>();
 
         public IConnectionServer[] GetAllConnections()
