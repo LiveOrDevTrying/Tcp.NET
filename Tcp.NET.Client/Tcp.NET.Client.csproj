@@ -11,13 +11,13 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</PackageTags>
     <Description>The client module for a simple SSL or non-SSL Tcp Client with authentication.</Description>
-    <Copyright>Copyright 2020</Copyright>
+    <Copyright>Copyright 2021</Copyright>
     <PackageIcon>Logo.png</PackageIcon>
     <RepositoryType>GitHub</RepositoryType>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,7 +7,7 @@
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server and client modules for a simple SSL or non-SSL Tcp Server with authentication.</Description>
-    <Copyright>Copyright 2020</Copyright>
+    <Copyright>Copyright 2021</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
