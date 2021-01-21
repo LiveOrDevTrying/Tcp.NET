@@ -12,12 +12,14 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The server module for a simple SSL or non-SSL Tcp Server with authentication.</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2020</copyright>
+    <copyright>Copyright 2021</copyright>
     <tags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</tags>
     <dependencies>
-	    <dependency id="Newtonsoft.Json" version="12.0.2" />
-	    <dependency id="Tcp.NET.Core" version="[1,2)" />
-	    <dependency id="PHS.Networking.Server" version="[1,2)" />
+		<group targetFramework="netstandard2.1">
+			<dependency id="Newtonsoft.Json" version="[12,13)" />
+			<dependency id="Tcp.NET.Core" version="[2,3)" />
+			<dependency id="PHS.Networking.Server" version="[2,3)" />
+		</group>
     </dependencies>
   </metadata>
   <files>
