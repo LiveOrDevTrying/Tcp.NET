@@ -310,6 +310,13 @@ namespace Tcp.NET.Server
                 return _connectionManager.GetAllConnections();
             }
         }
+        public TcpConnectionManager ConnectionManager
+        {
+            get
+            {
+                return _connectionManager;
+            }
+        }
 
         public event NetworkingEventHandler<ServerEventArgs> ServerEvent
         {

@@ -228,7 +228,7 @@ namespace Tcp.NET.Server
                                 Message = JsonConvert.SerializeObject(packet),
                                 MessageEventType = MessageEventType.Sent,
                                 Packet = packet,
-                                UserId = identity.Id,
+                                UserId = identity.UserId,
                                 Connection = connection
                             });
 
@@ -241,7 +241,7 @@ namespace Tcp.NET.Server
                                 Connection = connection,
                                 Exception = ex,
                                 Message = ex.Message,
-                                UserId = identity.Id
+                                UserId = identity.UserId
                             });
 
                             await DisconnectConnectionAsync(connection);
@@ -327,7 +327,7 @@ namespace Tcp.NET.Server
                                     Data = message,
                                     Timestamp = DateTime.UtcNow
                                 },
-                                UserId = identity.Id,
+                                UserId = identity.UserId,
                                 Connection = connection,
                                 MessageEventType = MessageEventType.Sent,
                             });
@@ -341,7 +341,7 @@ namespace Tcp.NET.Server
                                 Connection = connection,
                                 Exception = ex,
                                 Message = ex.Message,
-                                UserId = identity.Id
+                                UserId = identity.UserId
                             });
 
                             await DisconnectConnectionAsync(connection);
@@ -390,7 +390,7 @@ namespace Tcp.NET.Server
                             {
                                 Connection = args.Connection,
                                 ConnectionEventType = args.ConnectionEventType,
-                                UserId = identity.Id,
+                                UserId = identity.UserId,
                             });
                         }
                     }
@@ -428,7 +428,7 @@ namespace Tcp.NET.Server
                                 Message = args.Message,
                                 MessageEventType = MessageEventType.Receive,
                                 Packet = args.Packet,
-                                UserId = identity.Id,
+                                UserId = identity.UserId,
                                 Connection = args.Connection,
                             });
                         }
@@ -482,7 +482,7 @@ namespace Tcp.NET.Server
                     {
                         Exception = args.Exception,
                         Message = args.Message,
-                        UserId = identity.Id,
+                        UserId = identity.UserId,
                         Connection = args.Connection
                     });
                 }
@@ -521,7 +521,7 @@ namespace Tcp.NET.Server
                                     Connection = connection,
                                     Exception = ex,
                                     Message = ex.Message,
-                                    UserId = identity.Id
+                                    UserId = identity.UserId
                                 });
                             }
                         }
@@ -581,7 +581,7 @@ namespace Tcp.NET.Server
                         await FireEventAsync(this, new TcpConnectionServerAuthEventArgs<T>
                         {
                             ConnectionEventType = ConnectionEventType.Connected,
-                            UserId = identity.Id,
+                            UserId = identity.UserId,
                             Connection = args.Connection,
                         });
                         return true;
@@ -696,7 +696,13 @@ namespace Tcp.NET.Server
                 return _connectionManager.GetAllIdentities();
             }
         }
-
+        public TcpConnectionManagerAuth<T> ConnectionManager
+        {
+            get
+            {
+                return _connectionManager;
+            }
+        }
         public event NetworkingEventHandler<ServerEventArgs> ServerEvent
         {
             add
