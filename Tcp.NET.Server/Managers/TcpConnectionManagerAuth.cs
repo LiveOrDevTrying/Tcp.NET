@@ -5,27 +5,27 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Managers
 {
-    internal class TcpConnectionManagerAuth<T> : TcpConnectionManager
+    public class TcpConnectionManagerAuth<T> : TcpConnectionManager
     {
-        protected ConcurrentDictionary<T, IUserConnections<T>> _userConnections =
+        internal ConcurrentDictionary<T, IUserConnections<T>> _userConnections =
             new ConcurrentDictionary<T, IUserConnections<T>>();
 
-        public virtual IUserConnections<T> GetIdentity(T userId)
+        public IUserConnections<T> GetIdentity(T userId)
         {
             return _userConnections.TryGetValue(userId, out var clientAuthorized) ? clientAuthorized : (default);
         }
-        public virtual IUserConnections<T> GetIdentity(IConnectionServer connection)
+        public IUserConnections<T> GetIdentity(IConnectionServer connection)
         {
             return _userConnections.Any(p => p.Value.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()))
                 ? _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()))
                 : (default);
         }
-        public virtual IUserConnections<T>[] GetAllIdentities()
+        public IUserConnections<T>[] GetAllIdentities()
         {
             return _userConnections.Values.Where(s => s != null).ToArray();
         }
 
-        public virtual IUserConnections<T> AddUserConnection(T userId, IConnectionServer connection)
+        public IUserConnections<T> AddUserConnection(T userId, IConnectionServer connection)
         {
             if (!_userConnections.TryGetValue(userId, out var instance))
             {
@@ -45,7 +45,7 @@ namespace Tcp.NET.Server.Managers
 
             return null;
         }
-        public virtual void RemoveUserConnection(IConnectionServer connection)
+        public void RemoveUserConnection(IConnectionServer connection)
         {
             var userConnection = _userConnections.Values.FirstOrDefault(s => s.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()));
 
@@ -65,11 +65,11 @@ namespace Tcp.NET.Server.Managers
             }
         }
 
-        public virtual bool IsConnectionAuthorized(IConnectionServer connection)
+        public bool IsConnectionAuthorized(IConnectionServer connection)
         {
             return _userConnections.Values.Any(s => s.Connections.Any(t => t != null && t.Client.GetHashCode() == connection.Client.GetHashCode()));
         }
-        public virtual bool IsUserConnected(T userId)
+        public bool IsUserConnected(T userId)
         {
             return _userConnections.ContainsKey(userId);
         }
