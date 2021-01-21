@@ -16,15 +16,15 @@
     <ApplicationIcon>Logo.ico</ApplicationIcon>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="PHS.Networking" Version="2.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Logo.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="PHS.Networking" Version="2.*" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<None Include="Logo.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 
 </Project>
