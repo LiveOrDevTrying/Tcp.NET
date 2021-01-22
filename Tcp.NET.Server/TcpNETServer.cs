@@ -67,7 +67,7 @@ namespace Tcp.NET.Server
             await _handler.StopAsync();
         }
 
-        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
+        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionTcpServer connection) where S : IPacket
         {
             try
             {
@@ -103,7 +103,7 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection)
         {
             return await SendToConnectionAsync(new Packet
             {
@@ -111,7 +111,7 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             }, connection);
         }
-        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection)
         {
             try
             {
@@ -152,7 +152,7 @@ namespace Tcp.NET.Server
             return false;
         }
 
-        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
+        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection)
         {
             return await _handler.DisconnectConnectionAsync(connection);
         }
@@ -303,7 +303,7 @@ namespace Tcp.NET.Server
                 return _handler != null ? _handler.IsServerRunning : false;
             }
         }
-        public IConnectionServer[] Connections
+        public IConnectionTcpServer[] Connections
         {
             get
             {

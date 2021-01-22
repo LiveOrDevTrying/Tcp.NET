@@ -16,7 +16,7 @@ namespace Tcp.NET.Client
         Task<bool> SendToServerAsync(string message);
         Task<bool> SendToServerRawAsync(string message);
 
-        IConnection Connection { get; }
+        IConnectionTcp Connection { get; }
         bool IsRunning { get; }
     }
 }

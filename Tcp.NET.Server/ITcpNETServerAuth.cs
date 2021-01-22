@@ -17,8 +17,8 @@ namespace Tcp.NET.Server
 
         Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket;
         Task BroadcastToAllAuthorizedUsersAsync(string message);
-        Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionServer connectionSending) where S : IPacket;
-        Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionServer connectionSending);
+        Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionTcpServer connectionSending) where S : IPacket;
+        Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionTcpServer connectionSending);
         Task BroadcastToAllAuthorizedUsersRawAsync(string message);
         Task SendToUserAsync<S>(S packet, T userId) where S : IPacket;
         Task SendToUserAsync(string message, T userId);
@@ -26,13 +26,13 @@ namespace Tcp.NET.Server
 
         bool IsServerRunning { get; }
         TcpListener Server { get; }
-        Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket;
-        Task<bool> SendToConnectionAsync(string message, IConnectionServer connection);
-        Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection);
-        Task<bool> DisconnectConnectionAsync(IConnectionServer connection);
+        Task<bool> SendToConnectionAsync<S>(S packet, IConnectionTcpServer connection) where S : IPacket;
+        Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection);
+        Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection);
+        Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection);
 
-        IConnectionServer[] Connections { get; }
-        IUserConnections<T>[] UserConnections { get; }
+        IConnectionTcpServer[] Connections { get; }
+        IUserConnectionsTcp<T>[] UserConnections { get; }
         TcpConnectionManagerAuth<T> ConnectionManager { get; }
         event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }

@@ -119,7 +119,7 @@ namespace Tcp.NET.Server.Handlers
                         NewLine = _parameters.EndOfLineCharacters
                     };
 
-                    var connection = new ConnectionServer
+                    var connection = new ConnectionTcpServer
                     {
                         Client = client,
                         Reader = reader,
@@ -169,7 +169,7 @@ namespace Tcp.NET.Server.Handlers
                             NewLine = _parameters.EndOfLineCharacters
                         };
 
-                        var connection = new ConnectionServer
+                        var connection = new ConnectionTcpServer
                         {
                             Client = client,
                             Reader = reader,
@@ -201,7 +201,7 @@ namespace Tcp.NET.Server.Handlers
 
             }
         }
-        private async Task StartListeningForMessagesAsync(IConnectionServer connection)
+        private async Task StartListeningForMessagesAsync(IConnectionTcpServer connection)
         {
             var isRunning = true;
 
@@ -249,7 +249,7 @@ namespace Tcp.NET.Server.Handlers
             } while (isRunning);
         }
 
-        protected virtual IPacket MessageReceived(string message, IConnectionServer connection)
+        protected virtual IPacket MessageReceived(string message, IConnectionTcpServer connection)
         {
             IPacket packet;
 
@@ -278,7 +278,7 @@ namespace Tcp.NET.Server.Handlers
             return packet;
         }
 
-        public virtual async Task<bool> SendAsync<T>(T packet, IConnectionServer connection) where T : IPacket
+        public virtual async Task<bool> SendAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket
         {
             try
             {
@@ -312,7 +312,7 @@ namespace Tcp.NET.Server.Handlers
 
             return false;
         }
-        public virtual async Task<bool> SendAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendAsync(string message, IConnectionTcpServer connection)
         {
             return await SendAsync(new Packet
             {
@@ -320,7 +320,7 @@ namespace Tcp.NET.Server.Handlers
                 Timestamp = DateTime.UtcNow
             }, connection);
         }
-        public virtual async Task<bool> SendRawAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendRawAsync(string message, IConnectionTcpServer connection)
         {
             try
             {
@@ -356,7 +356,7 @@ namespace Tcp.NET.Server.Handlers
 
             return false;
         }
-        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
+        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection)
         {
             try
             {

@@ -95,7 +95,7 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             });
         }
-        public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionServer connectionSending) where S : IPacket
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync<S>(S packet, IConnectionTcpServer connectionSending) where S : IPacket
         {
             if (_handler != null &&
                 _handler.IsServerRunning)
@@ -112,7 +112,7 @@ namespace Tcp.NET.Server
                 }
             }
         }
-        public virtual async Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionServer connectionSending)
+        public virtual async Task BroadcastToAllAuthorizedUsersAsync(string message, IConnectionTcpServer connectionSending)
         {
             await BroadcastToAllAuthorizedUsersAsync(new Packet
             {
@@ -173,7 +173,7 @@ namespace Tcp.NET.Server
             }
         }
 
-        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionServer connection) where S : IPacket
+        public virtual async Task<bool> SendToConnectionAsync<S>(S packet, IConnectionTcpServer connection) where S : IPacket
         {
             if (_handler.IsServerRunning)
             {
@@ -254,7 +254,7 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection)
         {
             return await SendToConnectionAsync(new Packet
             {
@@ -262,7 +262,7 @@ namespace Tcp.NET.Server
                 Timestamp = DateTime.UtcNow
             }, connection);
         }
-        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection)
+        public virtual async Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection)
         {
             if (_handler != null &&
                 _handler.IsServerRunning)
@@ -352,7 +352,7 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionServer connection)
+        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection)
         {
             return await _handler.DisconnectConnectionAsync(connection);
         }
@@ -682,14 +682,14 @@ namespace Tcp.NET.Server
                 return _handler != null ? _handler.IsServerRunning : false;
             }
         }
-        public IConnectionServer[] Connections
+        public IConnectionTcpServer[] Connections
         {
             get
             {
                 return _connectionManager.GetAllConnections();
             }
         }
-        public IUserConnections<T>[] UserConnections
+        public IUserConnectionsTcp<T>[] UserConnections
         {
             get
             {

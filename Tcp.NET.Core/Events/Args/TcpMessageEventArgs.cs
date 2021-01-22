@@ -4,7 +4,7 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Core.Events.Args
 {
-    public class TcpMessageEventArgs<T> : MessageEventArgs where T : IConnection
+    public class TcpMessageEventArgs<T> : MessageEventArgs where T : IConnectionTcp
     {
         public T Connection { get; set; }
     }
