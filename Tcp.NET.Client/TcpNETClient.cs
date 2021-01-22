@@ -19,7 +19,7 @@ namespace Tcp.NET.Client
     {
         protected readonly IParamsTcpClient _parameters;
         protected readonly string _oauthToken;
-        protected IConnection _connection;
+        protected IConnectionTcp _connection;
         protected bool _isClientRunning;
 
         public TcpNETClient(IParamsTcpClient parameters, string oauthToken = "")
@@ -134,7 +134,7 @@ namespace Tcp.NET.Client
                 NewLine = _parameters.EndOfLineCharacters
             };
 
-            _connection = new Connection
+            _connection = new ConnectionTcp
             {
                 Client = client,
                 Reader = reader,
@@ -159,7 +159,7 @@ namespace Tcp.NET.Client
                 NewLine = _parameters.EndOfLineCharacters
             };
 
-            _connection = new Connection
+            _connection = new ConnectionTcp
             {
                 Client = client,
                 Reader = reader,
@@ -324,7 +324,7 @@ namespace Tcp.NET.Client
                 return _connection != null && _connection.Client.Connected;
             }
         }
-        public IConnection Connection
+        public IConnectionTcp Connection
         {
             get
             {

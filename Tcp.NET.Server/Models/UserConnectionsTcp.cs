@@ -4,13 +4,13 @@ using System.Net.Sockets;
 
 namespace Tcp.NET.Server.Models
 {
-    public class UserConnections<T> : IUserConnections<T>
+    public class UserConnectionsTcp<T> : IUserConnectionsTcp<T>
     {
         public T UserId { get; set; }
 
-        public ICollection<IConnectionServer> Connections { get; set; }
+        public ICollection<IConnectionTcpServer> Connections { get; set; }
 
-        public IConnectionServer GetConnection(TcpClient client)
+        public IConnectionTcpServer GetConnection(TcpClient client)
         {
             return Connections.FirstOrDefault(s => s.Client.GetHashCode() == client.GetHashCode());
         }

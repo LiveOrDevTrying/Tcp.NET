@@ -2,7 +2,7 @@
 
 namespace Tcp.NET.Server.Models
 {
-    public interface IConnectionServer : IConnection
+    public interface IConnectionTcpServer : IConnectionTcp
     {
         bool HasBeenPinged { get; set; }
         string ConnectionId { get; set; }

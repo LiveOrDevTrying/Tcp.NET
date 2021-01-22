@@ -18,12 +18,12 @@ namespace Tcp.NET.Server
         Task StartAsync();
         Task StopAsync();
 
-        Task<bool> SendToConnectionAsync<T>(T packet, IConnectionServer connection) where T : IPacket;
-        Task<bool> SendToConnectionAsync(string message, IConnectionServer connection);
-        Task<bool> SendToConnectionRawAsync(string message, IConnectionServer connection);
-        Task<bool> DisconnectConnectionAsync(IConnectionServer connection);
+        Task<bool> SendToConnectionAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket;
+        Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection);
+        Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection);
+        Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection);
 
-        IConnectionServer[] Connections { get; }
+        IConnectionTcpServer[] Connections { get; }
         TcpConnectionManager ConnectionManager { get; }
 
         event NetworkingEventHandler<ServerEventArgs> ServerEvent;
