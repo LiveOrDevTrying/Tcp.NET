@@ -5,7 +5,6 @@ using PHS.Networking.Services;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
-using Tcp.NET.Server.Managers;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
@@ -33,7 +32,6 @@ namespace Tcp.NET.Server
 
         IConnectionTcpServer[] Connections { get; }
         IUserConnectionsTcp<T>[] UserConnections { get; }
-        TcpConnectionManagerAuth<T> ConnectionManager { get; }
         event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }
 }

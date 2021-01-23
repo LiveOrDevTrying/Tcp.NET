@@ -25,11 +25,9 @@ namespace Tcp.NET.Server
         protected readonly IUserService<T> _userService;
         protected readonly IParamsTcpServerAuth _parameters;
         protected readonly TcpConnectionManagerAuth<T> _connectionManager;
-        
-        private const int PING_INTERVAL_SEC = 120;
-        
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
+        protected const int PING_INTERVAL_SEC = 120;
 
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
@@ -697,13 +695,7 @@ namespace Tcp.NET.Server
                 return _connectionManager.GetAllIdentities();
             }
         }
-        public TcpConnectionManagerAuth<T> ConnectionManager
-        {
-            get
-            {
-                return _connectionManager;
-            }
-        }
+
         public event NetworkingEventHandler<ServerEventArgs> ServerEvent
         {
             add

@@ -23,12 +23,10 @@ namespace Tcp.NET.Server
         protected readonly TcpHandler _handler;
         protected readonly IParamsTcpServer _parameters;
         protected readonly TcpConnectionManager _connectionManager;
-
-        private const int PING_INTERVAL_SEC = 120;
-
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
-
+        protected const int PING_INTERVAL_SEC = 120;
+        
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
         public TcpNETServer(IParamsTcpServer parameters, 
@@ -310,13 +308,6 @@ namespace Tcp.NET.Server
             get
             {
                 return _connectionManager.GetAllConnections();
-            }
-        }
-        public TcpConnectionManager ConnectionManager
-        {
-            get
-            {
-                return _connectionManager;
             }
         }
 
