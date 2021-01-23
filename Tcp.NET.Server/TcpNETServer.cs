@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Handlers;
 using Tcp.NET.Server.Managers;
-using System.Security.Cryptography.X509Certificates;
 using PHS.Networking.Models;
 using PHS.Networking.Server.Events.Args;
 using PHS.Networking.Services;
@@ -21,9 +20,9 @@ namespace Tcp.NET.Server
         CoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>, 
         ITcpNETServer
     {
-        private readonly TcpHandler _handler;
-        private readonly IParamsTcpServer _parameters;
-        private readonly TcpConnectionManager _connectionManager;
+        protected readonly TcpHandler _handler;
+        protected readonly IParamsTcpServer _parameters;
+        protected readonly TcpConnectionManager _connectionManager;
 
         private const int PING_INTERVAL_SEC = 120;
 
@@ -32,10 +31,12 @@ namespace Tcp.NET.Server
 
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
-        public TcpNETServer(IParamsTcpServer parameters, TcpHandler handler = null)
+        public TcpNETServer(IParamsTcpServer parameters, 
+            TcpHandler handler = null, 
+            TcpConnectionManager tcpConnectionManager = null)
         {
             _parameters = parameters;
-            _connectionManager = new TcpConnectionManager();
+            _connectionManager = tcpConnectionManager ?? new TcpConnectionManager();
 
             _handler = handler ?? new TcpHandler(_parameters);
             _handler.ConnectionEvent += OnConnectionEvent;
@@ -46,10 +47,11 @@ namespace Tcp.NET.Server
         public TcpNETServer(IParamsTcpServer parameters,
             byte[] certificate,
             string certificatePassword,
-            TcpHandler handler = null)
+            TcpHandler handler = null,
+            TcpConnectionManager tcpConnectionManager = null)
         {
             _parameters = parameters;
-            _connectionManager = new TcpConnectionManager();
+            _connectionManager = tcpConnectionManager ?? new TcpConnectionManager();
 
             _handler = handler ?? new TcpHandler(_parameters, certificate, certificatePassword);
             _handler.ConnectionEvent += OnConnectionEvent;
