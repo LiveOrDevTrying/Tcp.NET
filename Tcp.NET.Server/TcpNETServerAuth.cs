@@ -24,23 +24,23 @@ namespace Tcp.NET.Server
         protected readonly TcpHandler _handler;
         protected readonly IUserService<T> _userService;
         protected readonly IParamsTcpServerAuth _parameters;
+        protected readonly TcpConnectionManagerAuth<T> _connectionManager;
+        
+        private const int PING_INTERVAL_SEC = 120;
         
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
-        
-        private const int PING_INTERVAL_SEC = 120;
-
-        private readonly TcpConnectionManagerAuth<T> _connectionManager;
 
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
         public TcpNETServerAuth(IParamsTcpServerAuth parameters,
             IUserService<T> userService,
-            TcpHandler handler = null)
+            TcpHandler handler = null,
+            TcpConnectionManagerAuth<T> connectionManager = null)
         { 
             _parameters = parameters;
             _userService = userService;
-            _connectionManager = new TcpConnectionManagerAuth<T>();
+            _connectionManager = connectionManager ?? new TcpConnectionManagerAuth<T>();
 
             _handler = handler ?? new TcpHandler(_parameters);
             _handler.ConnectionEvent += OnConnectionEvent;
@@ -52,11 +52,12 @@ namespace Tcp.NET.Server
             IUserService<T> userService,
             byte[] certificate,
             string certificatePassword,
-            TcpHandler handler = null)
+            TcpHandler handler = null,
+            TcpConnectionManagerAuth<T> connectionManager = null)
         {
             _parameters = parameters;
             _userService = userService;
-            _connectionManager = new TcpConnectionManagerAuth<T>();
+            _connectionManager = connectionManager ?? new TcpConnectionManagerAuth<T>();
 
             _handler = handler ?? new TcpHandler(_parameters, certificate, certificatePassword);
             _handler.ConnectionEvent += OnConnectionEvent;
