@@ -487,7 +487,7 @@ namespace Tcp.NET.Server
                 }
             }
         }
-        private void OnTimerPingTick(object state)
+        protected virtual void OnTimerPingTick(object state)
         {
             if (!_isPingRunning)
             {
