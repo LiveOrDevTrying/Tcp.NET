@@ -17,11 +17,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Tcp.NET.Client\Tcp.NET.Client.csproj" />
-    <ProjectReference Include="..\Tcp.NET.Server\Tcp.NET.Server.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
@@ -29,8 +24,8 @@
   </ItemGroup>
 
     <ItemGroup>
-	    <PackageReference Include="Tcp.NET.Client" Version="2.*" />
-	    <PackageReference Include="Tcp.NET.Server" Version="2.*" />
+	    <PackageReference Include="Tcp.NET.Client" Version="2.1.*" />
+	    <PackageReference Include="Tcp.NET.Server" Version="2.1.*" />
     </ItemGroup>
 
 </Project>
