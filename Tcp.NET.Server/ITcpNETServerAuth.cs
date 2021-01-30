@@ -31,7 +31,7 @@ namespace Tcp.NET.Server
         Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection);
 
         IConnectionTcpServer[] Connections { get; }
-        IUserConnectionsTcp<T>[] UserConnections { get; }
+        IIdentityTcp<T>[] Identities { get; }
         event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }
 }
