@@ -4,7 +4,7 @@ using System.Net.Sockets;
 
 namespace Tcp.NET.Server.Models
 {
-    public class UserConnectionsTcp<T> : IUserConnectionsTcp<T>
+    public class IdentityTcp<T> : IIdentityTcp<T>
     {
         public T UserId { get; set; }
 

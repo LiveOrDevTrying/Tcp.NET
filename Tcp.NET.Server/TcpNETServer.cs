@@ -197,12 +197,7 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    await StopAsync();
-
                     await FireEventAsync(sender, args);
-
-                    Thread.Sleep(5000);
-                    await StartAsync();
                     break;
                 default:
                     break;
@@ -214,6 +209,8 @@ namespace Tcp.NET.Server
         }
         protected virtual async Task OnErrorEvent(object sender, TcpErrorServerEventArgs args)
         {
+            await DisconnectConnectionAsync(args.Connection);
+
             await FireEventAsync(this, args);
         }
         

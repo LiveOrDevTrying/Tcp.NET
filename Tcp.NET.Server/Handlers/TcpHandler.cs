@@ -63,16 +63,11 @@ namespace Tcp.NET.Server.Handlers
 
                 if (_certificate == null)
                 {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    ListenForConnectionsAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    _ = Task.Run(async () => { await ListenForConnectionsAsync(); });
                 }
                 else
                 {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    ListenForConnectionsSSLAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
+                    _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(); });
                 }
                 return;
             }
@@ -92,19 +87,18 @@ namespace Tcp.NET.Server.Handlers
             if (_server != null)
             {
                 _server.Stop();
-
-                await FireEventAsync(this, new ServerEventArgs
-                {
-                    ServerEventType = ServerEventType.Stop
-                });
-
                 _server = null;
             }
 
             _numberOfConnections = 0;
+            
+            await FireEventAsync(this, new ServerEventArgs
+            {
+                ServerEventType = ServerEventType.Stop
+            });
         }
  
-        private async Task ListenForConnectionsAsync()
+        protected virtual async Task ListenForConnectionsAsync()
         {
             while (_isRunning)
             {
@@ -133,9 +127,8 @@ namespace Tcp.NET.Server.Handlers
                         Connection = connection,
                     });
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    StartListeningForMessagesAsync(connection);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection); });
+#pragma warning restore CS4014 // Becaue this call is not awaited, execution of the current method continues before the call is completed
                     
                     _numberOfConnections++;
                 }
@@ -150,7 +143,7 @@ namespace Tcp.NET.Server.Handlers
 
             }
         }
-        private async Task ListenForConnectionsSSLAsync()
+        protected virtual async Task ListenForConnectionsSSLAsync()
         {
             while (_isRunning)
             {
@@ -183,11 +176,9 @@ namespace Tcp.NET.Server.Handlers
                             Connection = connection,
                         });
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                        StartListeningForMessagesAsync(connection);
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-
                         _numberOfConnections++;
+
+                        _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection); });
                     }
                 }
                 catch (Exception ex)
@@ -201,7 +192,7 @@ namespace Tcp.NET.Server.Handlers
 
             }
         }
-        private async Task StartListeningForMessagesAsync(IConnectionTcpServer connection)
+        protected virtual async Task StartListeningForMessagesAsync(IConnectionTcpServer connection)
         {
             var isRunning = true;
 
@@ -219,14 +210,14 @@ namespace Tcp.NET.Server.Handlers
                         }
                         else
                         {
-                            var packet = MessageReceived(line, connection);
+                            var packet = await MessageReceivedAsync(line, connection);
 
                             if (packet != null)
                             {
                                 await FireEventAsync(this, new TcpMessageServerEventArgs
                                 {
                                     MessageEventType = MessageEventType.Receive,
-                                    Message = line,
+                                    Message = packet.Data,
                                     Packet = packet,
                                     Connection = connection
                                 });
@@ -246,10 +237,10 @@ namespace Tcp.NET.Server.Handlers
 
                     await DisconnectConnectionAsync(connection);
                 }
-            } while (isRunning);
+            } while (connection.Client != null && connection.Client.Connected);
         }
 
-        protected virtual IPacket MessageReceived(string message, IConnectionTcpServer connection)
+        protected virtual Task<IPacket> MessageReceivedAsync(string message, IConnectionTcpServer connection)
         {
             IPacket packet;
 
@@ -275,7 +266,7 @@ namespace Tcp.NET.Server.Handlers
                 };
             }
 
-            return packet;
+            return Task.FromResult(packet);
         }
 
         public virtual async Task<bool> SendAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket

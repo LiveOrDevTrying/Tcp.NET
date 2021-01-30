@@ -29,16 +29,15 @@ namespace Tcp.NET.Client
         }
         public virtual async Task ConnectAsync()
         {
-            // Connect to a remote device.  
             try
             {
                 if (_parameters.IsSSL)
                 {
-                    CreateSSLConnection();
+                    await CreateSSLConnectionAsync();
                 }
                 else
                 {
-                    CreateConnection();
+                    await CreateConnectionAsync();
                 }
 
                 _isClientRunning = true;
@@ -56,9 +55,7 @@ namespace Tcp.NET.Client
                         ConnectionEventType = ConnectionEventType.Connected,
                     });
 
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    StartListeningForMessagesAsync();
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    _ = Task.Run(async () => { await StartListeningForMessagesAsync(); });
                 };
             }
             catch (Exception ex)
@@ -120,12 +117,13 @@ namespace Tcp.NET.Client
             return false;
         }
 
-        protected virtual void CreateConnection()
+        protected virtual Task CreateConnectionAsync()
         {
             // Establish the remote endpoint for the socket.  
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            var client = new TcpClient(_parameters.Uri, _parameters.Port);
-            client.ReceiveTimeout = 60000;
+            var client = new TcpClient(_parameters.Uri, _parameters.Port)
+            {
+                ReceiveTimeout = 60000
+            };
 
             var reader = new StreamReader(client.GetStream());
             var writer = new StreamWriter(client.GetStream())
@@ -140,36 +138,46 @@ namespace Tcp.NET.Client
                 Reader = reader,
                 Writer = writer
             };
+
+            return Task.CompletedTask;
         }
-        protected virtual void CreateSSLConnection()
+        protected virtual async Task CreateSSLConnectionAsync()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            var client = new TcpClient(_parameters.Uri, _parameters.Port);
-            client.ReceiveTimeout = 60000;
+            var client = new TcpClient(_parameters.Uri, _parameters.Port)
+            {
+                ReceiveTimeout = 60000,
+            };
 
             var sslStream = new SslStream(client.GetStream());
 
-            sslStream.AuthenticateAsClient(_parameters.Uri);
+            await sslStream.AuthenticateAsClientAsync(_parameters.Uri);
 
-            var reader = new StreamReader(sslStream);
-            var writer = new StreamWriter(sslStream)
-            {
-                AutoFlush = true,
-                NewLine = _parameters.EndOfLineCharacters
-            };
+            if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
+            { 
+                var reader = new StreamReader(sslStream);
+                var writer = new StreamWriter(sslStream)
+                {
+                    AutoFlush = true,
+                    NewLine = _parameters.EndOfLineCharacters
+                };
 
-            _connection = new ConnectionTcp
+                _connection = new ConnectionTcp
+                {
+                    Client = client,
+                    Reader = reader,
+                    Writer = writer
+                };
+            }
+            else
             {
-                Client = client,
-                Reader = reader,
-                Writer = writer
-            };
+                throw new Exception("Could not create connection - SSL cert has validation problem.");
+            }
         }
         protected virtual async Task StartListeningForMessagesAsync()
         {
-            while (_isClientRunning &&
-                _connection != null)
+            while (_connection != null && _connection.Client != null && _connection.Client.Connected)
             {
                 try
                 {
@@ -284,6 +292,7 @@ namespace Tcp.NET.Client
             try
             {
                 if (_connection != null &&
+                    _connection.Client != null &&
                     _connection.Client.Connected)
                 {
                     await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");

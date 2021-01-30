@@ -381,7 +381,7 @@ namespace Tcp.NET.Server
                     if (_connectionManager.IsConnectionAuthorized(args.Connection))
                     {
                         var identity = _connectionManager.GetIdentity(args.Connection);
-                        _connectionManager.RemoveUserConnection(args.Connection);
+                        _connectionManager.RemoveIdentity(args.Connection);
 
                         if (identity != null)
                         {
@@ -410,6 +410,13 @@ namespace Tcp.NET.Server
             switch (args.MessageEventType)
             {
                 case MessageEventType.Sent:
+                    await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
+                    {
+                        Message = args.Packet.Data,
+                        MessageEventType = MessageEventType.Sent,
+                        Packet = args.Packet,
+                        Connection = args.Connection,
+                    });
                     break;
                 case MessageEventType.Receive:
                     if (_connectionManager.IsConnectionOpen(args.Connection))
@@ -424,7 +431,7 @@ namespace Tcp.NET.Server
                         {
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
-                                Message = args.Message,
+                                Message = args.Packet.Data,
                                 MessageEventType = MessageEventType.Receive,
                                 Packet = args.Packet,
                                 UserId = identity.UserId,
@@ -458,12 +465,7 @@ namespace Tcp.NET.Server
                         _timerPing = null;
                     }
 
-                    await StopAsync();
-
                     await FireEventAsync(this, args);
-
-                    Thread.Sleep(5000);
-                    await _handler.StartAsync();
                     break;
                 default:
                     break;
@@ -486,6 +488,17 @@ namespace Tcp.NET.Server
                     });
                 }
             }
+            else
+            {
+                await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
+                {
+                    Exception = args.Exception,
+                    Message = args.Message,
+                    Connection = args.Connection
+                });
+            }
+
+            await DisconnectConnectionAsync(args.Connection);
         }
         protected virtual void OnTimerPingTick(object state)
         {
@@ -495,6 +508,33 @@ namespace Tcp.NET.Server
 
                 Task.Run(async () =>
                 {
+                    foreach (var connection in _connectionManager.GetAllConnections())
+                    {
+                        try
+                        {
+                            if (connection.HasBeenPinged)
+                            {
+                                // Already been pinged, no response, disconnect
+                                await SendToConnectionRawAsync("No ping response - disconnected.", connection);
+                                await DisconnectConnectionAsync(connection);
+                            }
+                            else
+                            {
+                                connection.HasBeenPinged = true;
+                                await SendToConnectionRawAsync("Ping", connection);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            await FireEventAsync(this, new TcpErrorServerAuthEventArgs<T>
+                            {
+                                Connection = connection,
+                                Exception = ex,
+                                Message = ex.Message,
+                            });
+                        }
+                    }
+
                     foreach (var identity in _connectionManager.GetAllIdentities())
                     {
                         foreach (var connection in identity.Connections.ToList())
@@ -573,7 +613,7 @@ namespace Tcp.NET.Server
                             return false;
                         }
 
-                        var identity = _connectionManager.AddUserConnection(userId, args.Connection);
+                        var identity = _connectionManager.AddIdentity(userId, args.Connection);
 
                         await SendToConnectionRawAsync(_parameters.ConnectionSuccessString, args.Connection);
 
@@ -688,7 +728,7 @@ namespace Tcp.NET.Server
                 return _connectionManager.GetAllConnections();
             }
         }
-        public IUserConnectionsTcp<T>[] UserConnections
+        public IIdentityTcp<T>[] Identities
         {
             get
             {
