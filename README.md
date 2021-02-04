@@ -480,7 +480,7 @@ If you want to extend **`IPacket`** to include additional fields, you will need 
 
 If you are sending polymorphic objects, first deserialize the initial message into a class or struct that contains “common” fields, such as `PacketExtended` with a `PacketExtendedType` enum field. Then use the value of `PacketExtendedType` and deserialize a second time into the type the enum represents. Repeat until the your polymorphic object is completely deserialized.
 
-Finally, when constructing your **`ITcpNETServer`**, pass in your new **`TcpHandlerExtended`** extended class you created. An example is below:
+Finally, when constructing your **`TcpNETServer`**, pass in your new **`TcpHandlerExtended`** extended class you created. An example is below:
 
 ``` c#
     IParamsTcpServer parameters = new ParamsTcpServer 
