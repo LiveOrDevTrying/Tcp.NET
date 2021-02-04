@@ -192,15 +192,8 @@ namespace Tcp.NET.Client
                         }
                         else
                         {
-                            var packet = MessageReceived(message);
+                            await MessageReceivedAsync(message);
 
-                            await FireEventAsync(this, new TcpMessageClientEventArgs
-                            {
-                                MessageEventType = MessageEventType.Receive,
-                                Message = packet.Data,
-                                Packet = packet,
-                                Connection = _connection
-                            });
                         }
                     }
                 }
@@ -217,7 +210,7 @@ namespace Tcp.NET.Client
                 }
             }
         }
-        protected virtual IPacket MessageReceived(string message)
+        protected virtual async Task MessageReceivedAsync(string message)
         {
             IPacket packet;
             try
@@ -242,7 +235,14 @@ namespace Tcp.NET.Client
                 };
             }
 
-            return packet;
+
+            await FireEventAsync(this, new TcpMessageClientEventArgs
+            {
+                MessageEventType = MessageEventType.Receive,
+                Message = packet.Data,
+                Packet = packet,
+                Connection = _connection
+            });
         }
 
         public virtual async Task<bool> SendToServerAsync<T>(T packet) where T : IPacket
