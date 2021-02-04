@@ -31,10 +31,10 @@ namespace Tcp.NET.Server
 
         public TcpNETServer(IParamsTcpServer parameters, 
             TcpHandler handler = null, 
-            TcpConnectionManager tcpConnectionManager = null)
+            TcpConnectionManager connectionManager = null)
         {
             _parameters = parameters;
-            _connectionManager = tcpConnectionManager ?? new TcpConnectionManager();
+            _connectionManager = connectionManager ?? new TcpConnectionManager();
 
             _handler = handler ?? new TcpHandler(_parameters);
             _handler.ConnectionEvent += OnConnectionEvent;
@@ -46,10 +46,10 @@ namespace Tcp.NET.Server
             byte[] certificate,
             string certificatePassword,
             TcpHandler handler = null,
-            TcpConnectionManager tcpConnectionManager = null)
+            TcpConnectionManager connectionManager = null)
         {
             _parameters = parameters;
-            _connectionManager = tcpConnectionManager ?? new TcpConnectionManager();
+            _connectionManager = connectionManager ?? new TcpConnectionManager();
 
             _handler = handler ?? new TcpHandler(_parameters, certificate, certificatePassword);
             _handler.ConnectionEvent += OnConnectionEvent;
