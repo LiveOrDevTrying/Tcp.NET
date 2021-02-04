@@ -194,8 +194,6 @@ namespace Tcp.NET.Server.Handlers
         }
         protected virtual async Task StartListeningForMessagesAsync(IConnectionTcpServer connection)
         {
-            var isRunning = true;
-
             do
             {
                 try
@@ -210,18 +208,7 @@ namespace Tcp.NET.Server.Handlers
                         }
                         else
                         {
-                            var packet = await MessageReceivedAsync(line, connection);
-
-                            if (packet != null)
-                            {
-                                await FireEventAsync(this, new TcpMessageServerEventArgs
-                                {
-                                    MessageEventType = MessageEventType.Receive,
-                                    Message = packet.Data,
-                                    Packet = packet,
-                                    Connection = connection
-                                });
-                            }
+                            await MessageReceivedAsync(line, connection);
                         }
                     }
                 }
@@ -233,14 +220,12 @@ namespace Tcp.NET.Server.Handlers
                         ConnectionEventType = ConnectionEventType.Disconnect,
                     });
 
-                    isRunning = false;
-
                     await DisconnectConnectionAsync(connection);
                 }
             } while (connection.Client != null && connection.Client.Connected);
         }
 
-        protected virtual Task<IPacket> MessageReceivedAsync(string message, IConnectionTcpServer connection)
+        protected virtual async Task MessageReceivedAsync(string message, IConnectionTcpServer connection)
         {
             IPacket packet;
 
@@ -266,7 +251,13 @@ namespace Tcp.NET.Server.Handlers
                 };
             }
 
-            return Task.FromResult(packet);
+            await FireEventAsync(this, new TcpMessageServerEventArgs
+            {
+                MessageEventType = MessageEventType.Receive,
+                Message = packet.Data,
+                Packet = packet,
+                Connection = connection
+            });
         }
 
         public virtual async Task<bool> SendAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket
