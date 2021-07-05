@@ -180,6 +180,17 @@ namespace Tcp.NET.Server.Handlers
 
                         _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection); });
                     }
+                    else
+                    {
+                        var certStatus = $"IsAuthenticated = {sslStream.IsAuthenticated} && IsEncripted == {sslStream.IsEncrypted}";
+                        await FireEventAsync(this, new TcpErrorServerEventArgs
+                        {
+                            Exception = new Exception(certStatus),
+                            Message = certStatus
+                        });
+
+                        client.Close();
+                    }
                 }
                 catch (Exception ex)
                 {
