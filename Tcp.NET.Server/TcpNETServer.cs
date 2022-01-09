@@ -82,7 +82,6 @@ namespace Tcp.NET.Server
 
                     await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
-                        Message = JsonConvert.SerializeObject(packet),
                         MessageEventType = MessageEventType.Sent,
                         Packet = packet,
                         Connection = connection,
@@ -126,7 +125,6 @@ namespace Tcp.NET.Server
 
                     await FireEventAsync(this, new TcpMessageServerEventArgs
                     {
-                        Message = message,
                         MessageEventType = MessageEventType.Sent,
                         Connection = connection,
                         Packet = new Packet
