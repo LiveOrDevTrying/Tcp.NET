@@ -59,7 +59,7 @@ namespace Tcp.NET.TestApps.Server
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    Console.WriteLine(args.MessageEventType + ": " + args.Message);
+                    Console.WriteLine(args.MessageEventType + ": " + args.Packet.Data);
                     break;
                 default:
                     break;

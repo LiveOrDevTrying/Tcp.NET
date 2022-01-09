@@ -265,7 +265,6 @@ namespace Tcp.NET.Server.Handlers
             await FireEventAsync(this, new TcpMessageServerEventArgs
             {
                 MessageEventType = MessageEventType.Receive,
-                Message = packet.Data,
                 Packet = packet,
                 Connection = connection
             });
@@ -284,7 +283,6 @@ namespace Tcp.NET.Server.Handlers
                 await FireEventAsync(this, new TcpMessageServerEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Message = message,
                     Packet = packet,
                     Connection = connection
                 });
@@ -324,7 +322,6 @@ namespace Tcp.NET.Server.Handlers
                 await FireEventAsync(this, new TcpMessageServerEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
-                    Message = message,
                     Connection = connection,
                     Packet = new Packet
                     {
