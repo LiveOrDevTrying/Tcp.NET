@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
-    <Version>6.0.0</Version>
+    <Version>2.2.0</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.*" />
-	<PackageReference Include="Tcp.NET.Core" Version="6.*" />
+	<PackageReference Include="Tcp.NET.Core" Version="2.2.*" />
   </ItemGroup>
 	
   <ItemGroup>
