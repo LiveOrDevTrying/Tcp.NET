@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <ApplicationIcon>Logo.ico</ApplicationIcon>
-    <Version>5.0.0</Version>
+    <Version>6.0.0</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The server module for a simple SSL or non-SSL Tcp Server with authentication.</Description>
@@ -18,8 +18,8 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.*" />
-    <PackageReference Include="PHS.Networking.Server" Version="5.*" />
-	<PackageReference Include="Tcp.NET.Core" Version="5.*" />
+    <PackageReference Include="PHS.Networking.Server" Version="6.*" />
+	<PackageReference Include="Tcp.NET.Core" Version="6.*" />
   </ItemGroup>
 
   <ItemGroup>
