@@ -15,8 +15,8 @@
     <copyright>Copyright 2022</copyright>
     <tags>Tcp server client Tcp.NET TcpNET async dotnet net ssl authorization auth authentication liveordevtrying async await</tags>
     <dependencies>
-		<group targetFramework="net6.0">
-			<dependency id="PHS.Networking" version="[6,7)" />
+		<group targetFramework="net5.0">
+			<dependency id="PHS.Networking" version="[5.0,5.1)" />
 		</group>
     </dependencies>
   </metadata>
