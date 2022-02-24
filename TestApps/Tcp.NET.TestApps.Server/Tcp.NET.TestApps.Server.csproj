@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tcp.NET" Version="2.1.0*" />
+    <PackageReference Include="Tcp.NET" Version="6.*" />
   </ItemGroup>
 
 </Project>

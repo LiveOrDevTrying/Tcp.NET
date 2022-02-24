@@ -239,7 +239,6 @@ namespace Tcp.NET.Client
             await FireEventAsync(this, new TcpMessageClientEventArgs
             {
                 MessageEventType = MessageEventType.Receive,
-                Message = packet.Data,
                 Packet = packet,
                 Connection = _connection
             });
@@ -260,7 +259,6 @@ namespace Tcp.NET.Client
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
                         Packet = packet,
-                        Message = packet.Data,
                     });
                     return true;
                 }
@@ -301,7 +299,6 @@ namespace Tcp.NET.Client
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
-                        Message = message,
                         Packet = new Packet
                         {
                             Data = message,

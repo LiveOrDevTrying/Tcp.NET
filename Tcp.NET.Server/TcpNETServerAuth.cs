@@ -187,7 +187,6 @@ namespace Tcp.NET.Server
 
                         await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
-                            Message = JsonConvert.SerializeObject(packet),
                             MessageEventType = MessageEventType.Sent,
                             Connection = connection,
                             Packet = packet,
@@ -224,7 +223,6 @@ namespace Tcp.NET.Server
 
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
-                                Message = JsonConvert.SerializeObject(packet),
                                 MessageEventType = MessageEventType.Sent,
                                 Packet = packet,
                                 UserId = identity.UserId,
@@ -277,7 +275,6 @@ namespace Tcp.NET.Server
 
                         await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                         {
-                            Message = message,
                             MessageEventType = MessageEventType.Sent,
                             Packet = new Packet
                             {
@@ -320,7 +317,6 @@ namespace Tcp.NET.Server
 
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
-                                Message = message,
                                 Packet = new Packet
                                 {
                                     Data = message,
@@ -412,7 +408,6 @@ namespace Tcp.NET.Server
                 case MessageEventType.Sent:
                     await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                     {
-                        Message = args.Packet.Data,
                         MessageEventType = MessageEventType.Sent,
                         Packet = args.Packet,
                         Connection = args.Connection,
@@ -431,7 +426,6 @@ namespace Tcp.NET.Server
                         {
                             await FireEventAsync(this, new TcpMessageServerAuthEventArgs<T>
                             {
-                                Message = args.Packet.Data,
                                 MessageEventType = MessageEventType.Receive,
                                 Packet = args.Packet,
                                 UserId = identity.UserId,
@@ -580,8 +574,8 @@ namespace Tcp.NET.Server
                 {
                     _connectionManager.RemoveConnection(args.Connection);
 
-                    if (args.Message.Length < "oauth:".Length ||
-                        !args.Message.ToLower().StartsWith("oauth:"))
+                    if (args.Packet.Data.Length < "oauth:".Length ||
+                        !args.Packet.Data.ToLower().StartsWith("oauth:"))
                     {
                         await SendToConnectionRawAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
                         await DisconnectConnectionAsync(args.Connection);
@@ -594,7 +588,7 @@ namespace Tcp.NET.Server
                         return false;
                     }
 
-                    var token = args.Message.Substring("oauth:".Length);
+                    var token = args.Packet.Data.Substring("oauth:".Length);
 
                     if (await _userService.IsValidTokenAsync(token))
                     {
