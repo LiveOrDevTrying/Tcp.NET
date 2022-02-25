@@ -17,7 +17,7 @@
     <dependencies>
 		<group targetFramework="net6.0">
 			<dependency id="Newtonsoft.Json" version="[12,13)" />
-			<dependency id="Tcp.NET.Core" version="[6,7)" />
+			<dependency id="Tcp.NET.Core" version="[6.0,6.1)" />
 		</group>
     </dependencies>
   </metadata>
