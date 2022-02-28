@@ -1,0 +1,3 @@
+[submodule "Resources/PHS"]
+	path = Resources/PHS
+	url = https://github.com/LiveOrDevTrying/PHS

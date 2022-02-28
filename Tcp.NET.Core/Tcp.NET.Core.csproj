@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -17,14 +17,14 @@
   </PropertyGroup>
 
     <ItemGroup>
-	    <PackageReference Include="PHS.Networking" Version="6.*" />
-    </ItemGroup>
-
-    <ItemGroup>
         <None Include="Logo.png">
             <Pack>True</Pack>
             <PackagePath></PackagePath>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Resources\PHS\PHS.Networking\PHS.Networking.csproj" />
     </ItemGroup>
 
 </Project>
