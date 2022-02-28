@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
@@ -19,7 +19,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.*" />
     <PackageReference Include="PHS.Networking.Server" Version="6.*" />
-	<PackageReference Include="Tcp.NET.Core" Version="6.*" />
+	  <PackageReference Include="Tcp.NET.Core" Version="6.*" />
   </ItemGroup>
 
   <ItemGroup>
