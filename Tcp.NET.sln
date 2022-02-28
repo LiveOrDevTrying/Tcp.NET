@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.32014.148
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestApps", "TestApps", "{DD1F096D-D0DF-42E3-8860-F7BE723C45B5}"
 EndProject
@@ -9,13 +9,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.TestApps.Client", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.TestApps.Server", "TestApps\Tcp.NET.TestApps.Server\Tcp.NET.TestApps.Server.csproj", "{03B36794-6FAF-4C1B-8C11-1755F595DD9A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Core", "Tcp.NET.Core\Tcp.NET.Core.csproj", "{F23A8DFF-C5D1-4A0A-8730-74B535AA4DF0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Core", "Tcp.NET.Core\Tcp.NET.Core.csproj", "{F23A8DFF-C5D1-4A0A-8730-74B535AA4DF0}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Client", "Tcp.NET.Client\Tcp.NET.Client.csproj", "{963A83BA-03E7-4367-9106-E54BFA83059D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Client", "Tcp.NET.Client\Tcp.NET.Client.csproj", "{963A83BA-03E7-4367-9106-E54BFA83059D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET.Server", "Tcp.NET.Server\Tcp.NET.Server.csproj", "{6550B5EC-4B12-456E-91AC-CDEDD9ABC20A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET.Server", "Tcp.NET.Server\Tcp.NET.Server.csproj", "{6550B5EC-4B12-456E-91AC-CDEDD9ABC20A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tcp.NET", "Tcp.NET\Tcp.NET.csproj", "{665750FE-72A7-4EAC-8FAB-5396DB87CDF3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tcp.NET", "Tcp.NET\Tcp.NET.csproj", "{665750FE-72A7-4EAC-8FAB-5396DB87CDF3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
