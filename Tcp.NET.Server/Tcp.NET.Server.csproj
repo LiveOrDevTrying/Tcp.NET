@@ -18,8 +18,13 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.*" />
+<<<<<<< HEAD
     <PackageReference Include="PHS.Networking.Server" Version="2.0.*" />
 	<PackageReference Include="Tcp.NET.Core" Version="2.0.*" />
+=======
+    <PackageReference Include="PHS.Networking.Server" Version="6.*" />
+	  <PackageReference Include="Tcp.NET.Core" Version="6.*" />
+>>>>>>> master
   </ItemGroup>
 
   <ItemGroup>
