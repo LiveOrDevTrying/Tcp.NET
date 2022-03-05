@@ -14,13 +14,13 @@ namespace Tcp.NET.Server
         bool IsServerRunning { get; }
         TcpListener Server { get; }
 
-        Task StartAsync();
-        Task StopAsync();
+        void Start();
+        void Stop();
 
         Task<bool> SendToConnectionAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket;
         Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection);
         Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection);
-        Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection);
+        bool DisconnectConnection(IConnectionTcpServer connection);
 
         IConnectionTcpServer[] Connections { get; }
 

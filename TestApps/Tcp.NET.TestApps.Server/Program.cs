@@ -12,7 +12,7 @@ namespace Tcp.NET.TestApps.Server
     {
         private static ITcpNETServerAuth<Guid> _authServer;
 
-        static async Task Main(string[] args)
+        static void Main(string[] args)
         {
             _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth
             {
@@ -25,7 +25,7 @@ namespace Tcp.NET.TestApps.Server
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
             _authServer.ErrorEvent += OnErrorEvent;
-            await _authServer.StartAsync();
+            _authServer.Start();
 
             while (true)
             {
@@ -33,26 +33,22 @@ namespace Tcp.NET.TestApps.Server
             }
         }
 
-        private static Task OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<Guid> args)
+        private static void OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<Guid> args)
         {
             Console.WriteLine(args.Message);
-            return Task.CompletedTask;
         }
 
-        private static Task OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<Guid> args)
+        private static void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<Guid> args)
         {
             Console.WriteLine(args.ConnectionEventType);
-
-            return Task.CompletedTask;
         }
 
-        private static Task OnServerEvent(object sender, ServerEventArgs args)
+        private static void OnServerEvent(object sender, ServerEventArgs args)
         {
             Console.WriteLine(args.ServerEventType);
-            return Task.CompletedTask;
         }
 
-        private static Task OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<Guid> args)
+        private static void OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<Guid> args)
         {
             switch (args.MessageEventType)
             {
@@ -64,8 +60,6 @@ namespace Tcp.NET.TestApps.Server
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
     }
 }
