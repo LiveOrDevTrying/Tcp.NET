@@ -49,7 +49,7 @@ namespace Tcp.NET.Client
 
                 if (_connection.Client.Connected)
                 {
-                    await FireEventAsync(this, new TcpConnectionClientEventArgs
+                    FireEvent(this, new TcpConnectionClientEventArgs
                     {
                         Connection = _connection,
                         ConnectionEventType = ConnectionEventType.Connected,
@@ -60,7 +60,7 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorClientEventArgs
+                FireEvent(this, new TcpErrorClientEventArgs
                 {
                     Exception = ex,
                     Connection = _connection,
@@ -68,7 +68,7 @@ namespace Tcp.NET.Client
                 });
             }
         }
-        public virtual async Task<bool> DisconnectAsync()
+        public virtual bool Disconnect()
         {
             try
             {
@@ -93,7 +93,7 @@ namespace Tcp.NET.Client
                         _connection.Client.Dispose();
                     }
 
-                    await FireEventAsync(this, new TcpConnectionClientEventArgs
+                    FireEvent(this, new TcpConnectionClientEventArgs
                     {
                         ConnectionEventType = ConnectionEventType.Disconnect,
                         Connection = _connection
@@ -106,7 +106,7 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorClientEventArgs
+                FireEvent(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,
@@ -192,25 +192,25 @@ namespace Tcp.NET.Client
                         }
                         else
                         {
-                            await MessageReceivedAsync(message);
+                            MessageReceived(message);
 
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    await FireEventAsync(this, new TcpErrorClientEventArgs
+                    FireEvent(this, new TcpErrorClientEventArgs
                     {
                         Connection = _connection,
                         Exception = ex,
                         Message = ex.Message
                     });
 
-                    await DisconnectAsync();
+                    Disconnect();
                 }
             }
         }
-        protected virtual async Task MessageReceivedAsync(string message)
+        protected virtual void MessageReceived(string message)
         {
             IPacket packet;
             try
@@ -236,7 +236,7 @@ namespace Tcp.NET.Client
             }
 
 
-            await FireEventAsync(this, new TcpMessageClientEventArgs
+            FireEvent(this, new TcpMessageClientEventArgs
             {
                 MessageEventType = MessageEventType.Receive,
                 Packet = packet,
@@ -254,7 +254,7 @@ namespace Tcp.NET.Client
                     var message = JsonConvert.SerializeObject(packet);
                     await _connection.Writer.WriteLineAsync(message);
 
-                    await FireEventAsync(this, new TcpMessageClientEventArgs
+                    FireEvent(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
@@ -265,14 +265,14 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorClientEventArgs
+                FireEvent(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
                 });
 
-                await DisconnectAsync();
+                Disconnect();
             }
 
             return false;
@@ -295,7 +295,7 @@ namespace Tcp.NET.Client
                 {
                     await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
 
-                    await FireEventAsync(this, new TcpMessageClientEventArgs
+                    FireEvent(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
@@ -310,14 +310,14 @@ namespace Tcp.NET.Client
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorClientEventArgs
+                FireEvent(this, new TcpErrorClientEventArgs
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
                 });
 
-                await DisconnectAsync();
+                Disconnect();
             }
 
             return false;

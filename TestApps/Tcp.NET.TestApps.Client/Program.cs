@@ -35,18 +35,17 @@ namespace Tcp.NET.TestApps.Client
             }
         }
 
-        private static Task OnErrorEvent(object sender, TcpErrorClientEventArgs args)
+        private static void OnErrorEvent(object sender, TcpErrorClientEventArgs args)
         {
-            return Task.CompletedTask;
+            Console.WriteLine(args.Message);
         }
 
-        private static Task OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
+        private static void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
             Console.WriteLine(args.ConnectionEventType.ToString());
-            return Task.CompletedTask;
         }
 
-        private static Task OnMessageEvent(object sender, TcpMessageClientEventArgs args)
+        private static void OnMessageEvent(object sender, TcpMessageClientEventArgs args)
         {
             switch (args.MessageEventType)
             {
@@ -58,8 +57,6 @@ namespace Tcp.NET.TestApps.Client
                 default:
                     break;
             }
-
-            return Task.CompletedTask;
         }
     }
 }
