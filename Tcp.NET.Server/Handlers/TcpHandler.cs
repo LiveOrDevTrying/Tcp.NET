@@ -41,13 +41,13 @@ namespace Tcp.NET.Server.Handlers
             _certificatePassword = certificatePassword;
         }
 
-        public virtual async Task StartAsync()
+        public virtual void Start()
         {
             try
             {
                 if (_server != null)
                 {
-                    await StopAsync();
+                    Stop();
                 }
 
                 _isRunning = true;
@@ -56,7 +56,7 @@ namespace Tcp.NET.Server.Handlers
                 _server.Server.ReceiveTimeout = 60000;
                 _server.Start();
 
-                await FireEventAsync(this, new ServerEventArgs
+                FireEvent(this, new ServerEventArgs
                 {
                     ServerEventType = ServerEventType.Start
                 });
@@ -73,14 +73,14 @@ namespace Tcp.NET.Server.Handlers
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorServerEventArgs
+                FireEvent(this, new TcpErrorServerEventArgs
                 {
                     Exception = ex,
                     Message = ex.Message,
                 });
             }
         }
-        public virtual async Task StopAsync()
+        public virtual void Stop()
         {
             _isRunning = false;
 
@@ -92,7 +92,7 @@ namespace Tcp.NET.Server.Handlers
 
             _numberOfConnections = 0;
             
-            await FireEventAsync(this, new ServerEventArgs
+            FireEvent(this, new ServerEventArgs
             {
                 ServerEventType = ServerEventType.Stop
             });
@@ -121,7 +121,7 @@ namespace Tcp.NET.Server.Handlers
                         ConnectionId = Guid.NewGuid().ToString()
                     };
 
-                    await FireEventAsync(this, new TcpConnectionServerEventArgs
+                    FireEvent(this, new TcpConnectionServerEventArgs
                     {
                         ConnectionEventType = ConnectionEventType.Connected,
                         Connection = connection,
@@ -134,7 +134,7 @@ namespace Tcp.NET.Server.Handlers
                 }
                 catch (Exception ex)
                 {
-                    await FireEventAsync(this, new TcpErrorServerEventArgs
+                    FireEvent(this, new TcpErrorServerEventArgs
                     {
                         Exception = ex,
                         Message = ex.Message,
@@ -170,7 +170,7 @@ namespace Tcp.NET.Server.Handlers
                             ConnectionId = Guid.NewGuid().ToString()
                         };
 
-                        await FireEventAsync(this, new TcpConnectionServerEventArgs
+                        FireEvent(this, new TcpConnectionServerEventArgs
                         {
                             ConnectionEventType = ConnectionEventType.Connected,
                             Connection = connection,
@@ -183,7 +183,7 @@ namespace Tcp.NET.Server.Handlers
                     else
                     {
                         var certStatus = $"IsAuthenticated = {sslStream.IsAuthenticated} && IsEncripted == {sslStream.IsEncrypted}";
-                        await FireEventAsync(this, new TcpErrorServerEventArgs
+                        FireEvent(this, new TcpErrorServerEventArgs
                         {
                             Exception = new Exception(certStatus),
                             Message = certStatus
@@ -194,7 +194,7 @@ namespace Tcp.NET.Server.Handlers
                 }
                 catch (Exception ex)
                 {
-                    await FireEventAsync(this, new TcpErrorServerEventArgs
+                    FireEvent(this, new TcpErrorServerEventArgs
                     {
                         Exception = ex,
                         Message = ex.Message,
@@ -219,24 +219,24 @@ namespace Tcp.NET.Server.Handlers
                         }
                         else
                         {
-                            await MessageReceivedAsync(line, connection);
+                            MessageReceived(line, connection);
                         }
                     }
                 }
                 catch
                 {
-                    await FireEventAsync(this, new TcpConnectionServerEventArgs
+                    FireEvent(this, new TcpConnectionServerEventArgs
                     {
                         Connection = connection,
                         ConnectionEventType = ConnectionEventType.Disconnect,
                     });
 
-                    await DisconnectConnectionAsync(connection);
+                    DisconnectConnection(connection);
                 }
             } while (connection.Client != null && connection.Client.Connected);
         }
 
-        protected virtual async Task MessageReceivedAsync(string message, IConnectionTcpServer connection)
+        protected virtual void MessageReceived(string message, IConnectionTcpServer connection)
         {
             IPacket packet;
 
@@ -262,7 +262,7 @@ namespace Tcp.NET.Server.Handlers
                 };
             }
 
-            await FireEventAsync(this, new TcpMessageServerEventArgs
+            FireEvent(this, new TcpMessageServerEventArgs
             {
                 MessageEventType = MessageEventType.Receive,
                 Packet = packet,
@@ -280,7 +280,7 @@ namespace Tcp.NET.Server.Handlers
 
                 await connection.Writer.WriteLineAsync(message);
 
-                await FireEventAsync(this, new TcpMessageServerEventArgs
+                FireEvent(this, new TcpMessageServerEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
                     Packet = packet,
@@ -291,14 +291,14 @@ namespace Tcp.NET.Server.Handlers
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorServerEventArgs
+                FireEvent(this, new TcpErrorServerEventArgs
                 {
                     Exception = ex,
                     Message = ex.Message,
                     Connection = connection
                 });
 
-                await DisconnectConnectionAsync(connection);
+                DisconnectConnection(connection);
             }
 
             return false;
@@ -319,7 +319,7 @@ namespace Tcp.NET.Server.Handlers
 
                 await connection.Writer.WriteLineAsync(message);
 
-                await FireEventAsync(this, new TcpMessageServerEventArgs
+                FireEvent(this, new TcpMessageServerEventArgs
                 {
                     MessageEventType = MessageEventType.Sent,
                     Connection = connection,
@@ -334,19 +334,19 @@ namespace Tcp.NET.Server.Handlers
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorServerEventArgs
+                FireEvent(this, new TcpErrorServerEventArgs
                 {
                     Exception = ex,
                     Message = ex.Message,
                     Connection = connection
                 });
 
-                await DisconnectConnectionAsync(connection);
+                DisconnectConnection(connection);
             }
 
             return false;
         }
-        public virtual async Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection)
+        public virtual bool DisconnectConnection(IConnectionTcpServer connection)
         {
             try
             {
@@ -370,7 +370,7 @@ namespace Tcp.NET.Server.Handlers
                         connection.Reader.Dispose();
                     }
 
-                    await FireEventAsync(this, new TcpConnectionServerEventArgs
+                    FireEvent(this, new TcpConnectionServerEventArgs
                     {
                         ConnectionEventType = ConnectionEventType.Disconnect,
                         Connection = connection
@@ -380,7 +380,7 @@ namespace Tcp.NET.Server.Handlers
             }
             catch (Exception ex)
             {
-                await FireEventAsync(this, new TcpErrorServerEventArgs
+                FireEvent(this, new TcpErrorServerEventArgs
                 {
                     Exception = ex,
                     Message = ex.Message,
@@ -391,17 +391,14 @@ namespace Tcp.NET.Server.Handlers
             return false;
         }
 
-        protected virtual async Task FireEventAsync(object sender, ServerEventArgs args)
+        protected virtual void FireEvent(object sender, ServerEventArgs args)
         {
-            if (_serverEvent != null)
-            {
-                await _serverEvent?.Invoke(sender, args);
-            }
+            _serverEvent?.Invoke(sender, args);
         }
 
         public override void Dispose()
         {
-            StopAsync().Wait();
+            Stop();
 
             base.Dispose();
         }
