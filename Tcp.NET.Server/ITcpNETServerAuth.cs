@@ -11,8 +11,8 @@ namespace Tcp.NET.Server
 {
     public interface ITcpNETServerAuth<T> : ICoreNetworking<TcpConnectionServerAuthEventArgs<T>, TcpMessageServerAuthEventArgs<T>, TcpErrorServerAuthEventArgs<T>>
     {
-        Task StartAsync();
-        Task StopAsync();
+        void Start();
+        void Stop();
 
         Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket;
         Task BroadcastToAllAuthorizedUsersAsync(string message);
@@ -28,7 +28,7 @@ namespace Tcp.NET.Server
         Task<bool> SendToConnectionAsync<S>(S packet, IConnectionTcpServer connection) where S : IPacket;
         Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection);
         Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection);
-        Task<bool> DisconnectConnectionAsync(IConnectionTcpServer connection);
+        bool DisconnectConnection(IConnectionTcpServer connection);
 
         IConnectionTcpServer[] Connections { get; }
         IIdentityTcp<T>[] Identities { get; }
