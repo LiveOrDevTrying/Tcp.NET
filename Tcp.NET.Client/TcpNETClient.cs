@@ -129,7 +129,7 @@ namespace Tcp.NET.Client
                 ReceiveTimeout = 60000
             };
 
-            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port);
 
             var reader = new StreamReader(client.GetStream());
             var writer = new StreamWriter(client.GetStream())
@@ -154,7 +154,7 @@ namespace Tcp.NET.Client
                 ReceiveTimeout = 60000,
             };
 
-            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port);
 
             var sslStream = new SslStream(client.GetStream());
 
@@ -190,7 +190,7 @@ namespace Tcp.NET.Client
             {
                 try
                 {
-                    var message = await _connection.Reader.ReadLineAsync().WaitAsync(_cancellationToken);
+                    var message = await _connection.Reader.ReadLineAsync();
 
                     if (!string.IsNullOrWhiteSpace(message))
                     {
