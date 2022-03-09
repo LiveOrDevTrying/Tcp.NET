@@ -25,6 +25,7 @@ namespace Tcp.NET.Server
         protected readonly IUserService<T> _userService;
         protected readonly IParamsTcpServerAuth _parameters;
         protected readonly TcpConnectionManagerAuth<T> _connectionManager;
+        protected CancellationToken _cancellationToken;
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
         protected const int PING_INTERVAL_SEC = 120;
@@ -64,9 +65,10 @@ namespace Tcp.NET.Server
             _handler.ServerEvent += OnServerEvent;
         }
 
-        public virtual void Start()
+        public virtual void Start(CancellationToken cancellationToken = default)
         {
-            _handler.Start();
+            _cancellationToken = cancellationToken;
+            _handler.Start(cancellationToken);
         }
         public virtual void Stop()
         {
@@ -180,7 +182,7 @@ namespace Tcp.NET.Server
                 {
                     try
                     {
-                        if (!await _handler.SendAsync(packet, connection))
+                        if (!await _handler.SendAsync(packet, connection, _cancellationToken))
                         {
                             return false;
                         }
@@ -216,7 +218,7 @@ namespace Tcp.NET.Server
                     {
                         try
                         {
-                            if (!await _handler.SendAsync(packet, connection))
+                            if (!await _handler.SendAsync(packet, connection, _cancellationToken))
                             {
                                 return false;
                             }
@@ -268,7 +270,7 @@ namespace Tcp.NET.Server
                 {
                     try
                     {
-                        if (!await _handler.SendRawAsync(message, connection))
+                        if (!await _handler.SendRawAsync(message, connection, _cancellationToken))
                         {
                             return false;
                         }
@@ -310,7 +312,7 @@ namespace Tcp.NET.Server
                     {
                         try
                         {
-                            if (!await _handler.SendRawAsync(message, connection))
+                            if (!await _handler.SendRawAsync(message, connection, _cancellationToken))
                             {
                                 return false;
                             }

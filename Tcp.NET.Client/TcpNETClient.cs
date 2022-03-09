@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Client.Models;
@@ -21,16 +22,19 @@ namespace Tcp.NET.Client
         protected readonly string _oauthToken;
         protected IConnectionTcp _connection;
         protected bool _isClientRunning;
+        protected CancellationToken _cancellationToken;
 
         public TcpNETClient(IParamsTcpClient parameters, string oauthToken = "")
         {
             _parameters = parameters;
             _oauthToken = oauthToken;
         }
-        public virtual async Task ConnectAsync()
+        public virtual async Task ConnectAsync(CancellationToken cancellationToken = default)
         {
             try
             {
+                _cancellationToken = cancellationToken;
+
                 if (_parameters.IsSSL)
                 {
                     await CreateSSLConnectionAsync();
@@ -44,7 +48,7 @@ namespace Tcp.NET.Client
 
                 if (!string.IsNullOrWhiteSpace(_oauthToken))
                 {
-                    await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}");
+                    await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}".AsMemory(), cancellationToken);
                 }
 
                 if (_connection.Client.Connected)
@@ -117,13 +121,15 @@ namespace Tcp.NET.Client
             return false;
         }
 
-        protected virtual Task CreateConnectionAsync()
+        protected virtual async Task CreateConnectionAsync()
         {
             // Establish the remote endpoint for the socket.  
-            var client = new TcpClient(_parameters.Uri, _parameters.Port)
+            var client = new TcpClient()
             {
                 ReceiveTimeout = 60000
             };
+
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
 
             var reader = new StreamReader(client.GetStream());
             var writer = new StreamWriter(client.GetStream())
@@ -138,21 +144,24 @@ namespace Tcp.NET.Client
                 Reader = reader,
                 Writer = writer
             };
-
-            return Task.CompletedTask;
         }
         protected virtual async Task CreateSSLConnectionAsync()
         {
             // Establish the remote endpoint for the socket.  
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
-            var client = new TcpClient(_parameters.Uri, _parameters.Port)
+            var client = new TcpClient()
             {
                 ReceiveTimeout = 60000,
             };
 
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
+
             var sslStream = new SslStream(client.GetStream());
 
-            await sslStream.AuthenticateAsClientAsync(_parameters.Uri);
+            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = _parameters.Uri
+            }, _cancellationToken);
 
             if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
             { 
@@ -177,11 +186,11 @@ namespace Tcp.NET.Client
         }
         protected virtual async Task StartListeningForMessagesAsync()
         {
-            while (_connection != null && _connection.Client != null && _connection.Client.Connected)
+            while (_connection != null && _connection.Client != null && _connection.Client.Connected && !_cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var message = await _connection.Reader.ReadLineAsync();
+                    var message = await _connection.Reader.ReadLineAsync().WaitAsync(_cancellationToken);
 
                     if (!string.IsNullOrWhiteSpace(message))
                     {
@@ -213,6 +222,7 @@ namespace Tcp.NET.Client
         protected virtual void MessageReceived(string message)
         {
             IPacket packet;
+
             try
             {
                 packet = JsonConvert.DeserializeObject<Packet>(message);
@@ -249,10 +259,11 @@ namespace Tcp.NET.Client
             try
             {
                 if (_connection != null &&
-                    _connection.Client.Connected)
+                    _connection.Client.Connected &&
+                    !_cancellationToken.IsCancellationRequested)
                 {
                     var message = JsonConvert.SerializeObject(packet);
-                    await _connection.Writer.WriteLineAsync(message);
+                    await _connection.Writer.WriteLineAsync(message.AsMemory(), _cancellationToken);
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
@@ -291,9 +302,10 @@ namespace Tcp.NET.Client
             {
                 if (_connection != null &&
                     _connection.Client != null &&
-                    _connection.Client.Connected)
+                    _connection.Client.Connected &&
+                    !_cancellationToken.IsCancellationRequested)
                 {
-                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
+                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}".AsMemory(), _cancellationToken);
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
