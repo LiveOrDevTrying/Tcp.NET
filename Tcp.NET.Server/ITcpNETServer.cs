@@ -3,6 +3,7 @@ using PHS.Networking.Models;
 using PHS.Networking.Server.Events.Args;
 using PHS.Networking.Services;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
@@ -14,7 +15,7 @@ namespace Tcp.NET.Server
         bool IsServerRunning { get; }
         TcpListener Server { get; }
 
-        void Start();
+        void Start(CancellationToken cancellationToken = default);
         void Stop();
 
         Task<bool> SendToConnectionAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket;
