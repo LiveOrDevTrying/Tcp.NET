@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
@@ -41,7 +42,7 @@ namespace Tcp.NET.Server.Handlers
             _certificatePassword = certificatePassword;
         }
 
-        public virtual void Start()
+        public virtual void Start(CancellationToken cancellationToken)
         {
             try
             {
@@ -63,11 +64,11 @@ namespace Tcp.NET.Server.Handlers
 
                 if (_certificate == null)
                 {
-                    _ = Task.Run(async () => { await ListenForConnectionsAsync(); });
+                    _ = Task.Run(async () => { await ListenForConnectionsAsync(cancellationToken); });
                 }
                 else
                 {
-                    _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(); });
+                    _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(cancellationToken); });
                 }
                 return;
             }
@@ -98,13 +99,13 @@ namespace Tcp.NET.Server.Handlers
             });
         }
  
-        protected virtual async Task ListenForConnectionsAsync()
+        protected virtual async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
         {
-            while (_isRunning)
+            while (_isRunning && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync();
+                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
                     var stream = client.GetStream();
                     var reader = new StreamReader(stream);
                     var writer = new StreamWriter(stream)
@@ -127,8 +128,7 @@ namespace Tcp.NET.Server.Handlers
                         Connection = connection,
                     });
 
-                    _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection); });
-#pragma warning restore CS4014 // Becaue this call is not awaited, execution of the current method continues before the call is completed
+                    _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection, cancellationToken); });
                     
                     _numberOfConnections++;
                 }
@@ -143,15 +143,18 @@ namespace Tcp.NET.Server.Handlers
 
             }
         }
-        protected virtual async Task ListenForConnectionsSSLAsync()
+        protected virtual async Task ListenForConnectionsSSLAsync(CancellationToken cancellationToken)
         {
-            while (_isRunning)
+            while (_isRunning && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync();
+                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
                     var sslStream = new SslStream(client.GetStream());
-                    await sslStream.AuthenticateAsServerAsync(new X509Certificate2(_certificate, _certificatePassword));
+                    await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = new X509Certificate2(_certificate, _certificatePassword)
+                    }, cancellationToken);
 
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
@@ -178,7 +181,7 @@ namespace Tcp.NET.Server.Handlers
 
                         _numberOfConnections++;
 
-                        _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection); });
+                        _ = Task.Run(async () => { await StartListeningForMessagesAsync(connection, cancellationToken); });
                     }
                     else
                     {
@@ -203,13 +206,13 @@ namespace Tcp.NET.Server.Handlers
 
             }
         }
-        protected virtual async Task StartListeningForMessagesAsync(IConnectionTcpServer connection)
+        protected virtual async Task StartListeningForMessagesAsync(IConnectionTcpServer connection, CancellationToken cancellationToken)
         {
             do
             {
                 try
                 {
-                    var line = await connection.Reader.ReadLineAsync();
+                    var line = await connection.Reader.ReadLineAsync().WaitAsync(cancellationToken);
 
                     if (!string.IsNullOrWhiteSpace(line))
                     {
@@ -233,7 +236,7 @@ namespace Tcp.NET.Server.Handlers
 
                     DisconnectConnection(connection);
                 }
-            } while (connection.Client != null && connection.Client.Connected);
+            } while (connection.Client != null && connection.Client.Connected && !cancellationToken.IsCancellationRequested);
         }
 
         protected virtual void MessageReceived(string message, IConnectionTcpServer connection)
@@ -270,7 +273,7 @@ namespace Tcp.NET.Server.Handlers
             });
         }
 
-        public virtual async Task<bool> SendAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket
+        public virtual async Task<bool> SendAsync<T>(T packet, IConnectionTcpServer connection, CancellationToken cancellationToken) where T : IPacket
         {
             try
             {
@@ -278,7 +281,7 @@ namespace Tcp.NET.Server.Handlers
 
                 var message = JsonConvert.SerializeObject(packet);
 
-                await connection.Writer.WriteLineAsync(message);
+                await connection.Writer.WriteLineAsync(message.AsMemory(), cancellationToken);
 
                 FireEvent(this, new TcpMessageServerEventArgs
                 {
@@ -303,21 +306,21 @@ namespace Tcp.NET.Server.Handlers
 
             return false;
         }
-        public virtual async Task<bool> SendAsync(string message, IConnectionTcpServer connection)
+        public virtual async Task<bool> SendAsync(string message, IConnectionTcpServer connection, CancellationToken cancellationToken)
         {
             return await SendAsync(new Packet
             {
                 Data = message,
                 Timestamp = DateTime.UtcNow
-            }, connection);
+            }, connection, cancellationToken);
         }
-        public virtual async Task<bool> SendRawAsync(string message, IConnectionTcpServer connection)
+        public virtual async Task<bool> SendRawAsync(string message, IConnectionTcpServer connection, CancellationToken cancellationToken)
         {
             try
             {
                 if (!_isRunning) { return false; }
 
-                await connection.Writer.WriteLineAsync(message);
+                await connection.Writer.WriteLineAsync(message.AsMemory(), cancellationToken);
 
                 FireEvent(this, new TcpMessageServerEventArgs
                 {
