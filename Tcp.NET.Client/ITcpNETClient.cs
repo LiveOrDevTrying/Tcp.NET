@@ -1,5 +1,6 @@
 ﻿using PHS.Networking.Models;
 using PHS.Networking.Services;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Core.Models;
@@ -9,7 +10,7 @@ namespace Tcp.NET.Client
     public interface ITcpNETClient : 
         ICoreNetworking<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs>
     {
-        Task ConnectAsync();
+        Task ConnectAsync(CancellationToken cancellationToken = default);
         bool Disconnect();
 
         Task<bool> SendToServerAsync<T>(T packet) where T : IPacket;
