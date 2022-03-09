@@ -105,7 +105,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync();
                     var stream = client.GetStream();
                     var reader = new StreamReader(stream);
                     var writer = new StreamWriter(stream)
@@ -149,7 +149,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync();
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
@@ -212,7 +212,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var line = await connection.Reader.ReadLineAsync().WaitAsync(cancellationToken);
+                    var line = await connection.Reader.ReadLineAsync();
 
                     if (!string.IsNullOrWhiteSpace(line))
                     {

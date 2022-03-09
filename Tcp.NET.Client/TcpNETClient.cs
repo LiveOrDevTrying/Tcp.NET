@@ -190,7 +190,7 @@ namespace Tcp.NET.Client
             {
                 try
                 {
-                    var message = await _connection.Reader.ReadLineAsync().WaitAsync(_cancellationToken);
+                    var message = await _connection.Reader.ReadLineAsync();
 
                     if (!string.IsNullOrWhiteSpace(message))
                     {
