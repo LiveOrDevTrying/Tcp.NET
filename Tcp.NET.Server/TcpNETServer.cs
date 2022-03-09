@@ -23,10 +23,11 @@ namespace Tcp.NET.Server
         protected readonly TcpHandler _handler;
         protected readonly IParamsTcpServer _parameters;
         protected readonly TcpConnectionManager _connectionManager;
+        protected CancellationToken _cancellationToken;
         protected Timer _timerPing;
         protected volatile bool _isPingRunning;
         protected const int PING_INTERVAL_SEC = 120;
-        
+
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
         public TcpNETServer(IParamsTcpServer parameters, 
@@ -58,9 +59,10 @@ namespace Tcp.NET.Server
             _handler.ServerEvent += OnServerEvent;
         }
 
-        public virtual void Start()
+        public virtual void Start(CancellationToken cancellationToken = default)
         {
-            _handler.Start();
+            _cancellationToken = cancellationToken;
+            _handler.Start(cancellationToken);
         }
         public virtual void Stop()
         {
@@ -75,7 +77,7 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    if (!await _handler.SendAsync(packet, connection))
+                    if (!await _handler.SendAsync(packet, connection, _cancellationToken))
                     {
                         return false;
                     }
@@ -118,7 +120,7 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    if (!await _handler.SendRawAsync(message, connection))
+                    if (!await _handler.SendRawAsync(message, connection, _cancellationToken))
                     {
                         return false;
                     }
