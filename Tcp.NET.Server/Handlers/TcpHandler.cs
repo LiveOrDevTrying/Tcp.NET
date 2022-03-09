@@ -105,7 +105,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync();
                     var stream = client.GetStream();
                     var reader = new StreamReader(stream);
                     var writer = new StreamWriter(stream)
@@ -149,12 +149,9 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync();
                     var sslStream = new SslStream(client.GetStream());
-                    await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
-                    {
-                        ServerCertificate = new X509Certificate2(_certificate, _certificatePassword)
-                    }, cancellationToken);
+                    await sslStream.AuthenticateAsServerAsync(new X509Certificate2(_certificate, _certificatePassword));
 
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
@@ -212,7 +209,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var line = await connection.Reader.ReadLineAsync().WaitAsync(cancellationToken);
+                    var line = await connection.Reader.ReadLineAsync();
 
                     if (!string.IsNullOrWhiteSpace(line))
                     {
@@ -281,7 +278,7 @@ namespace Tcp.NET.Server.Handlers
 
                 var message = JsonConvert.SerializeObject(packet);
 
-                await connection.Writer.WriteLineAsync(message.AsMemory(), cancellationToken);
+                await connection.Writer.WriteLineAsync(message);
 
                 FireEvent(this, new TcpMessageServerEventArgs
                 {
@@ -320,7 +317,7 @@ namespace Tcp.NET.Server.Handlers
             {
                 if (!_isRunning) { return false; }
 
-                await connection.Writer.WriteLineAsync(message.AsMemory(), cancellationToken);
+                await connection.Writer.WriteLineAsync(message);
 
                 FireEvent(this, new TcpMessageServerEventArgs
                 {

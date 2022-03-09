@@ -48,7 +48,7 @@ namespace Tcp.NET.Client
 
                 if (!string.IsNullOrWhiteSpace(_oauthToken))
                 {
-                    await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}".AsMemory(), cancellationToken);
+                    await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}");
                 }
 
                 if (_connection.Client.Connected)
@@ -129,7 +129,7 @@ namespace Tcp.NET.Client
                 ReceiveTimeout = 60000
             };
 
-            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port);
 
             var reader = new StreamReader(client.GetStream());
             var writer = new StreamWriter(client.GetStream())
@@ -154,14 +154,11 @@ namespace Tcp.NET.Client
                 ReceiveTimeout = 60000,
             };
 
-            await client.ConnectAsync(_parameters.Uri, _parameters.Port, _cancellationToken);
+            await client.ConnectAsync(_parameters.Uri, _parameters.Port);
 
             var sslStream = new SslStream(client.GetStream());
 
-            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-            {
-                TargetHost = _parameters.Uri
-            }, _cancellationToken);
+            await sslStream.AuthenticateAsClientAsync(_parameters.Uri);
 
             if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
             { 
@@ -190,7 +187,7 @@ namespace Tcp.NET.Client
             {
                 try
                 {
-                    var message = await _connection.Reader.ReadLineAsync().WaitAsync(_cancellationToken);
+                    var message = await _connection.Reader.ReadLineAsync();
 
                     if (!string.IsNullOrWhiteSpace(message))
                     {
@@ -263,7 +260,7 @@ namespace Tcp.NET.Client
                     !_cancellationToken.IsCancellationRequested)
                 {
                     var message = JsonConvert.SerializeObject(packet);
-                    await _connection.Writer.WriteLineAsync(message.AsMemory(), _cancellationToken);
+                    await _connection.Writer.WriteLineAsync(message);
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
@@ -305,7 +302,7 @@ namespace Tcp.NET.Client
                     _connection.Client.Connected &&
                     !_cancellationToken.IsCancellationRequested)
                 {
-                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}".AsMemory(), _cancellationToken);
+                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}");
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
