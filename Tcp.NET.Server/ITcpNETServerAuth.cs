@@ -3,6 +3,7 @@ using PHS.Networking.Models;
 using PHS.Networking.Server.Events.Args;
 using PHS.Networking.Services;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
@@ -11,7 +12,7 @@ namespace Tcp.NET.Server
 {
     public interface ITcpNETServerAuth<T> : ICoreNetworking<TcpConnectionServerAuthEventArgs<T>, TcpMessageServerAuthEventArgs<T>, TcpErrorServerAuthEventArgs<T>>
     {
-        void Start();
+        void Start(CancellationToken cancellationToken = default);
         void Stop();
 
         Task BroadcastToAllAuthorizedUsersAsync<S>(S packet) where S : IPacket;
