@@ -46,12 +46,12 @@ namespace Tcp.NET.Client
 
                 _isClientRunning = true;
 
-                if (!string.IsNullOrWhiteSpace(_oauthToken))
+                if (!string.IsNullOrWhiteSpace(_oauthToken) && !_cancellationToken.IsCancellationRequested)
                 {
                     await _connection.Writer.WriteLineAsync($"oauth:{_oauthToken}".AsMemory(), cancellationToken);
                 }
 
-                if (_connection.Client.Connected)
+                if (_connection.Client.Connected && !_cancellationToken.IsCancellationRequested)
                 {
                     FireEvent(this, new TcpConnectionClientEventArgs
                     {
@@ -163,7 +163,7 @@ namespace Tcp.NET.Client
                 TargetHost = _parameters.Uri
             }, _cancellationToken);
 
-            if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
+            if (sslStream.IsAuthenticated && sslStream.IsEncrypted && !_cancellationToken.IsCancellationRequested)
             { 
                 var reader = new StreamReader(sslStream);
                 var writer = new StreamWriter(sslStream)
