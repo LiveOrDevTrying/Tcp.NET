@@ -77,7 +77,7 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    if (!await _handler.SendAsync(packet, connection, _cancellationToken))
+                    if (!await _handler.SendAsync(packet, connection))
                     {
                         return false;
                     }
@@ -120,7 +120,7 @@ namespace Tcp.NET.Server
                     _handler.IsServerRunning &&
                     _connectionManager.IsConnectionOpen(connection))
                 {
-                    if (!await _handler.SendRawAsync(message, connection, _cancellationToken))
+                    if (!await _handler.SendRawAsync(message, connection))
                     {
                         return false;
                     }
