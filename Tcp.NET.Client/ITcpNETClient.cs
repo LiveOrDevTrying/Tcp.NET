@@ -1,23 +1,11 @@
-﻿using PHS.Networking.Models;
-using PHS.Networking.Services;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using PHS.Networking.Services;
 using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
 {
     public interface ITcpNETClient : 
-        ICoreNetworking<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs>
+        ICoreNetworkingClient<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs, ConnectionTcp>
     {
-        Task ConnectAsync(CancellationToken cancellationToken = default);
-        bool Disconnect();
-
-        Task<bool> SendToServerAsync<T>(T packet) where T : IPacket;
-        Task<bool> SendToServerAsync(string message);
-        Task<bool> SendToServerRawAsync(string message);
-
-        IConnectionTcp Connection { get; }
-        bool IsRunning { get; }
     }
 }

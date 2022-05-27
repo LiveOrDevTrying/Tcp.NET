@@ -1,34 +1,48 @@
 ﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Managers
 {
-    public class TcpConnectionManager
+    public class TcpConnectionManager<T> where T : ConnectionTcpServer
     {
-        protected ConcurrentDictionary<int, IConnectionTcpServer> _connections =
-            new ConcurrentDictionary<int, IConnectionTcpServer>();
+        protected ConcurrentDictionary<string, T> _connections =
+            new ConcurrentDictionary<string, T>();
 
-        public IConnectionTcpServer[] GetAllConnections()
+        public TcpConnectionManager()
+        {
+        }
+
+        public TcpConnectionManager(IEnumerable<T> connections)
+        {
+            _connections = new ConcurrentDictionary<string, T>();
+            foreach (var item in connections)
+            {
+                _connections.TryAdd(item.ConnectionId, item);
+            }
+        }
+
+        public virtual IEnumerable<T> GetAll()
         {
             return _connections.Values.ToArray();
         }
-        public IConnectionTcpServer GetConnection(TcpClient client)
+        public virtual T Get(string id)
         {
-            return _connections.TryGetValue(client.GetHashCode(), out var connection) ? connection : null;
+            return _connections.TryGetValue(id, out var connection) ? connection : null;
         }
-        public bool AddConnection(IConnectionTcpServer connection)
+        public bool Add(string id, T connection)
         {
-            return !_connections.ContainsKey(connection.Client.GetHashCode()) ? _connections.TryAdd(connection.Client.GetHashCode(), connection) : false;
+            return _connections.TryAdd(id, connection);
         }
-        public void RemoveConnection(IConnectionTcpServer connection)
+        public virtual bool Remove(string id)
         {
-            _connections.TryRemove(connection.Client.GetHashCode(), out var instance);
+            return _connections.TryRemove(id, out var _);
         }
-        public bool IsConnectionOpen(IConnectionTcpServer connection)
+        public virtual int Count()
         {
-            return _connections.TryGetValue(connection.Client.GetHashCode(), out var instance) ? instance.Client.Connected : false;
+            return _connections.Skip(0).Count();
         }
     }
 }
