@@ -26,6 +26,16 @@ namespace Tcp.NET.Server.Models
                 throw new ArgumentException("End of Line Characters are not valid");
             }
 
+            if (string.IsNullOrEmpty(pingCharacters))
+            {
+                throw new ArgumentException("Ping Characters are not valid");
+            }
+
+            if (string.IsNullOrEmpty(pongCharacters))
+            {
+                throw new ArgumentException("Pong Characters are not valid");
+            }
+
             if (onlyEmitBytes && !string.IsNullOrWhiteSpace(connectionSuccessString))
             {
                 throw new ArgumentException("onlyEmitBytes can not be true is a connectionSuccesString is specified");

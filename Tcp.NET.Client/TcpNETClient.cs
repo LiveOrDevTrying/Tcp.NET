@@ -15,7 +15,7 @@ namespace Tcp.NET.Client
             ConnectionTcp>,
         ITcpNETClient
     {
-        public TcpNETClient(ParamsTcpClient parameters, string token = "") : base(parameters, token)
+        public TcpNETClient(ParamsTcpClient parameters) : base(parameters)
         {
         }
 
@@ -34,7 +34,7 @@ namespace Tcp.NET.Client
 
         protected override TcpClientHandler CreateTcpClientHandler()
         {
-            return new TcpClientHandler(_parameters, _token);
+            return new TcpClientHandler(_parameters);
         }
     }
 }

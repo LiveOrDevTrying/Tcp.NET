@@ -13,8 +13,9 @@ namespace Tcp.NET.Client.Models
         public byte[] PongBytes { get; protected set; }
         public bool IsSSL { get; protected set; }
         public bool OnlyEmitBytes { get; protected set; }
+        public byte[] Token { get; protected set; }
 
-        public ParamsTcpClient(string host, int port, string endOfLineCharacters, bool isSSL, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong")
+        public ParamsTcpClient(string host, int port, string endOfLineCharacters, bool isSSL, string token = "", bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong")
         {
             if (string.IsNullOrWhiteSpace(host))
             {
@@ -31,6 +32,16 @@ namespace Tcp.NET.Client.Models
                 throw new ArgumentException("End of Line Characters are not valid");
             }
 
+            if (string.IsNullOrEmpty(pingCharacters))
+            {
+                throw new ArgumentException("Ping Characters are not valid");
+            }
+
+            if (string.IsNullOrEmpty(pongCharacters))
+            {
+                throw new ArgumentException("Pong Characters are not valid");
+            }
+
             Host = host;
             Port = port;
             EndOfLineBytes = Encoding.UTF8.GetBytes(endOfLineCharacters);
@@ -38,8 +49,13 @@ namespace Tcp.NET.Client.Models
             PongBytes = Encoding.UTF8.GetBytes(pongCharacters);
             IsSSL = isSSL;
             OnlyEmitBytes = onlyEmitBytes;
+
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                Token = Encoding.UTF8.GetBytes(token);
+            }
         }
-        public ParamsTcpClient(string host, int port, byte[] endOfLineBytes, bool isSSL, bool onlyEmitBytes = true, byte[] pingBytes = null, byte[] pongBytes = null)
+        public ParamsTcpClient(string host, int port, byte[] endOfLineBytes, bool isSSL, byte[] token = null, bool onlyEmitBytes = true, byte[] pingBytes = null, byte[] pongBytes = null)
         {
             if (string.IsNullOrWhiteSpace(host))
             {
@@ -51,9 +67,14 @@ namespace Tcp.NET.Client.Models
                 throw new ArgumentException("Port is not valid");
             }
 
-            if (endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
+            if (endOfLineBytes == null || endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
             {
                 throw new ArgumentException("End of Line Characters are not valid");
+            }
+
+            if (token != null && (token.Length <= 0 || token.All(x => x == 0)))
+            {
+                throw new ArgumentException("Token is not valid");
             }
 
             if (pingBytes.Length <= 0 || pingBytes.All(x => x == 0))
@@ -73,6 +94,7 @@ namespace Tcp.NET.Client.Models
             PongBytes = pongBytes;
             IsSSL = isSSL;
             OnlyEmitBytes = onlyEmitBytes;
+            Token = token;
         }
     }
 }

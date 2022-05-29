@@ -59,7 +59,7 @@ namespace Tcp.NET.TestApps.Server
                     Task.Run(async () =>
                     {
                         Console.WriteLine("Connections: " + _authServer.ConnectionCount);
-                        await _authServer.BroadcastToAllConnectionsAsync(args.Bytes, args.Connection);
+                        await _authServer.BroadcastToAllConnectionsAsync(args.Bytes);
                     });
                     break;
                 default:

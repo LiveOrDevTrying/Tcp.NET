@@ -5,7 +5,7 @@ namespace Tcp.NET.Client.Handlers
 {
     public class TcpClientHandler : TcpClientHandlerBase<ConnectionTcp>
     {
-        public TcpClientHandler(ParamsTcpClient parameters, string token = "") : base(parameters, token)
+        public TcpClientHandler(ParamsTcpClient parameters) : base(parameters)
         {
         }
 

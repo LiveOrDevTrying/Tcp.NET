@@ -38,7 +38,7 @@ namespace Tcp.NET.Server
                 : new TcpHandlerServer(_parameters);
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionServerBaseEventArgs<ConnectionTcpServer> args)
+        protected override void OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
         {
             switch (args.ConnectionEventType)
             {
@@ -52,30 +52,15 @@ namespace Tcp.NET.Server
                     break;
             }
 
-            FireEvent(this, new TcpConnectionServerEventArgs
-            {
-                Connection = args.Connection,
-                ConnectionEventType = args.ConnectionEventType
-            });
+            FireEvent(this, args);
         }
-        protected override void OnErrorEvent(object sender, TcpErrorServerBaseEventArgs<ConnectionTcpServer> args)
+        protected override void OnErrorEvent(object sender, TcpErrorServerEventArgs args)
         {
-            FireEvent(this, new TcpErrorServerEventArgs
-            {
-                Connection = args.Connection,
-                Exception = args.Exception,
-                Message = args.Message
-            });
+            FireEvent(this, args);
         }
-        protected override void OnMessageEvent(object sender, TcpMessageServerBaseEventArgs<ConnectionTcpServer> args)
+        protected override void OnMessageEvent(object sender, TcpMessageServerEventArgs args)
         {
-            FireEvent(this, new TcpMessageServerEventArgs
-            {
-                Connection = args.Connection,
-                Message = args.Message,
-                MessageEventType = args.MessageEventType,
-                Bytes = args.Bytes
-            });
+            FireEvent(this, args);
         }
     }
 }

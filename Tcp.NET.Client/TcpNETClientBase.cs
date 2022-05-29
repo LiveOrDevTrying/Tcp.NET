@@ -20,12 +20,10 @@ namespace Tcp.NET.Client
     {
         protected readonly X _handler;
         protected readonly W _parameters;
-        protected readonly string _token;
 
-        public TcpNETClientBase(W parameters, string token = "")
+        public TcpNETClientBase(W parameters)
         {
             _parameters = parameters;
-            _token = token;
 
             _handler = CreateTcpClientHandler();
             _handler.ConnectionEvent += OnConnectionEvent;

@@ -19,11 +19,11 @@ namespace Tcp.NET.Server
     public abstract class TcpNETServerBase<T, U, V, W, X, Y, Z> : 
         CoreNetworkingGeneric<T, U, V>, 
         ITcpNETServerBase<T, U, V, Z>
-        where T : TcpConnectionEventArgs<Z>
-        where U : TcpMessageEventArgs<Z>
-        where V : TcpErrorEventArgs<Z>
+        where T : TcpConnectionServerBaseEventArgs<Z>
+        where U : TcpMessageServerBaseEventArgs<Z>
+        where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
-        where X : TcpHandlerServerBase<Z>
+        where X : TcpHandlerServerBase<T, U, V, W, Z>
         where Y : TcpConnectionManager<Z>
         where Z : ConnectionTcpServer
     {
@@ -32,7 +32,8 @@ namespace Tcp.NET.Server
         protected readonly Y _connectionManager;
         protected Timer _timerPing;
         protected bool _isPingRunning;
-
+        protected CancellationToken _cancellationToken;
+        
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
         public TcpNETServerBase(W parameters)
@@ -61,6 +62,7 @@ namespace Tcp.NET.Server
         }
         public virtual void Start(CancellationToken cancellationToken = default)
         {
+            _cancellationToken = cancellationToken;
             _handler.Start(cancellationToken);
         }
         public virtual void Stop()
@@ -68,16 +70,13 @@ namespace Tcp.NET.Server
             _handler.Stop();
         }
 
-        public virtual async Task<bool> BroadcastToAllConnectionsAsync(string message, Z connectionSending = null, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> BroadcastToAllConnectionsAsync(string message, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
                 foreach (var connection in _connectionManager.GetAll())
                 {
-                    if (connectionSending == null || connection.ConnectionId != connectionSending.ConnectionId)
-                    {
-                        await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
-                    }
+                    await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
                 }
 
                 return true;
@@ -85,16 +84,13 @@ namespace Tcp.NET.Server
 
             return false;
         }
-        public virtual async Task<bool> BroadcastToAllConnectionsAsync(byte[] message, Z connectionSending = null, CancellationToken cancellationToken = default)
+        public virtual async Task<bool> BroadcastToAllConnectionsAsync(byte[] message, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
                 foreach (var connection in _connectionManager.GetAll())
                 {
-                    if (connectionSending == null || connection.ConnectionId != connectionSending.ConnectionId)
-                    {
-                        await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
-                    }
+                    await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
                 }
 
                 return true;
@@ -106,7 +102,7 @@ namespace Tcp.NET.Server
         {
             if (IsServerRunning)
             {
-                return await _handler.SendAsync(message, connection, cancellationToken);
+                return await _handler.SendAsync(message, connection, cancellationToken).ConfigureAwait(false);
             }
 
             return false;
@@ -115,47 +111,40 @@ namespace Tcp.NET.Server
         {
             if (IsServerRunning)
             {
-                return await _handler.SendAsync(message, connection, cancellationToken);
+                return await _handler.SendAsync(message, connection, cancellationToken).ConfigureAwait(false);
             }
 
             return false;
         }
         public virtual async Task<bool> DisconnectConnectionAsync(Z connection, CancellationToken cancellationToken = default)
         {
-            return await _handler.DisconnectConnectionAsync(connection, cancellationToken);
+            return await _handler.DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
         }
 
-        protected abstract void OnConnectionEvent(object sender, TcpConnectionServerBaseEventArgs<Z> args);
+        protected abstract void OnConnectionEvent(object sender, T args);
         protected virtual void OnServerEvent(object sender, ServerEventArgs args)
         {
+            if (_timerPing != null)
+            {
+                _timerPing.Dispose();
+                _timerPing = null;
+            }
+
             switch (args.ServerEventType)
             {
                 case ServerEventType.Start:
-                    if (_timerPing != null)
-                    {
-                        _timerPing.Dispose();
-                        _timerPing = null;
-                    }
-
-                    FireEvent(sender, args);
-
                     _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
                     break;
                 case ServerEventType.Stop:
-                    if (_timerPing != null)
-                    {
-                        _timerPing.Dispose();
-                        _timerPing = null;
-                    }
-
-                    FireEvent(sender, args);
                     break;
                 default:
                     break;
             }
+
+            FireEvent(sender, args);
         }
-        protected abstract void OnMessageEvent(object sender, TcpMessageServerBaseEventArgs<Z> args);
-        protected abstract void OnErrorEvent(object sender, TcpErrorServerBaseEventArgs<Z> args);
+        protected abstract void OnMessageEvent(object sender, U args);
+        protected abstract void OnErrorEvent(object sender, V args);
         
         protected virtual void OnTimerPingTick(object state)
         {
@@ -170,13 +159,13 @@ namespace Tcp.NET.Server
                         if (connection.HasBeenPinged)
                         {
                             // Already been pinged, no response, disconnect
-                            await SendToConnectionAsync("No ping response - disconnected.", connection);
-                            await DisconnectConnectionAsync(connection);
+                            await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
+                            await DisconnectConnectionAsync(connection, _cancellationToken).ConfigureAwait(false);
                         }
                         else
                         {
                             connection.HasBeenPinged = true;
-                            await SendToConnectionAsync("ping", connection);
+                            await SendToConnectionAsync(_parameters.PingBytes, connection, _cancellationToken).ConfigureAwait(false);
                         }
                     }
 
@@ -216,6 +205,18 @@ namespace Tcp.NET.Server
             }
         }
 
+        public event NetworkingEventHandler<ServerEventArgs> ServerEvent
+        {
+            add
+            {
+                _serverEvent += value;
+            }
+            remove
+            {
+                _serverEvent -= value;
+            }
+        }
+
         public TcpListener Server
         {
             get
@@ -242,17 +243,6 @@ namespace Tcp.NET.Server
             get
             {
                 return _connectionManager.Count();
-            }
-        }
-        public event NetworkingEventHandler<ServerEventArgs> ServerEvent
-        {
-            add
-            {
-                _serverEvent += value;
-            }
-            remove
-            {
-                _serverEvent -= value;
             }
         }
     }

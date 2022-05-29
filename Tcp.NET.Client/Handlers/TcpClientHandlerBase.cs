@@ -20,13 +20,11 @@ namespace Tcp.NET.Client.Handlers
         where T : ConnectionTcp
     {
         protected readonly ParamsTcpClient _parameters;
-        protected readonly string _token;
         protected T _connection;
 
-        public TcpClientHandlerBase(ParamsTcpClient parameters, string token = "")
+        public TcpClientHandlerBase(ParamsTcpClient parameters)
         {
             _parameters = parameters;
-            _token = token;
         }
 
         public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
@@ -42,9 +40,9 @@ namespace Tcp.NET.Client.Handlers
                     await CreateNonSSLConnectionAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (!string.IsNullOrWhiteSpace(_token) && !cancellationToken.IsCancellationRequested)
+                if (_parameters.Token != null && !cancellationToken.IsCancellationRequested)
                 {
-                    await SendAsync($"oauth:{_token}", cancellationToken);
+                    await SendAsync(_parameters.Token, cancellationToken).ConfigureAwait(false);
                 }
 
                 if (_connection != null && _connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
@@ -55,7 +53,7 @@ namespace Tcp.NET.Client.Handlers
                         ConnectionEventType = ConnectionEventType.Connected,
                     });
 
-                    _ = Task.Run(async () => { await ReceiveAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken);
+                    _ = Task.Run(async () => { await ReceiveAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
 
                     return true;
                 };
@@ -211,8 +209,8 @@ namespace Tcp.NET.Client.Handlers
                                 }
 
                                 var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken);
-                                await ms.WriteAsync(buffer.Array, buffer.Offset, result).ConfigureAwait(false);
+                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
 
                                 endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
                             }
@@ -226,13 +224,13 @@ namespace Tcp.NET.Client.Handlers
                                 {
                                     if (parts.Length > 1 && i == parts.Length - 1)
                                     {
-                                        await persistantMS.WriteAsync(parts[i], cancellationToken);
+                                        await persistantMS.WriteAsync(parts[i], cancellationToken).ConfigureAwait(false);
                                     }
                                     else
                                     {
                                         if (Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
                                         {
-                                            await SendAsync(_parameters.PongBytes, cancellationToken);
+                                            await SendAsync(_parameters.PongBytes, cancellationToken).ConfigureAwait(false);
                                         }
                                         else
                                         {

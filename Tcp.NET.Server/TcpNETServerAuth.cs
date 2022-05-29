@@ -28,6 +28,8 @@ namespace Tcp.NET.Server
             IUserService<T> userService) : base(parameters)
         { 
             _userService = userService;
+
+            _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
         public TcpNETServerAuth(ParamsTcpServerAuth parameters,
             IUserService<T> userService,
@@ -35,6 +37,8 @@ namespace Tcp.NET.Server
             string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
             _userService = userService;
+
+            _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
 
         protected override TcpConnectionManagerAuth<T> CreateTcpConnectionManager()
@@ -56,11 +60,7 @@ namespace Tcp.NET.Server
 
                 foreach (var connection in connections)
                 {
-                    if (connection.TcpClient.Connected)
-                    {
-                        await SendToConnectionAsync(message, connection, cancellationToken);
-
-                    }
+                    await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -72,16 +72,12 @@ namespace Tcp.NET.Server
 
                 foreach (var connection in connections)
                 {
-                    if (connection.TcpClient.Connected)
-                    {
-                        await SendToConnectionAsync(message, connection, cancellationToken);
-
-                    }
+                    await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected override void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<T> args)
         {
             switch (args.ConnectionEventType)
             {
@@ -90,55 +86,18 @@ namespace Tcp.NET.Server
                     break;
                 case ConnectionEventType.Disconnect:
                     _connectionManager.Remove(args.Connection.ConnectionId);
+                    break;
+                default:
+                    break;
+            }
 
-                    FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
-                    {
-                        Connection = args.Connection,
-                        ConnectionEventType = args.ConnectionEventType,
-                    });
-                    break;
-                default:
-                    break;
-            }
+            FireEvent(this, args);
         }
-        protected override void OnMessageEvent(object sender, TcpMessageServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected override void OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
         {
-            switch (args.MessageEventType)
-            {
-                case MessageEventType.Sent:
-                    FireEvent(this, new TcpMessageServerAuthEventArgs<T>
-                    {
-                        MessageEventType = MessageEventType.Sent,
-                        Connection = args.Connection,
-                        Message = args.Message,
-                        Bytes = args.Bytes
-                        
-                    });
-                    break;
-                case MessageEventType.Receive:
-                    if (!args.Connection.IsAuthorized)
-                    {
-                        Task.Run(async () =>
-                        {
-                            await CheckIfAuthorizedAsync(args);
-                        });
-                    }
-                    else
-                    {
-                        FireEvent(this, new TcpMessageServerAuthEventArgs<T>
-                        {
-                            MessageEventType = MessageEventType.Receive,
-                            Message = args.Message,
-                            Connection = args.Connection,
-                            Bytes = args.Bytes
-                        });
-                    }
-                    break;
-                default:
-                    break;
-            }
+            FireEvent(this, args);
         }
-        protected override void OnErrorEvent(object sender, TcpErrorServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected override void OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<T> args)
         {
             FireEvent(this, new TcpErrorServerAuthEventArgs<T>
             {
@@ -147,65 +106,70 @@ namespace Tcp.NET.Server
                 Connection = args.Connection
             });
         }
-        
-        protected virtual async Task<bool> CheckIfAuthorizedAsync(TcpMessageServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected virtual void OnAuthorizeEvent(object sender, TcpAuthorizeEventArgs<IdentityTcpServer<T>, T> args)
         {
-            try
+            Task.Run(async () =>
             {
-                // Check for token here
-                if (args.Connection != null &&
-                    args.Connection.TcpClient.Connected &&
-                    !args.Connection.IsAuthorized)
+                try
                 {
-                    var message = Encoding.UTF8.GetString(args.Bytes);
-                    if (message.Length < "oauth:".Length ||
-                        !message.ToLower().StartsWith("oauth:"))
+                    // Check for token here
+                    if (args.Connection != null &&
+                        args.Connection.TcpClient.Connected &&
+                        !args.Connection.IsAuthorized)
                     {
-                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                        if (args.Token.Length <= 0)
                         {
-                            await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
+                            if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                            {
+                                await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                            }
+
+                            await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
+                            return;
                         }
 
-                        await DisconnectConnectionAsync(args.Connection);
-
-                        return false;
-                    }
-
-                    var token = message.Substring("oauth:".Length);
-
-                    if (await _userService.IsValidTokenAsync(token))
-                    {
-                        args.Connection.UserId = await _userService.GetIdAsync(token);
-                        args.Connection.IsAuthorized = true;
-
-                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
+                        if (await _userService.IsValidTokenAsync(args.Token, _cancellationToken).ConfigureAwait(false))
                         {
-                            await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection);
+                            args.Connection.UserId = await _userService.GetIdAsync(args.Token, _cancellationToken).ConfigureAwait(false);
+                            args.Connection.IsAuthorized = true;
+
+                            if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
+                            {
+                                await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                            }
+
+                            await _handler.AuthorizeCallbackAsync(args, _cancellationToken).ConfigureAwait(false);
+                            return;
                         }
-
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
-                        {
-                            ConnectionEventType = ConnectionEventType.Connected,
-                            Connection = args.Connection
-                        });
-                        return true;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                catch (Exception ex)
                 {
-                    Connection = args.Connection,
-                    Exception = ex,
-                    Message = ex.Message
-                });
+                    FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                    {
+                        Connection = args.Connection,
+                        Exception = ex,
+                        Message = ex.Message
+                    });
+                }
+
+                if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                {
+                    await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                }
+
+                await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
+            });
+        }
+
+        public override void Dispose()
+        {
+            if (_handler != null)
+            {
+                _handler.AuthorizeEvent -= OnAuthorizeEvent;
             }
 
-            await SendToConnectionAsync("Error connecting to server", args.Connection);
-            await DisconnectConnectionAsync(args.Connection);
-
-            return false;
+            base.Dispose();
         }
     }
 }

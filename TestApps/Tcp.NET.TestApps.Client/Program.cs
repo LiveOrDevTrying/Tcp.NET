@@ -69,7 +69,7 @@ namespace Tcp.NET.TestApps.Client
         {
             if (_clients.Count < _max)
             {
-                var client = new TcpNETClient(new ParamsTcpClient("localhost", 8989, "\r\n", false), token: "testToken");
+                var client = new TcpNETClient(new ParamsTcpClient("localhost", 8989, "\r\n", false, token: "testToken"));
                 client.ConnectionEvent += OnConnectionEvent;
                 client.MessageEvent += OnMessageEvent;
                 client.ErrorEvent += OnErrorEvent;

@@ -18,24 +18,28 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Handlers
 {
-    public abstract class TcpHandlerServerBase<T> : 
-        CoreNetworkingGeneric<TcpConnectionServerBaseEventArgs<T>, TcpMessageServerBaseEventArgs<T>, TcpErrorServerBaseEventArgs<T>>, 
-        ICoreNetworkingGeneric<TcpConnectionServerBaseEventArgs<T>, TcpMessageServerBaseEventArgs<T>, TcpErrorServerBaseEventArgs<T>> 
-        where T : ConnectionTcpServer
+    public abstract class TcpHandlerServerBase<T, U, V, W, X> : 
+        CoreNetworkingGeneric<T, U, V>, 
+        ICoreNetworkingGeneric<T, U, V> 
+        where T : TcpConnectionServerBaseEventArgs<X>
+        where U : TcpMessageServerBaseEventArgs<X>
+        where V : TcpErrorServerBaseEventArgs<X>
+        where W : ParamsTcpServer
+        where X : ConnectionTcpServer
     {
         protected readonly byte[] _certificate;
         protected readonly string _certificatePassword;
-        protected readonly ParamsTcpServer _parameters;
+        protected readonly W _parameters;
         protected TcpListener _server;
         protected bool _isRunning;
 
         private event NetworkingEventHandler<ServerEventArgs> _serverEvent;
 
-        public TcpHandlerServerBase(ParamsTcpServer parameters)
+        public TcpHandlerServerBase(W parameters)
         {
             _parameters = parameters;
         }
-        public TcpHandlerServerBase(ParamsTcpServer parameters, byte[] certificate, string certificatePassword)
+        public TcpHandlerServerBase(W parameters, byte[] certificate, string certificatePassword)
         {
             _parameters = parameters;
             _certificate = certificate;
@@ -64,21 +68,21 @@ namespace Tcp.NET.Server.Handlers
 
                 if (_certificate == null)
                 {
-                    _ = Task.Run(async () => { await ListenForConnectionsAsync(cancellationToken); });
+                    _ = Task.Run(async () => { await ListenForConnectionsAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(cancellationToken); });
+                    _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                 }
                 return;
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorServerBaseEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
                 {
                     Exception = ex,
                     Message = ex.Message,
-                });
+                }));
             }
         }
         public virtual void Stop()
@@ -97,14 +101,117 @@ namespace Tcp.NET.Server.Handlers
             });
         }
 
-        protected abstract T CreateConnection(ConnectionTcpServer connection);
+        public virtual async Task<bool> SendAsync(string message, X connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (connection.TcpClient.Connected && _isRunning)
+                {
+                    var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
+                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+                    FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<X>
+                    {
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = connection,
+                        Message = message,
+                        Bytes = bytes
+                    }));
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                }));
+
+                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
+            }
+
+            return false;
+        }
+        public virtual async Task<bool> SendAsync(byte[] message, X connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (connection.TcpClient.Connected && _isRunning)
+                {
+                    var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
+                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+                    FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<X>
+                    {
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = connection,
+                        Message = null,
+                        Bytes = bytes
+                    }));
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                }));
+
+                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
+            }
+
+            return false;
+        }
+        public virtual Task<bool> DisconnectConnectionAsync(X connection, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (connection != null)
+                {
+                    if (connection.TcpClient != null &&
+                        !connection.Disposed)
+                    {
+                        connection.Disposed = true;
+                        connection.TcpClient.Close();
+                        connection.TcpClient.Dispose();
+
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionServerBaseEventArgs<X>
+                        {
+                            ConnectionEventType = ConnectionEventType.Disconnect,
+                            Connection = connection
+                        }));
+                    }
+                }
+
+                return Task.FromResult(true);
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
+                {
+                    Exception = ex,
+                    Message = ex.Message,
+                    Connection = connection
+                }));
+            }
+
+            return Task.FromResult(false);
+        }
+
         protected virtual async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
         {
             while (_isRunning && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
 
                     var connection = CreateConnection(new ConnectionTcpServer
                     {
@@ -112,23 +219,22 @@ namespace Tcp.NET.Server.Handlers
                         ConnectionId = Guid.NewGuid().ToString()
                     });
 
-                    FireEvent(this, new TcpConnectionServerBaseEventArgs<T>
+                    FireEvent(this, CreateConnectionEventArgs(new TcpConnectionServerBaseEventArgs<X>
                     {
                         ConnectionEventType = ConnectionEventType.Connected,
                         Connection = connection,
-                    });
+                    }));
 
-                    _ = Task.Run(async () => { await ReceiveAsync(connection, cancellationToken); });
+                    _ = Task.Run(async () => { await ReceiveAsync(connection, cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    FireEvent(this, new TcpErrorServerBaseEventArgs<T>
+                    FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
                     {
                         Exception = ex,
                         Message = ex.Message,
-                    });
+                    }));
                 }
-
             }
         }
         protected virtual async Task ListenForConnectionsSSLAsync(CancellationToken cancellationToken)
@@ -137,12 +243,12 @@ namespace Tcp.NET.Server.Handlers
             {
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync(cancellationToken);
+                    var client = await _server.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
                         ServerCertificate = new X509Certificate2(_certificate, _certificatePassword)
-                    }, cancellationToken);
+                    }, cancellationToken).ConfigureAwait(false);
 
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
@@ -152,37 +258,37 @@ namespace Tcp.NET.Server.Handlers
                             ConnectionId = Guid.NewGuid().ToString()
                         });
 
-                        FireEvent(this, new TcpConnectionServerBaseEventArgs<T>
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionServerBaseEventArgs<X>
                         {
                             ConnectionEventType = ConnectionEventType.Connected,
                             Connection = connection,
-                        });
+                        }));
 
-                        _ = Task.Run(async () => { await ReceiveAsync(connection, cancellationToken); });
+                        _ = Task.Run(async () => { await ReceiveAsync(connection, cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
                         var certStatus = $"IsAuthenticated = {sslStream.IsAuthenticated} && IsEncrypted == {sslStream.IsEncrypted}";
-                        FireEvent(this, new TcpErrorServerBaseEventArgs<T>
+                        FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
                         {
                             Exception = new Exception(certStatus),
                             Message = certStatus
-                        });
+                        }));
 
                         client.Close();
                     }
                 }
                 catch (Exception ex)
                 {
-                    FireEvent(this, new TcpErrorServerBaseEventArgs<T>
+                    FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
                     {
                         Exception = ex,
                         Message = ex.Message,
-                    });
+                    }));
                 }
             }
         }
-        protected virtual async Task ReceiveAsync(T connection, CancellationToken cancellationToken) 
+        protected virtual async Task ReceiveAsync(X connection, CancellationToken cancellationToken) 
         {
             try
             {
@@ -208,8 +314,8 @@ namespace Tcp.NET.Server.Handlers
                                 }
 
                                 var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
-                                var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken);
-                                await ms.WriteAsync(buffer.Array, buffer.Offset, result).ConfigureAwait(false);
+                                var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
 
                                 endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
                             }
@@ -223,7 +329,7 @@ namespace Tcp.NET.Server.Handlers
                                 {
                                     if (parts.Length > 1 && i == parts.Length - 1)
                                     {
-                                        await persistantMS.WriteAsync(parts[i], cancellationToken);
+                                        await persistantMS.WriteAsync(parts[i], cancellationToken).ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -240,13 +346,13 @@ namespace Tcp.NET.Server.Handlers
                                                 message = Encoding.UTF8.GetString(parts[i]);
                                             }
 
-                                            FireEvent(this, new TcpMessageServerBaseEventArgs<T>
+                                            FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<X>
                                             {
                                                 Connection = connection,
                                                 Message = message,
                                                 MessageEventType = MessageEventType.Receive,
                                                 Bytes = parts[i]
-                                            });
+                                            }));
                                         }
                                     }
                                 }
@@ -257,122 +363,22 @@ namespace Tcp.NET.Server.Handlers
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorServerBaseEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<X>
                 {
                     Exception = ex,
                     Message = ex.Message,
                     Connection = connection
-                });
+                }));
             }
 
-            await DisconnectConnectionAsync(connection, cancellationToken);
+            await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual async Task<bool> SendAsync(string message, T connection, CancellationToken cancellationToken)
-        {
-            try
-            {
-                if (connection.TcpClient.Connected && _isRunning)
-                {
-                    var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
-
-                    FireEvent(this, new TcpMessageServerBaseEventArgs<T>
-                    {
-                        MessageEventType = MessageEventType.Sent,
-                        Connection = connection,
-                        Message = message,
-                        Bytes = bytes
-                    });
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                FireEvent(this, new TcpErrorServerBaseEventArgs<T>
-                {
-                    Exception = ex,
-                    Message = ex.Message,
-                    Connection = connection
-                });
-
-                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
-            }
-
-            return false;
-        }
-        public virtual async Task<bool> SendAsync(byte[] message, T connection, CancellationToken cancellationToken)
-        {
-            try
-            {
-                if (connection.TcpClient.Connected && _isRunning)
-                {
-                    var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
-
-                    FireEvent(this, new TcpMessageServerBaseEventArgs<T>
-                    {
-                        MessageEventType = MessageEventType.Sent,
-                        Connection = connection,
-                        Message = null,
-                        Bytes = bytes
-                    });
-
-                    return true;
-                }
-            }
-            catch (Exception ex)
-            {
-                FireEvent(this, new TcpErrorServerBaseEventArgs<T>
-                {
-                    Exception = ex,
-                    Message = ex.Message,
-                    Connection = connection
-                });
-
-                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
-            }
-
-            return false;
-        }
-
-        public virtual Task<bool> DisconnectConnectionAsync(T connection, CancellationToken cancellationToken)
-        {
-            try
-            {
-                if (connection != null)
-                {
-                    if (connection.TcpClient != null &&
-                        !connection.Disposed)
-                    {
-                        connection.Disposed = true;
-                        connection.TcpClient.Close();
-                        connection.TcpClient.Dispose();
-
-                        FireEvent(this, new TcpConnectionServerBaseEventArgs<T>
-                        {
-                            ConnectionEventType = ConnectionEventType.Disconnect,
-                            Connection = connection
-                        });
-                    }
-                }
-
-                return Task.FromResult(true);
-            }
-            catch (Exception ex)
-            {
-                FireEvent(this, new TcpErrorServerBaseEventArgs<T>
-                {
-                    Exception = ex,
-                    Message = ex.Message,
-                    Connection = connection
-                });
-            }
-
-            return Task.FromResult(false);
-        }
-
+        protected abstract X CreateConnection(ConnectionTcpServer connection);
+        protected abstract T CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<X> args);
+        protected abstract U CreateMessageEventArgs(TcpMessageServerBaseEventArgs<X> args);
+        protected abstract V CreateErrorEventArgs(TcpErrorServerBaseEventArgs<X> args);
+        
         protected virtual void FireEvent(object sender, ServerEventArgs args)
         {
             _serverEvent?.Invoke(sender, args);
