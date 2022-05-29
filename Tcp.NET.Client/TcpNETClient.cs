@@ -1,16 +1,4 @@
-﻿using Newtonsoft.Json;
-using PHS.Networking.Enums;
-using PHS.Networking.Models;
-using PHS.Networking.Services;
-using System;
-using System.IO;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Tcp.NET.Client.Events.Args;
+﻿using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Client.Handlers;
 using Tcp.NET.Client.Models;
 using Tcp.NET.Core.Models;

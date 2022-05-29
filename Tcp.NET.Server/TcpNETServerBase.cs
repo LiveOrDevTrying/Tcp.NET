@@ -23,7 +23,7 @@ namespace Tcp.NET.Server
         where U : TcpMessageEventArgs<Z>
         where V : TcpErrorEventArgs<Z>
         where W : ParamsTcpServer
-        where X : TcpHandlerBase<Z>
+        where X : TcpHandlerServerBase<Z>
         where Y : TcpConnectionManager<Z>
         where Z : ConnectionTcpServer
     {
@@ -85,7 +85,33 @@ namespace Tcp.NET.Server
 
             return false;
         }
+        public virtual async Task<bool> BroadcastToAllConnectionsAsync(byte[] message, Z connectionSending = null, CancellationToken cancellationToken = default)
+        {
+            if (IsServerRunning)
+            {
+                foreach (var connection in _connectionManager.GetAll())
+                {
+                    if (connectionSending == null || connection.ConnectionId != connectionSending.ConnectionId)
+                    {
+                        await SendToConnectionAsync(message, connection, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+
+                return true;
+            }
+
+            return false;
+        }
         public virtual async Task<bool> SendToConnectionAsync(string message, Z connection, CancellationToken cancellationToken = default)
+        {
+            if (IsServerRunning)
+            {
+                return await _handler.SendAsync(message, connection, cancellationToken);
+            }
+
+            return false;
+        }
+        public virtual async Task<bool> SendToConnectionAsync(byte[] message, Z connection, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
@@ -139,7 +165,6 @@ namespace Tcp.NET.Server
 
                 Task.Run(async () =>
                 {
-                    Console.WriteLine("Ping");
                     foreach (var connection in _connectionManager.GetAll())
                     {
                         if (connection.HasBeenPinged)
@@ -156,7 +181,6 @@ namespace Tcp.NET.Server
                     }
 
                     _isPingRunning = false;
-                    Console.WriteLine("Pinged");
                 });
             }
         }

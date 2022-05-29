@@ -14,13 +14,7 @@ namespace Tcp.NET.TestApps.Server
 
         static async Task Main(string[] args)
         {
-            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth
-            {
-                ConnectionSuccessString = "Connected Successfully",
-                EndOfLineCharacters = "\r\n",
-                Port = 8989,
-                ConnectionUnauthorizedString = "Not authorized",
-            }, new MockUserService());
+            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized"), new MockUserService()); ;
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
@@ -65,7 +59,7 @@ namespace Tcp.NET.TestApps.Server
                     Task.Run(async () =>
                     {
                         Console.WriteLine("Connections: " + _authServer.ConnectionCount);
-                        await _authServer.BroadcastToAllConnectionsAsync(args.Message, args.Connection);
+                        await _authServer.BroadcastToAllConnectionsAsync(args.Bytes, args.Connection);
                     });
                     break;
                 default:

@@ -13,5 +13,6 @@ namespace Tcp.NET.Server
             IdentityTcpServer<T>>
     {
         Task SendToUserAsync(string message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default);
+        Task SendToUserAsync(byte[] message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default);
     }
 }

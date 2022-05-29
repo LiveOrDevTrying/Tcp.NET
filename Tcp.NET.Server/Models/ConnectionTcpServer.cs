@@ -6,5 +6,6 @@ namespace Tcp.NET.Server.Models
     {
         public bool HasBeenPinged { get; set; }
         public string ConnectionId { get; set; }
+        public bool Disposed { get; set; }
     }
 }

@@ -1,7 +1,9 @@
 ﻿using PHS.Networking.Enums;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -58,9 +60,7 @@ namespace Tcp.NET.TestApps.Client
                 }
                 else
                 {
-                    var bytes = Encoding.UTF8.GetBytes(line + "\r\n");
-                    await _clients.First().Connection.Client.Client.SendAsync(new ArraySegment<byte>(bytes), System.Net.Sockets.SocketFlags.None);
-                    //await _clients.ToList().Where(x => x.IsRunning).OrderBy(x => Guid.NewGuid()).First().Connection.Client.Client.SendAsync(new ArraySegment<byte>(bytes), System.Net.Sockets.SocketFlags.Broadcast);
+                    await _clients.ToList().Where(x => x.IsRunning).OrderBy(x => Guid.NewGuid()).First().SendAsync(line);
                 }
             }
         }
@@ -69,13 +69,7 @@ namespace Tcp.NET.TestApps.Client
         {
             if (_clients.Count < _max)
             {
-                var client = new TcpNETClient(new ParamsTcpClient
-                {
-                    EndOfLineCharacters = "\r\n",
-                    Port = 8989,
-                    Host = "localhost",
-                    IsSSL = false
-                }, "testToken");
+                var client = new TcpNETClient(new ParamsTcpClient("localhost", 8989, "\r\n", false), token: "testToken");
                 client.ConnectionEvent += OnConnectionEvent;
                 client.MessageEvent += OnMessageEvent;
                 client.ErrorEvent += OnErrorEvent;
@@ -90,6 +84,8 @@ namespace Tcp.NET.TestApps.Client
         }
         private static void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
+            Console.WriteLine(args.ConnectionEventType);
+
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:

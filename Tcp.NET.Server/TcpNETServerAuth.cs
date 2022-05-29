@@ -1,15 +1,7 @@
-﻿using Newtonsoft.Json;
-using PHS.Networking.Enums;
-using PHS.Networking.Events;
-using PHS.Networking.Models;
-using PHS.Networking.Server.Enums;
-using PHS.Networking.Server.Events.Args;
+﻿using PHS.Networking.Enums;
 using PHS.Networking.Server.Services;
-using PHS.Networking.Services;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
@@ -25,7 +17,7 @@ namespace Tcp.NET.Server
             TcpMessageServerAuthEventArgs<T>, 
             TcpErrorServerAuthEventArgs<T>,
             ParamsTcpServerAuth,
-            TcpHandlerAuth<T>,
+            TcpHandlerServerAuth<T>,
             TcpConnectionManagerAuth<T>,
             IdentityTcpServer<T>>,
         ITcpNETServerAuth<T>
@@ -49,23 +41,22 @@ namespace Tcp.NET.Server
         {
             return new TcpConnectionManagerAuth<T>();
         }
-        protected override TcpHandlerAuth<T> CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServerAuth<T> CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
         {
             return certificate == null
-                ? new TcpHandlerAuth<T>(_parameters)
-                : new TcpHandlerAuth<T>(_parameters, certificate, certificatePassword);
+                ? new TcpHandlerServerAuth<T>(_parameters)
+                : new TcpHandlerServerAuth<T>(_parameters, certificate, certificatePassword);
         }
 
         public virtual async Task SendToUserAsync(string message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default)
         {
-            if (_handler != null &&
-                _handler.IsServerRunning)
+            if (IsServerRunning)
             {
                 var connections = _connectionManager.GetAll(userId);
 
                 foreach (var connection in connections)
                 {
-                    if (connection.Client.Connected)
+                    if (connection.TcpClient.Connected)
                     {
                         await SendToConnectionAsync(message, connection, cancellationToken);
 
@@ -73,7 +64,23 @@ namespace Tcp.NET.Server
                 }
             }
         }
-        
+        public virtual async Task SendToUserAsync(byte[] message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default)
+        {
+            if (IsServerRunning)
+            {
+                var connections = _connectionManager.GetAll(userId);
+
+                foreach (var connection in connections)
+                {
+                    if (connection.TcpClient.Connected)
+                    {
+                        await SendToConnectionAsync(message, connection, cancellationToken);
+
+                    }
+                }
+            }
+        }
+
         protected override void OnConnectionEvent(object sender, TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
         {
             switch (args.ConnectionEventType)
@@ -103,8 +110,9 @@ namespace Tcp.NET.Server
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = args.Connection,
-                        Message = args.Message
-
+                        Message = args.Message,
+                        Bytes = args.Bytes
+                        
                     });
                     break;
                 case MessageEventType.Receive:
@@ -122,6 +130,7 @@ namespace Tcp.NET.Server
                             MessageEventType = MessageEventType.Receive,
                             Message = args.Message,
                             Connection = args.Connection,
+                            Bytes = args.Bytes
                         });
                     }
                     break;
@@ -145,31 +154,34 @@ namespace Tcp.NET.Server
             {
                 // Check for token here
                 if (args.Connection != null &&
-                    args.Connection.Client.Connected &&
+                    args.Connection.TcpClient.Connected &&
                     !args.Connection.IsAuthorized)
                 {
-                    if (args.Message.Length < "oauth:".Length ||
-                        !args.Message.ToLower().StartsWith("oauth:"))
+                    var message = Encoding.UTF8.GetString(args.Bytes);
+                    if (message.Length < "oauth:".Length ||
+                        !message.ToLower().StartsWith("oauth:"))
                     {
-                        await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
+                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                        {
+                            await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection);
+                        }
+
                         await DisconnectConnectionAsync(args.Connection);
 
-                        FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
-                        {
-                            ConnectionEventType = ConnectionEventType.Disconnect,
-                            Connection = args.Connection
-                        });
                         return false;
                     }
 
-                    var token = args.Message.Substring("oauth:".Length);
+                    var token = message.Substring("oauth:".Length);
 
                     if (await _userService.IsValidTokenAsync(token))
                     {
                         args.Connection.UserId = await _userService.GetIdAsync(token);
                         args.Connection.IsAuthorized = true;
 
-                        await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection);
+                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
+                        {
+                            await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection);
+                        }
 
                         FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
                         {

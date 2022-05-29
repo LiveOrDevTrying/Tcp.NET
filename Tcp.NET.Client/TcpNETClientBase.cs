@@ -46,6 +46,10 @@ namespace Tcp.NET.Client
         {
             return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
+        public virtual async Task<bool> SendAsync(byte[] message, CancellationToken cancellationToken = default)
+        {
+            return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
+        }
 
         protected abstract void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args);
         protected abstract void OnMessageEvent(object sender, TcpMessageClientEventArgs args);
@@ -69,8 +73,8 @@ namespace Tcp.NET.Client
             get
             {
                 return _handler.Connection != null &&
-                    _handler.Connection.Client != null &&
-                    _handler.Connection.Client.Connected;
+                    _handler.Connection.TcpClient != null &&
+                    _handler.Connection.TcpClient.Connected;
             }
         }
         public Y Connection

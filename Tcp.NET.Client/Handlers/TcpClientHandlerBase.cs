@@ -1,10 +1,12 @@
 ﻿using PHS.Networking.Enums;
 using PHS.Networking.Services;
+using PHS.Networking.Utilities;
 using System;
 using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Client.Events.Args;
@@ -42,10 +44,10 @@ namespace Tcp.NET.Client.Handlers
 
                 if (!string.IsNullOrWhiteSpace(_token) && !cancellationToken.IsCancellationRequested)
                 {
-                    await _connection.Writer.WriteLineAsync($"oauth:{_token}".AsMemory(), cancellationToken).ConfigureAwait(false);
+                    await SendAsync($"oauth:{_token}", cancellationToken);
                 }
 
-                if (_connection.Client.Connected && !cancellationToken.IsCancellationRequested)
+                if (_connection != null && _connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
                 {
                     FireEvent(this, new TcpConnectionClientEventArgs
                     {
@@ -66,6 +68,8 @@ namespace Tcp.NET.Client.Handlers
                     Connection = _connection,
                     Message = ex.Message
                 });
+
+                await DisconnectAsync(cancellationToken);
             }
 
             return false;
@@ -76,30 +80,17 @@ namespace Tcp.NET.Client.Handlers
             {
                 if (_connection != null)
                 {
-                    if (_connection != null &&
-                        _connection.Writer != null)
+                    if (_connection.TcpClient != null)
                     {
-                        _connection.Writer.Dispose();
-                    }
+                        _connection.TcpClient.Close();
+                        _connection.TcpClient.Dispose();
 
-                    if (_connection != null &&
-                        _connection.Reader != null)
-                    {
-                        _connection.Reader.Dispose();
+                        FireEvent(this, new TcpConnectionClientEventArgs
+                        {
+                            ConnectionEventType = ConnectionEventType.Disconnect,
+                            Connection = _connection
+                        });
                     }
-
-                    if (_connection != null &&
-                        _connection.Client != null)
-                    {
-                        _connection.Client.Close();
-                        _connection.Client.Dispose();
-                    }
-
-                    FireEvent(this, new TcpConnectionClientEventArgs
-                    {
-                        ConnectionEventType = ConnectionEventType.Disconnect,
-                        Connection = _connection
-                    });
 
                     _connection = null;
 
@@ -124,17 +115,19 @@ namespace Tcp.NET.Client.Handlers
             try
             {
                 if (_connection != null &&
-                    _connection.Client != null &&
-                    _connection.Client.Connected &&
+                    _connection.TcpClient != null &&
+                    _connection.TcpClient.Connected &&
                     !cancellationToken.IsCancellationRequested)
                 {
-                    await _connection.Writer.WriteAsync($"{message}{_parameters.EndOfLineCharacters}".AsMemory(), cancellationToken).ConfigureAwait(false);
+                    var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes($"{message}"), _parameters.EndOfLineBytes);
+                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
 
                     FireEvent(this, new TcpMessageClientEventArgs
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
-                        Message = message
+                        Message = message,
+                        Bytes = bytes
                     });
 
                     return true;
@@ -148,6 +141,45 @@ namespace Tcp.NET.Client.Handlers
                     Exception = ex,
                     Message = ex.Message
                 });
+
+                await DisconnectAsync(cancellationToken);
+            }
+
+            return false;
+        }
+        public virtual async Task<bool> SendAsync(byte[] message, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                if (_connection != null &&
+                    _connection.TcpClient != null &&
+                    _connection.TcpClient.Connected &&
+                    !cancellationToken.IsCancellationRequested)
+                {
+                    var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
+                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+                    FireEvent(this, new TcpMessageClientEventArgs
+                    { 
+                        MessageEventType = MessageEventType.Sent,
+                        Connection = _connection,
+                        Message = null,
+                        Bytes = bytes
+                    });
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, new TcpErrorClientEventArgs
+                {
+                    Connection = _connection,
+                    Exception = ex,
+                    Message = ex.Message
+                });
+
+                await DisconnectAsync(cancellationToken);
             }
 
             return false;
@@ -157,30 +189,71 @@ namespace Tcp.NET.Client.Handlers
         {
             try
             {
-                while (!cancellationToken.IsCancellationRequested && _connection != null && _connection.Client.Connected)
+                using (var persistantMS = new MemoryStream())
                 {
-                    if (_connection.Client.Available <= 0)
+                    while (!cancellationToken.IsCancellationRequested && _connection != null && _connection.TcpClient.Connected)
                     {
-                        await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                        continue;
-                    }
-                    var message = await _connection.Reader.ReadLineAsync().WaitAsync(cancellationToken).ConfigureAwait(false);
-
-                    if (!string.IsNullOrWhiteSpace(message))
-                    {
-                        // Digest the ping first
-                        if (message.Trim().ToLower() == "ping")
+                        using (var ms = new MemoryStream())
                         {
-                            await SendAsync("pong", cancellationToken).ConfigureAwait(false);
-                        }
-                        else
-                        {
-                            FireEvent(this, new TcpMessageClientEventArgs
+                            if (persistantMS.Length > 0)
                             {
-                                MessageEventType = MessageEventType.Receive,
-                                Connection = _connection,
-                                Message = message
-                            });
+                                persistantMS.CopyTo(ms);
+                                persistantMS.SetLength(0);
+                            }
+
+                            var endOfMessage = false;
+                            do
+                            {
+                                if (_connection.TcpClient.Available <= 0)
+                                {
+                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                    continue;
+                                }
+
+                                var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
+                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken);
+                                await ms.WriteAsync(buffer.Array, buffer.Offset, result).ConfigureAwait(false);
+
+                                endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
+                            }
+                            while (!endOfMessage && _connection != null && _connection.TcpClient.Connected);
+
+                            if (endOfMessage)
+                            {
+                                var parts = Statics.ByteArraySeparate(ms.ToArray(), _parameters.EndOfLineBytes);
+
+                                for (int i = 0; i < parts.Length; i++)
+                                {
+                                    if (parts.Length > 1 && i == parts.Length - 1)
+                                    {
+                                        await persistantMS.WriteAsync(parts[i], cancellationToken);
+                                    }
+                                    else
+                                    {
+                                        if (Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
+                                        {
+                                            await SendAsync(_parameters.PongBytes, cancellationToken);
+                                        }
+                                        else
+                                        {
+                                            string message = null;
+
+                                            if (!_parameters.OnlyEmitBytes)
+                                            {
+                                                message = Encoding.UTF8.GetString(parts[i]);
+                                            }
+
+                                            FireEvent(this, new TcpMessageClientEventArgs
+                                            {
+                                                MessageEventType = MessageEventType.Receive,
+                                                Connection = _connection,
+                                                Message = message,
+                                                Bytes = parts[i]
+                                            });
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -194,6 +267,8 @@ namespace Tcp.NET.Client.Handlers
                     Message = ex.Message
                 });
             }
+
+            await DisconnectAsync(cancellationToken);
         }
 
         protected virtual async Task CreateNonSSLConnectionAsync(CancellationToken cancellationToken)
@@ -206,18 +281,9 @@ namespace Tcp.NET.Client.Handlers
 
             await client.ConnectAsync(_parameters.Host, _parameters.Port, cancellationToken).ConfigureAwait(false);
 
-            var reader = new StreamReader(client.GetStream());
-            var writer = new StreamWriter(client.GetStream())
-            {
-                AutoFlush = true,
-                NewLine = _parameters.EndOfLineCharacters
-            };
-
             _connection = CreateConnection(new ConnectionTcp
             {
-                Client = client,
-                Reader = reader,
-                Writer = writer
+                TcpClient = client
             });
         }
         protected virtual async Task CreateSSLConnectionAsync(CancellationToken cancellationToken)
@@ -240,18 +306,9 @@ namespace Tcp.NET.Client.Handlers
 
             if (sslStream.IsAuthenticated && sslStream.IsEncrypted && !cancellationToken.IsCancellationRequested)
             {
-                var reader = new StreamReader(sslStream);
-                var writer = new StreamWriter(sslStream)
-                {
-                    AutoFlush = true,
-                    NewLine = _parameters.EndOfLineCharacters
-                };
-
                 _connection = CreateConnection(new ConnectionTcp
                 {
-                    Client = client,
-                    Reader = reader,
-                    Writer = writer
+                    TcpClient = client
                 });
             }
             else

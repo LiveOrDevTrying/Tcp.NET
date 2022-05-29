@@ -6,8 +6,6 @@ namespace Tcp.NET.Core.Models
 {
     public class ConnectionTcp : IConnection
     {
-        public TcpClient Client { get; set; }
-        public StreamReader Reader { get; set; }
-        public StreamWriter Writer { get; set; }
+        public TcpClient TcpClient { get; set; }
     }
 }

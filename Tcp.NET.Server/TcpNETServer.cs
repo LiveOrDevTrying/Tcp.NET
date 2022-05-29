@@ -12,7 +12,7 @@ namespace Tcp.NET.Server
             TcpMessageServerEventArgs,
             TcpErrorServerEventArgs,
             ParamsTcpServer,
-            TcpHandler,
+            TcpHandlerServer,
             TcpConnectionManager<ConnectionTcpServer>,
             ConnectionTcpServer>,
         ITcpNETServer
@@ -31,11 +31,11 @@ namespace Tcp.NET.Server
         {
             return new TcpConnectionManager<ConnectionTcpServer>();
         }
-        protected override TcpHandler CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServer CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
         {
             return certificate != null
-                ? new TcpHandler(_parameters, certificate, certificatePassword)
-                : new TcpHandler(_parameters);
+                ? new TcpHandlerServer(_parameters, certificate, certificatePassword)
+                : new TcpHandlerServer(_parameters);
         }
 
         protected override void OnConnectionEvent(object sender, TcpConnectionServerBaseEventArgs<ConnectionTcpServer> args)
@@ -74,6 +74,7 @@ namespace Tcp.NET.Server
                 Connection = args.Connection,
                 Message = args.Message,
                 MessageEventType = args.MessageEventType,
+                Bytes = args.Bytes
             });
         }
     }
