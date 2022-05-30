@@ -3,7 +3,7 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client.Events.Args
 {
-    public class TcpConnectionClientEventArgs : TcpConnectionEventArgs<IConnectionTcp>
+    public class TcpConnectionClientEventArgs : TcpConnectionEventArgs<ConnectionTcp>
     {
     }
 }

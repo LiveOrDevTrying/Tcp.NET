@@ -1,22 +1,20 @@
 ﻿using PHS.Networking.Server.Services;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tcp.NET.TestApps.Server
 {
     public class MockUserService : IUserService<Guid>
     {
-        public Task<Guid> GetIdAsync(string token)
+        public Task<bool> IsValidTokenAsync(string token, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(Guid.NewGuid());
-        }
-        public void Dispose()
-        {
+            return Task.FromResult(token == "testToken");
         }
 
-        public Task<bool> IsValidTokenAsync(string token)
+        public Task<Guid> GetIdAsync(string token, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(true);
+            return Task.FromResult(Guid.NewGuid());
         }
     }
 }

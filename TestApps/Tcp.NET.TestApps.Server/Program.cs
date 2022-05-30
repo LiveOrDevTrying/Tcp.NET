@@ -12,15 +12,9 @@ namespace Tcp.NET.TestApps.Server
     {
         private static ITcpNETServerAuth<Guid> _authServer;
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth
-            {
-                ConnectionSuccessString = "Connected Successfully",
-                EndOfLineCharacters = "\r\n",
-                Port = 8989,
-                ConnectionUnauthorizedString = "Not authorized"
-            }, new MockUserService());
+            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized"), new MockUserService()); ;
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
@@ -30,6 +24,11 @@ namespace Tcp.NET.TestApps.Server
             while (true)
             {
                 Console.ReadLine();
+
+                foreach (var item in _authServer.Connections)
+                {
+                    await _authServer.DisconnectConnectionAsync(item);
+                }
             }
         }
 
@@ -40,7 +39,7 @@ namespace Tcp.NET.TestApps.Server
 
         private static void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<Guid> args)
         {
-            Console.WriteLine(args.ConnectionEventType);
+            Console.WriteLine(args.ConnectionEventType + " " + _authServer.ConnectionCount);
         }
 
         private static void OnServerEvent(object sender, ServerEventArgs args)
@@ -55,7 +54,13 @@ namespace Tcp.NET.TestApps.Server
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    Console.WriteLine(args.MessageEventType + ": " + args.Packet.Data);
+                    Console.WriteLine(args.MessageEventType + ": " + args.Message);
+
+                    Task.Run(async () =>
+                    {
+                        Console.WriteLine("Connections: " + _authServer.ConnectionCount);
+                        await _authServer.BroadcastToAllConnectionsAsync(args.Bytes);
+                    });
                     break;
                 default:
                     break;

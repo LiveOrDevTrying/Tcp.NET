@@ -17,9 +17,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="12.*" />
     <PackageReference Include="PHS.Networking.Server" Version="6.0.*" />
-	<PackageReference Include="Tcp.NET.Core" Version="6.0.*" />
+	  <PackageReference Include="Tcp.NET.Core" Version="6.0.*" />
   </ItemGroup>
 
   <ItemGroup>

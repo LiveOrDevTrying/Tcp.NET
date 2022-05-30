@@ -1,30 +1,17 @@
-﻿using PHS.Networking.Events;
-using PHS.Networking.Models;
-using PHS.Networking.Server.Events.Args;
-using PHS.Networking.Services;
+﻿using PHS.Networking.Server.Services;
 using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
 {
-    public interface ITcpNETServer : ICoreNetworking<TcpConnectionServerEventArgs, TcpMessageServerEventArgs, TcpErrorServerEventArgs>
+    public interface ITcpNETServer :
+        ICoreNetworkingServer<
+            TcpConnectionServerEventArgs, 
+            TcpMessageServerEventArgs, 
+            TcpErrorServerEventArgs,
+            ConnectionTcpServer>
     {
-        bool IsServerRunning { get; }
         TcpListener Server { get; }
-
-        void Start(CancellationToken cancellationToken = default);
-        void Stop();
-
-        Task<bool> SendToConnectionAsync<T>(T packet, IConnectionTcpServer connection) where T : IPacket;
-        Task<bool> SendToConnectionAsync(string message, IConnectionTcpServer connection);
-        Task<bool> SendToConnectionRawAsync(string message, IConnectionTcpServer connection);
-        bool DisconnectConnection(IConnectionTcpServer connection);
-
-        IConnectionTcpServer[] Connections { get; }
-
-        event NetworkingEventHandler<ServerEventArgs> ServerEvent;
     }
 }

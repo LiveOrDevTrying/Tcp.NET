@@ -1,9 +1,8 @@
-﻿using Tcp.NET.Server.Events.Args;
+﻿using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Events.Args
 {
-    public class TcpErrorServerAuthEventArgs<T> : TcpErrorServerEventArgs
+    public class TcpErrorServerAuthEventArgs<T> : TcpErrorServerBaseEventArgs<IdentityTcpServer<T>>
     {
-        public T UserId { get; set; }
     }
 }

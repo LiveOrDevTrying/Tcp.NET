@@ -1,34 +1,14 @@
-﻿using System.Collections.Concurrent;
-using System.Linq;
-using System.Net.Sockets;
+﻿using PHS.Networking.Server.Managers;
+using System.Collections.Concurrent;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Managers
 {
-    public class TcpConnectionManager
+    public class TcpConnectionManager<T> : ConnectionManager<T>
+        where T : ConnectionTcpServer
     {
-        protected ConcurrentDictionary<int, IConnectionTcpServer> _connections =
-            new ConcurrentDictionary<int, IConnectionTcpServer>();
+        public TcpConnectionManager() { }
+        public TcpConnectionManager(ConcurrentDictionary<string, T> connections) : base(connections) { }
 
-        public IConnectionTcpServer[] GetAllConnections()
-        {
-            return _connections.Values.ToArray();
-        }
-        public IConnectionTcpServer GetConnection(TcpClient client)
-        {
-            return _connections.TryGetValue(client.GetHashCode(), out var connection) ? connection : null;
-        }
-        public bool AddConnection(IConnectionTcpServer connection)
-        {
-            return !_connections.ContainsKey(connection.Client.GetHashCode()) ? _connections.TryAdd(connection.Client.GetHashCode(), connection) : false;
-        }
-        public void RemoveConnection(IConnectionTcpServer connection)
-        {
-            _connections.TryRemove(connection.Client.GetHashCode(), out var instance);
-        }
-        public bool IsConnectionOpen(IConnectionTcpServer connection)
-        {
-            return _connections.TryGetValue(connection.Client.GetHashCode(), out var instance) ? instance.Client.Connected : false;
-        }
     }
 }
