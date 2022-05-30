@@ -3,7 +3,7 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Events.Args
 {
-    public class TcpErrorServerEventArgs : TcpErrorServerBaseEventArgs<ConnectionTcpServer>
+    public class TcpErrorServerBaseEventArgs<T> : TcpErrorEventArgs<T> where T : ConnectionTcpServer
     {
     }
 }

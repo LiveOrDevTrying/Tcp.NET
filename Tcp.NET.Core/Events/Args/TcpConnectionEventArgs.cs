@@ -3,8 +3,7 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Core.Events.Args
 {
-    public class TcpConnectionEventArgs<T> : ConnectionEventArgs where T : IConnectionTcp
+    public class TcpConnectionEventArgs<T> : ConnectionEventArgs<T> where T : ConnectionTcp
     {
-        public T Connection { get; set; }
     }
 }
