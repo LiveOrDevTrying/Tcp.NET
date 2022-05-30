@@ -1,30 +1,27 @@
 ﻿using PHS.Networking.Services;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Client.Handlers;
 using Tcp.NET.Client.Models;
+using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
 {
     public abstract class TcpNETClientBase<T, U, V, W, X, Y> : 
-        CoreNetworkingGeneric<T, U, V>,
-        ICoreNetworkingGeneric<T, U, V>
-        where T : TcpConnectionClientEventArgs
-        where U : TcpMessageClientEventArgs
-        where V : TcpErrorClientEventArgs
+        CoreNetworkingGeneric<T, U, V, W, Y>,
+        ICoreNetworkingClient<T, U, V, Y>
+        where T : TcpConnectionEventArgs<Y>
+        where U : TcpMessageEventArgs<Y>
+        where V : TcpErrorEventArgs<Y>
         where W : ParamsTcpClient
         where X : TcpClientHandlerBase<Y>
         where Y : ConnectionTcp
     {
         protected readonly X _handler;
-        protected readonly W _parameters;
 
-        public TcpNETClientBase(W parameters)
+        public TcpNETClientBase(W parameters) : base(parameters)
         {
-            _parameters = parameters;
-
             _handler = CreateTcpClientHandler();
             _handler.ConnectionEvent += OnConnectionEvent;
             _handler.MessageEvent += OnMessageEvent;
@@ -49,9 +46,9 @@ namespace Tcp.NET.Client
             return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
-        protected abstract void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args);
-        protected abstract void OnMessageEvent(object sender, TcpMessageClientEventArgs args);
-        protected abstract void OnErrorEvent(object sender, TcpErrorClientEventArgs args);
+        protected abstract void OnConnectionEvent(object sender, TcpConnectionEventArgs<Y> args);
+        protected abstract void OnMessageEvent(object sender, TcpMessageEventArgs<Y> args);
+        protected abstract void OnErrorEvent(object sender, TcpErrorEventArgs<Y> args);
 
         protected abstract X CreateTcpClientHandler();
 

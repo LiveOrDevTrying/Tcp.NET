@@ -1,6 +1,7 @@
 ﻿using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Client.Handlers;
 using Tcp.NET.Client.Models;
+using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client
@@ -19,17 +20,32 @@ namespace Tcp.NET.Client
         {
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
+        protected override void OnConnectionEvent(object sender, TcpConnectionEventArgs<ConnectionTcp> args)
         {
-            FireEvent(this, args);
+            FireEvent(this, new TcpConnectionClientEventArgs
+            {
+                Connection = args.Connection,
+                ConnectionEventType = args.ConnectionEventType
+            });
         }
-        protected override void OnMessageEvent(object sender, TcpMessageClientEventArgs args)
+        protected override void OnMessageEvent(object sender, TcpMessageEventArgs<ConnectionTcp> args)
         {
-            FireEvent(this, args);
+            FireEvent(this, new TcpMessageClientEventArgs
+            {
+                Connection = args.Connection,
+                Bytes = args.Bytes,
+                Message = args.Message,
+                MessageEventType = args.MessageEventType
+            });
         }
-        protected override void OnErrorEvent(object sender, TcpErrorClientEventArgs args)
+        protected override void OnErrorEvent(object sender, TcpErrorEventArgs<ConnectionTcp> args)
         {
-            FireEvent(this, args);
+            FireEvent(this, new TcpErrorClientEventArgs
+            {
+                Connection = args.Connection,
+                Exception = args.Exception,
+                Message = args.Message
+            });
         }
 
         protected override TcpClientHandler CreateTcpClientHandler()

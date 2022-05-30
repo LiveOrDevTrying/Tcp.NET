@@ -1,4 +1,7 @@
 ﻿using PHS.Networking.Enums;
+using PHS.Networking.Events.Args;
+using PHS.Networking.Models;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
@@ -37,16 +40,16 @@ namespace Tcp.NET.Server.Handlers
             return Task.CompletedTask;
         }
 
-        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcpServer connection)
+        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcpClient connection)
         {
             return new IdentityTcpServer<T>
             {
                 TcpClient = connection.TcpClient,
-                ConnectionId = connection.ConnectionId
+                ConnectionId = Guid.NewGuid().ToString()
             };
         }
 
-        protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(ConnectionEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpConnectionServerAuthEventArgs<T>
             {
@@ -55,7 +58,7 @@ namespace Tcp.NET.Server.Handlers
             };
         }
 
-        protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(TcpErrorServerBaseEventArgs<IdentityTcpServer<T>> args)
+        protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(ErrorEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpErrorServerAuthEventArgs<T>
             {

@@ -27,11 +27,11 @@ namespace Tcp.NET.Server
         {
         }
 
-        protected override TcpConnectionManager<ConnectionTcpServer> CreateTcpConnectionManager()
+        protected override TcpConnectionManager<ConnectionTcpServer> CreateConnectionManager()
         {
             return new TcpConnectionManager<ConnectionTcpServer>();
         }
-        protected override TcpHandlerServer CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServer CreateHandler(byte[] certificate = null, string certificatePassword = null)
         {
             return certificate != null
                 ? new TcpHandlerServer(_parameters, certificate, certificatePassword)

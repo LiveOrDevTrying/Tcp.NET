@@ -1,10 +1,11 @@
-﻿using System;
+﻿using PHS.Networking.Models;
+using System;
 using System.Linq;
 using System.Text;
 
 namespace Tcp.NET.Client.Models
 {
-    public class ParamsTcpClient
+    public class ParamsTcpClient : Params
     {
         public string Host { get; protected set; }
         public int Port { get; protected set; }

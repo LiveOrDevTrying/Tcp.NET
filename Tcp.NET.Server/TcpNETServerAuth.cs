@@ -41,18 +41,18 @@ namespace Tcp.NET.Server
             _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
 
-        protected override TcpConnectionManagerAuth<T> CreateTcpConnectionManager()
+        protected override TcpConnectionManagerAuth<T> CreateConnectionManager()
         {
             return new TcpConnectionManagerAuth<T>();
         }
-        protected override TcpHandlerServerAuth<T> CreateTcpHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServerAuth<T> CreateHandler(byte[] certificate = null, string certificatePassword = null)
         {
             return certificate == null
                 ? new TcpHandlerServerAuth<T>(_parameters)
                 : new TcpHandlerServerAuth<T>(_parameters, certificate, certificatePassword);
         }
 
-        public virtual async Task SendToUserAsync(string message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default)
+        public virtual async Task SendToUserAsync(string message, T userId, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
@@ -64,7 +64,7 @@ namespace Tcp.NET.Server
                 }
             }
         }
-        public virtual async Task SendToUserAsync(byte[] message, T userId, IdentityTcpServer<T> connectionSending = null, CancellationToken cancellationToken = default)
+        public virtual async Task SendToUserAsync(byte[] message, T userId, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {

@@ -1,12 +1,12 @@
-﻿using System;
+﻿using PHS.Networking.Models;
+using System;
 using System.Linq;
 using System.Text;
 
 namespace Tcp.NET.Server.Models
 {
-    public class ParamsTcpServer
+    public class ParamsTcpServer : ParamsPort
     {
-        public int Port { get; protected set; }
         public byte[] EndOfLineBytes { get; protected set; }
         public byte[] PingBytes { get; protected set; }
         public byte[] PongBytes { get; protected set; }
@@ -14,13 +14,8 @@ namespace Tcp.NET.Server.Models
         public int PingIntervalSec { get; protected set; }
         public bool OnlyEmitBytes { get; protected set; }
 
-        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong")
+        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong") : base(port)
         {
-            if (port <= 0)
-            {
-                throw new ArgumentException("Port is not valid");
-            }
-
             if (string.IsNullOrEmpty(endOfLineCharacters))
             {
                 throw new ArgumentException("End of Line Characters are not valid");
@@ -41,7 +36,6 @@ namespace Tcp.NET.Server.Models
                 throw new ArgumentException("onlyEmitBytes can not be true is a connectionSuccesString is specified");
             }
 
-            Port = port;
             EndOfLineBytes = Encoding.UTF8.GetBytes(endOfLineCharacters);
             PingBytes = Encoding.UTF8.GetBytes(pingCharacters);
             PongBytes = Encoding.UTF8.GetBytes(pongCharacters);
@@ -50,13 +44,8 @@ namespace Tcp.NET.Server.Models
             OnlyEmitBytes = onlyEmitBytes;
         }
 
-        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null)
+        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null) : base(port)
         {
-            if (port <= 0)
-            {
-                throw new ArgumentException("Port is not valid");
-            }
-
             if (endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
             {
                 throw new ArgumentException("End of Line Characters are not valid");

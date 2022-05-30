@@ -23,7 +23,7 @@ namespace Tcp.NET.Server.Managers
                 }
             }
 
-            var userNew = new TcpConnectionManager<IdentityTcpServer<T>>(userOriginal.GetAll());
+            var userNew = new TcpConnectionManager<IdentityTcpServer<T>>(userOriginal.GetAllDictionary());
             userNew.Add(identity.ConnectionId, identity);
             return _users.TryUpdate(identity.UserId, userNew, userOriginal);
         }

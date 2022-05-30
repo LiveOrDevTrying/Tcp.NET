@@ -5,7 +5,11 @@ using Tcp.NET.Core.Models;
 namespace Tcp.NET.Client
 {
     public interface ITcpNETClient : 
-        ICoreNetworkingClient<TcpConnectionClientEventArgs, TcpMessageClientEventArgs, TcpErrorClientEventArgs, ConnectionTcp>
+        ICoreNetworkingClient<
+            TcpConnectionClientEventArgs, 
+            TcpMessageClientEventArgs, 
+            TcpErrorClientEventArgs, 
+            ConnectionTcp>
     {
     }
 }

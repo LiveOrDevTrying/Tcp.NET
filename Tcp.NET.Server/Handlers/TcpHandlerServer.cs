@@ -1,4 +1,7 @@
-﻿using Tcp.NET.Server.Events.Args;
+﻿using PHS.Networking.Events.Args;
+using PHS.Networking.Models;
+using System;
+using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Handlers
@@ -19,12 +22,16 @@ namespace Tcp.NET.Server.Handlers
         {
         }
 
-        protected override ConnectionTcpServer CreateConnection(ConnectionTcpServer connection)
+        protected override ConnectionTcpServer CreateConnection(ConnectionTcpClient connection)
         {
-            return connection;
+            return new ConnectionTcpServer
+            {
+                TcpClient = connection.TcpClient,
+                ConnectionId = Guid.NewGuid().ToString()
+            };
         }
 
-        protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<ConnectionTcpServer> args)
+        protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(ConnectionEventArgs<ConnectionTcpServer> args)
         {
             return new TcpConnectionServerEventArgs
             {
@@ -32,17 +39,6 @@ namespace Tcp.NET.Server.Handlers
                 ConnectionEventType = args.ConnectionEventType
             };
         }
-
-        protected override TcpErrorServerEventArgs CreateErrorEventArgs(TcpErrorServerBaseEventArgs<ConnectionTcpServer> args)
-        {
-            return new TcpErrorServerEventArgs
-            {
-                Connection = args.Connection,
-                Exception = args.Exception,
-                Message = args.Message
-            };
-        }
-
         protected override TcpMessageServerEventArgs CreateMessageEventArgs(TcpMessageServerBaseEventArgs<ConnectionTcpServer> args)
         {
             return new TcpMessageServerEventArgs
@@ -51,6 +47,15 @@ namespace Tcp.NET.Server.Handlers
                 Bytes = args.Bytes,
                 Message = args.Message,
                 MessageEventType = args.MessageEventType
+            };
+        }
+        protected override TcpErrorServerEventArgs CreateErrorEventArgs(ErrorEventArgs<ConnectionTcpServer> args)
+        {
+            return new TcpErrorServerEventArgs
+            {
+                Connection = args.Connection,
+                Exception = args.Exception,
+                Message = args.Message
             };
         }
     }
