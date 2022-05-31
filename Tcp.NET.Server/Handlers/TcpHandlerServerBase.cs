@@ -42,7 +42,7 @@ namespace Tcp.NET.Server.Handlers
                 if (connection.TcpClient.Connected && _isRunning)
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {
@@ -76,7 +76,7 @@ namespace Tcp.NET.Server.Handlers
                 if (connection.TcpClient.Connected && _isRunning)
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {
@@ -165,7 +165,7 @@ namespace Tcp.NET.Server.Handlers
                                 }
 
                                 var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
-                                var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                                 await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
 
                                 endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
@@ -180,7 +180,7 @@ namespace Tcp.NET.Server.Handlers
                                 {
                                     if (parts.Length > 1 && i == parts.Length - 1)
                                     {
-                                        await persistantMS.WriteAsync(parts[i], cancellationToken).ConfigureAwait(false);
+                                        await persistantMS.WriteAsync(parts[i], 0, parts[i].Length, cancellationToken).ConfigureAwait(false);
                                     }
                                     else
                                     {

@@ -130,7 +130,7 @@ namespace Tcp.NET.Client.Handlers
                     !cancellationToken.IsCancellationRequested)
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes($"{message}"), _parameters.EndOfLineBytes);
-                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
 
                     FireEvent(this, new TcpMessageEventArgs<T>
                     {
@@ -167,7 +167,7 @@ namespace Tcp.NET.Client.Handlers
                     !cancellationToken.IsCancellationRequested)
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
 
                     FireEvent(this, new TcpMessageEventArgs<T>
                     { 
@@ -221,7 +221,7 @@ namespace Tcp.NET.Client.Handlers
                                 }
 
                                 var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
                                 await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
 
                                 endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
@@ -236,7 +236,7 @@ namespace Tcp.NET.Client.Handlers
                                 {
                                     if (parts.Length > 1 && i == parts.Length - 1)
                                     {
-                                        await persistantMS.WriteAsync(parts[i], cancellationToken).ConfigureAwait(false);
+                                        await persistantMS.WriteAsync(parts[i], 0, parts[i].Length, cancellationToken).ConfigureAwait(false);
                                     }
                                     else
                                     {
@@ -289,7 +289,7 @@ namespace Tcp.NET.Client.Handlers
                 ReceiveTimeout = 60000
             };
 
-            await client.ConnectAsync(_parameters.Host, _parameters.Port, cancellationToken).ConfigureAwait(false);
+            await client.ConnectAsync(_parameters.Host, _parameters.Port).ConfigureAwait(false);
 
             _connection = CreateConnection(new ConnectionTcp
             {
@@ -305,14 +305,11 @@ namespace Tcp.NET.Client.Handlers
                 ReceiveTimeout = 60000,
             };
 
-            await client.ConnectAsync(_parameters.Host, _parameters.Port, cancellationToken).ConfigureAwait(false);
+            await client.ConnectAsync(_parameters.Host, _parameters.Port).ConfigureAwait(false);
 
             var sslStream = new SslStream(client.GetStream());
 
-            await sslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
-            {
-                TargetHost = _parameters.Host
-            }, cancellationToken).ConfigureAwait(false);
+            await sslStream.AuthenticateAsClientAsync(_parameters.Host).ConfigureAwait(false);
 
             if (sslStream.IsAuthenticated && sslStream.IsEncrypted && !cancellationToken.IsCancellationRequested)
             {
