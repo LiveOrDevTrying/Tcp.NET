@@ -289,7 +289,7 @@ namespace Tcp.NET.Client.Handlers
                 ReceiveTimeout = 60000
             };
 
-            await client.ConnectAsync(_parameters.Host, _parameters.Port, cancellationToken).ConfigureAwait(false);
+            await client.ConnectAsync(_parameters.Host, _parameters.Port).ConfigureAwait(false);
 
             _connection = CreateConnection(new ConnectionTcp
             {
@@ -305,7 +305,7 @@ namespace Tcp.NET.Client.Handlers
                 ReceiveTimeout = 60000,
             };
 
-            await client.ConnectAsync(_parameters.Host, _parameters.Port, cancellationToken).ConfigureAwait(false);
+            await client.ConnectAsync(_parameters.Host, _parameters.Port).ConfigureAwait(false);
 
             var sslStream = new SslStream(client.GetStream());
 
