@@ -293,7 +293,8 @@ namespace Tcp.NET.Client.Handlers
 
             _connection = CreateConnection(new ConnectionTcp
             {
-                TcpClient = client
+                TcpClient = client,
+                ConnectionId = Guid.NewGuid().ToString()
             });
         }
         protected virtual async Task CreateSSLConnectionAsync(CancellationToken cancellationToken)
@@ -318,7 +319,8 @@ namespace Tcp.NET.Client.Handlers
             {
                 _connection = CreateConnection(new ConnectionTcp
                 {
-                    TcpClient = client
+                    TcpClient = client,
+                    ConnectionId = Guid.NewGuid().ToString()
                 });
             }
             else

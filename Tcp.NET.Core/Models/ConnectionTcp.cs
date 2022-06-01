@@ -7,5 +7,6 @@ namespace Tcp.NET.Core.Models
     public class ConnectionTcp : IConnection
     {
         public TcpClient TcpClient { get; set; }
+        public string ConnectionId { get; set; }
     }
 }
