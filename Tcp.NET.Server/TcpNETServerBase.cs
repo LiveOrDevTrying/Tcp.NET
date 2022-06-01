@@ -8,6 +8,8 @@ using PHS.Networking.Server.Events.Args;
 using Tcp.NET.Server.Events.Args;
 using PHS.Networking.Server.Enums;
 using PHS.Networking.Server.Services;
+using PHS.Networking.Enums;
+using System;
 
 namespace Tcp.NET.Server
 {
@@ -19,7 +21,7 @@ namespace Tcp.NET.Server
         where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
         where X : TcpHandlerServerBase<T, U, V, W, Z>
-        where Y : TcpConnectionManager<Z>
+        where Y : TcpConnectionManagerBase<Z>
         where Z : ConnectionTcpServer
     {
         protected Timer _timerPing;
@@ -55,7 +57,30 @@ namespace Tcp.NET.Server
 
             base.FireEvent(sender, args);
         }
+        protected override void OnConnectionEvent(object sender, T args)
+        {
+            switch (args.ConnectionEventType)
+            {
+                case ConnectionEventType.Connected:
+                    _connectionManager.Add(args.Connection.ConnectionId, args.Connection);
+                    break;
+                case ConnectionEventType.Disconnect:
+                    _connectionManager.Remove(args.Connection.ConnectionId);
+                    break;
+                default:
+                    break;
+            }
 
+            FireEvent(this, args);
+        }
+        protected override void OnMessageEvent(object sender, U args)
+        {
+            FireEvent(this, args);
+        }
+        protected override void OnErrorEvent(object sender, V args)
+        {
+            FireEvent(this, args);
+        }
         protected virtual void OnTimerPingTick(object state)
         {
             if (!_isPingRunning)
@@ -66,19 +91,31 @@ namespace Tcp.NET.Server
                 {
                     foreach (var connection in _connectionManager.GetAll())
                     {
-                        if (connection.HasBeenPinged)
+                        try
                         {
-                            // Already been pinged, no response, disconnect
-                            if (!_parameters.OnlyEmitBytes)
+                            if (connection.HasBeenPinged)
                             {
-                                await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
+                                // Already been pinged, no response, disconnect
+                                if (!_parameters.OnlyEmitBytes)
+                                {
+                                    await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
+                                }
+                                await DisconnectConnectionAsync(connection, _cancellationToken).ConfigureAwait(false);
                             }
-                            await DisconnectConnectionAsync(connection, _cancellationToken).ConfigureAwait(false);
+                            else
+                            {
+                                connection.HasBeenPinged = true;
+                                await SendToConnectionAsync(_parameters.PingBytes, connection, _cancellationToken).ConfigureAwait(false);
+                            }
                         }
-                        else
+                        catch (Exception ex)
                         {
-                            connection.HasBeenPinged = true;
-                            await SendToConnectionAsync(_parameters.PingBytes, connection, _cancellationToken).ConfigureAwait(false);
+                            FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<Z>
+                            {
+                                Connection = connection,
+                                Exception = ex,
+                                Message = ex.Message
+                            }));
                         }
                     }
 
@@ -86,6 +123,8 @@ namespace Tcp.NET.Server
                 });
             }
         }
+
+        protected abstract V CreateErrorEventArgs(TcpErrorServerBaseEventArgs<Z> args);
 
         public override void Dispose()
         {

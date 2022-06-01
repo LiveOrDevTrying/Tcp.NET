@@ -11,28 +11,29 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server
 {
-    public class TcpNETServerAuth<T> : 
-        TcpNETServerBase<
-            TcpConnectionServerAuthEventArgs<T>, 
-            TcpMessageServerAuthEventArgs<T>, 
-            TcpErrorServerAuthEventArgs<T>,
-            ParamsTcpServerAuth,
-            TcpHandlerServerAuth<T>,
-            TcpConnectionManagerAuth<T>,
-            IdentityTcpServer<T>>,
-        ITcpNETServerAuth<T>
+    public abstract class TcpNETServerAuthBase<T, U, V, W, X, Y, Z, A, B> : 
+        TcpNETServerBase<T, U, V, W, X, Y, Z>
+        where T : TcpConnectionServerAuthBaseEventArgs<Z, A>
+        where U : TcpMessageServerAuthBaseEventArgs<Z, A>
+        where V : TcpErrorServerAuthBaseEventArgs<Z, A>
+        where W : ParamsTcpServerAuth
+        where X : TcpHandlerServerAuthBase<T, U, V, W, B, Z, A>
+        where Y : TcpConnectionManagerAuthBase<Z, A>
+        where Z : IdentityTcpServer<A>
+        where B : TcpAuthorizeBaseEventArgs<Z, A>
     {
-        protected readonly IUserService<T> _userService;
+        protected readonly IUserService<A> _userService;
 
-        public TcpNETServerAuth(ParamsTcpServerAuth parameters,
-            IUserService<T> userService) : base(parameters)
+        public TcpNETServerAuthBase(W parameters,
+            IUserService<A> userService) : base(parameters)
         { 
             _userService = userService;
 
             _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
-        public TcpNETServerAuth(ParamsTcpServerAuth parameters,
-            IUserService<T> userService,
+
+        public TcpNETServerAuthBase(W parameters,
+            IUserService<A> userService,
             byte[] certificate,
             string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
@@ -41,18 +42,7 @@ namespace Tcp.NET.Server
             _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
 
-        protected override TcpConnectionManagerAuth<T> CreateConnectionManager()
-        {
-            return new TcpConnectionManagerAuth<T>();
-        }
-        protected override TcpHandlerServerAuth<T> CreateHandler(byte[] certificate = null, string certificatePassword = null)
-        {
-            return certificate == null
-                ? new TcpHandlerServerAuth<T>(_parameters)
-                : new TcpHandlerServerAuth<T>(_parameters, certificate, certificatePassword);
-        }
-
-        public virtual async Task SendToUserAsync(string message, T userId, CancellationToken cancellationToken = default)
+        public virtual async Task SendToUserAsync(string message, A userId, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
@@ -64,7 +54,7 @@ namespace Tcp.NET.Server
                 }
             }
         }
-        public virtual async Task SendToUserAsync(byte[] message, T userId, CancellationToken cancellationToken = default)
+        public virtual async Task SendToUserAsync(byte[] message, A userId, CancellationToken cancellationToken = default)
         {
             if (IsServerRunning)
             {
@@ -77,36 +67,7 @@ namespace Tcp.NET.Server
             }
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<T> args)
-        {
-            switch (args.ConnectionEventType)
-            {
-                case ConnectionEventType.Connected:
-                    _connectionManager.Add(args.Connection.ConnectionId, args.Connection);
-                    break;
-                case ConnectionEventType.Disconnect:
-                    _connectionManager.Remove(args.Connection.ConnectionId);
-                    break;
-                default:
-                    break;
-            }
-
-            FireEvent(this, args);
-        }
-        protected override void OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
-        {
-            FireEvent(this, args);
-        }
-        protected override void OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<T> args)
-        {
-            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
-            {
-                Exception = args.Exception,
-                Message = args.Message,
-                Connection = args.Connection
-            });
-        }
-        protected virtual void OnAuthorizeEvent(object sender, TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
+        protected virtual void OnAuthorizeEvent(object sender, TcpAuthorizeBaseEventArgs<Z, A> args)
         {
             Task.Run(async () =>
             {
@@ -142,34 +103,24 @@ namespace Tcp.NET.Server
                             return;
                         }
                     }
+
+                    if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                    {
+                        await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                    }
+
+                    await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    FireEvent(this, new TcpErrorServerAuthEventArgs<T>
+                    FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<Z>
                     {
                         Connection = args.Connection,
                         Exception = ex,
                         Message = ex.Message
-                    });
+                    }));
                 }
-
-                if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
-                {
-                    await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
-                }
-
-                await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
             });
-        }
-
-        protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(TcpErrorServerBaseEventArgs<IdentityTcpServer<T>> args)
-        {
-            return new TcpErrorServerAuthEventArgs<T>
-            {
-                Connection = args.Connection,
-                Exception = args.Exception,
-                Message = args.Message
-            };
         }
 
         public override void Dispose()
