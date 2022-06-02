@@ -4,6 +4,7 @@ using PHS.Networking.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
@@ -38,7 +39,7 @@ namespace Tcp.NET.Server.Handlers
             return Task.CompletedTask;
         }
 
-        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcpClient connection)
+        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcp connection)
         {
             return new IdentityTcpServer<T>
             {

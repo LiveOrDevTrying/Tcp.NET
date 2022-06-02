@@ -14,7 +14,7 @@ using Tcp.NET.Server.Models;
 namespace Tcp.NET.Server.Handlers
 {
     public abstract class TcpHandlerServerBase<T, U, V, W, Z> :
-        HandlerServerBaseTcpListener<T, U, V, W, Z>
+        TcpHandlerServerBaseTcp<T, U, V, W, Z>
         where T : ConnectionEventArgs<Z>
         where U : MessageEventArgs<Z>
         where V : ErrorEventArgs<Z>
@@ -27,6 +27,7 @@ namespace Tcp.NET.Server.Handlers
         public TcpHandlerServerBase(W parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
+
         public override async Task<bool> SendAsync(string message, Z connection, CancellationToken cancellationToken)
         {
             try
