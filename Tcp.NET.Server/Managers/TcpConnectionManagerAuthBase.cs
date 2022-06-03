@@ -1,29 +1,28 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Managers
 {
-    public abstract class TcpConnectionManagerAuthBase<U, T> : TcpConnectionManagerBase<U> where U : IdentityTcpServer<T>
+    public abstract class TcpConnectionManagerAuthBase<Z, A> : TcpConnectionManagerBase<Z> where Z : IdentityTcpServer<A>
     {
-        protected ConcurrentDictionary<T, TcpConnectionManagerBase<U>> _users =
-            new ConcurrentDictionary<T, TcpConnectionManagerBase<U>>();
+        protected ConcurrentDictionary<A, TcpConnectionManagerBase<Z>> _users =
+            new ConcurrentDictionary<A, TcpConnectionManagerBase<Z>>();
 
-        public virtual bool Add(U identity)
+        public virtual bool Add(Z identity)
         {
             Add(identity.ConnectionId, identity);
 
             if (!_users.TryGetValue(identity.UserId, out var userOriginal))
             {
-                userOriginal = new TcpConnectionManagerBase<U>();
+                userOriginal = new TcpConnectionManagerBase<Z>();
                 if (!_users.TryAdd(identity.UserId, userOriginal))
                 {
                     return false;
                 }
             }
 
-            var userNew = new TcpConnectionManagerBase<U>(userOriginal.GetAllDictionary());
+            var userNew = new TcpConnectionManagerBase<Z>(userOriginal.GetAllDictionary());
             userNew.Add(identity.ConnectionId, identity);
             return _users.TryUpdate(identity.UserId, userNew, userOriginal);
         }
@@ -33,7 +32,7 @@ namespace Tcp.NET.Server.Managers
 
             try
             {
-                T userToRemove = default;
+                A userToRemove = default;
                 bool removeUser = false;
                 foreach (var user in _users)
                 {
@@ -62,7 +61,7 @@ namespace Tcp.NET.Server.Managers
             return false;
         }
 
-        public IEnumerable<U> GetAll(T id)
+        public IEnumerable<Z> GetAll(A id)
         {
             if (_users.TryGetValue(id, out var user))
             {

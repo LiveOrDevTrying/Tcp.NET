@@ -5,7 +5,9 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Handlers
 {
-    public delegate void AuthorizeEvent<T, A>(object sender, TcpAuthorizeBaseEventArgs<T, A> args) where T : IdentityTcpServer<A>;
+    public delegate void AuthorizeEvent<Z, X, A>(object sender, X args) 
+        where X : TcpAuthorizeBaseEventArgs<Z, A> 
+        where Z : IdentityTcpServer<A>;
 
     public abstract class TcpHandlerServerAuthBase<T, U, V, W, X, Z, A> : 
         TcpHandlerServerBase<T, U, V, W, Z>
@@ -16,7 +18,7 @@ namespace Tcp.NET.Server.Handlers
         where X : TcpAuthorizeBaseEventArgs<Z, A>
         where Z : IdentityTcpServer<A>
     {
-        protected event AuthorizeEvent<Z, A> _authorizeEvent;
+        protected event AuthorizeEvent<Z, X, A> _authorizeEvent;
 
         public TcpHandlerServerAuthBase(W parameters) : base(parameters)
         {
@@ -57,7 +59,7 @@ namespace Tcp.NET.Server.Handlers
 
         protected abstract X CreateAuthorizeEventArgs(TcpAuthorizeBaseEventArgs<Z, A> args);
 
-        public event AuthorizeEvent<Z, A> AuthorizeEvent
+        public event AuthorizeEvent<Z, X, A> AuthorizeEvent
         {
             add
             {

@@ -1,5 +1,4 @@
 ﻿using PHS.Networking.Enums;
-using PHS.Networking.Events.Args;
 using PHS.Networking.Server.Handlers;
 using PHS.Networking.Utilities;
 using System;
@@ -15,9 +14,9 @@ namespace Tcp.NET.Server.Handlers
 {
     public abstract class TcpHandlerServerBase<T, U, V, W, Z> :
         TcpHandlerServerBaseTcp<T, U, V, W, Z>
-        where T : ConnectionEventArgs<Z>
-        where U : MessageEventArgs<Z>
-        where V : ErrorEventArgs<Z>
+        where T : TcpConnectionServerBaseEventArgs<Z>
+        where U : TcpMessageServerBaseEventArgs<Z>
+        where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
         where Z : ConnectionTcpServer
     {

@@ -57,30 +57,7 @@ namespace Tcp.NET.Server
 
             base.FireEvent(sender, args);
         }
-        protected override void OnConnectionEvent(object sender, T args)
-        {
-            switch (args.ConnectionEventType)
-            {
-                case ConnectionEventType.Connected:
-                    _connectionManager.Add(args.Connection.ConnectionId, args.Connection);
-                    break;
-                case ConnectionEventType.Disconnect:
-                    _connectionManager.Remove(args.Connection.ConnectionId);
-                    break;
-                default:
-                    break;
-            }
 
-            FireEvent(this, args);
-        }
-        protected override void OnMessageEvent(object sender, U args)
-        {
-            FireEvent(this, args);
-        }
-        protected override void OnErrorEvent(object sender, V args)
-        {
-            FireEvent(this, args);
-        }
         protected virtual void OnTimerPingTick(object state)
         {
             if (!_isPingRunning)
@@ -124,6 +101,8 @@ namespace Tcp.NET.Server
             }
         }
 
+        protected abstract T CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<Z> args);
+        protected abstract U CreateMessageEventArgs(TcpMessageServerBaseEventArgs<Z> args);
         protected abstract V CreateErrorEventArgs(TcpErrorServerBaseEventArgs<Z> args);
 
         public override void Dispose()
@@ -141,7 +120,7 @@ namespace Tcp.NET.Server
         {
             get
             {
-                return _handler != null ? _handler.Server : null;
+                return _handler?.Server;
             }
         }
     }

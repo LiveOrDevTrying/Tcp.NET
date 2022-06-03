@@ -12,7 +12,7 @@ namespace Tcp.NET.Server
             TcpErrorServerEventArgs,
             ParamsTcpServer,
             TcpHandlerServer,
-            TcpConnectionManagerBase<ConnectionTcpServer>,
+            TcpConnectionManager,
             ConnectionTcpServer>,
         ITcpNETServer
     {
@@ -26,9 +26,9 @@ namespace Tcp.NET.Server
         {
         }
 
-        protected override TcpConnectionManagerBase<ConnectionTcpServer> CreateConnectionManager()
+        protected override TcpConnectionManager CreateConnectionManager()
         {
-            return new TcpConnectionManagerBase<ConnectionTcpServer>();
+            return new TcpConnectionManager();
         }
 
         protected override TcpHandlerServer CreateHandler(byte[] certificate = null, string certificatePassword = null)
@@ -37,7 +37,6 @@ namespace Tcp.NET.Server
                 ? new TcpHandlerServer(_parameters, certificate, certificatePassword)
                 : new TcpHandlerServer(_parameters);
         }
-
 
         protected override TcpErrorServerEventArgs CreateErrorEventArgs(TcpErrorServerBaseEventArgs<ConnectionTcpServer> args)
         {
@@ -48,5 +47,25 @@ namespace Tcp.NET.Server
                 Message = args.Message
             };
         }
-    }
+
+        protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<ConnectionTcpServer> args)
+        {
+            return new TcpConnectionServerEventArgs
+            {
+                Connection = args.Connection,
+                ConnectionEventType = args.ConnectionEventType
+            };
+        }
+
+        protected override TcpMessageServerEventArgs CreateMessageEventArgs(TcpMessageServerBaseEventArgs<ConnectionTcpServer> args)
+        {
+            return new TcpMessageServerEventArgs
+            {
+                Bytes = args.Bytes,
+                Connection = args.Connection,
+                Message = args.Message,
+                MessageEventType = args.MessageEventType
+            };
+        }
+     }
 }

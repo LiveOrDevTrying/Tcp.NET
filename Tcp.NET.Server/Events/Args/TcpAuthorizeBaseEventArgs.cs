@@ -2,8 +2,8 @@
 
 namespace Tcp.NET.Server.Events.Args
 {
-    public class TcpAuthorizeBaseEventArgs<T, A> : AuthorizeBaseEventArgs<T>
-        where T : IdentityTcpServer<A>
+    public class TcpAuthorizeBaseEventArgs<Z, A> : AuthorizeBaseEventArgs<Z>
+        where Z : IdentityTcpServer<A>
     {
     }
 }
