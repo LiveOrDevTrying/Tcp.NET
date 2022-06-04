@@ -1,9 +1,18 @@
-﻿using Tcp.NET.Client.Models;
+﻿using Tcp.NET.Client.Events.Args;
+using Tcp.NET.Client.Models;
+using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client.Handlers
 {
-    public class TcpClientHandler : TcpClientHandlerBase<ConnectionTcp>
+    public class TcpClientHandler : 
+        TcpClientHandlerBase<
+            TcpConnectionClientEventArgs,
+            TcpMessageClientEventArgs,
+            TcpErrorClientEventArgs,
+            ParamsTcpClient,
+            TcpClientHandler,
+            ConnectionTcp>
     {
         public TcpClientHandler(ParamsTcpClient parameters) : base(parameters)
         {
@@ -12,6 +21,36 @@ namespace Tcp.NET.Client.Handlers
         protected override ConnectionTcp CreateConnection(ConnectionTcp connection)
         {
             return connection;
+        }
+
+        protected override TcpConnectionClientEventArgs CreateConnectionEventArgs(TcpConnectionEventArgs<ConnectionTcp> args)
+        {
+            return new TcpConnectionClientEventArgs
+            {
+                Connection = args.Connection,
+                ConnectionEventType = args.ConnectionEventType
+            };
+        }
+
+        protected override TcpErrorClientEventArgs CreateErrorEventArgs(TcpErrorEventArgs<ConnectionTcp> args)
+        {
+            return new TcpErrorClientEventArgs
+            {
+                Connection = args.Connection,
+                Exception = args.Exception,
+                Message = args.Message
+            };
+        }
+
+        protected override TcpMessageClientEventArgs CreateMessageEventArgs(TcpMessageEventArgs<ConnectionTcp> args)
+        {
+            return new TcpMessageClientEventArgs
+            {
+                Bytes = args.Bytes,
+                Connection = args.Connection,
+                Message = args.Message,
+                MessageEventType = args.MessageEventType
+            };
         }
     }
 }
