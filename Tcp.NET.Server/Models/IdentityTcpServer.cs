@@ -1,8 +1,6 @@
-﻿using PHS.Networking.Server.Models;
-
-namespace Tcp.NET.Server.Models
+﻿namespace Tcp.NET.Server.Models
 {
-    public class IdentityTcpServer<T> : ConnectionTcpServer, IIdentity<T>
+    public class IdentityTcpServer<T> : ConnectionTcpServer
     {
         public T UserId { get; set; }
         public bool IsAuthorized { get; set; }
