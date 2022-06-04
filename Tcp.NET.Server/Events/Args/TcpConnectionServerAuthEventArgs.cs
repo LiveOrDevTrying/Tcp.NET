@@ -2,7 +2,7 @@
 
 namespace Tcp.NET.Server.Events.Args
 {
-    public class TcpConnectionServerAuthEventArgs<T> : TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>>
+    public class TcpConnectionServerAuthEventArgs<T> : TcpConnectionServerAuthBaseEventArgs<IdentityTcpServer<T>, T>
     {
     }
 }

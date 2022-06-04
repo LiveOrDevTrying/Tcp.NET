@@ -4,23 +4,22 @@ using PHS.Networking.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Handlers
 {
-    public delegate void AuthorizeEvent<T, U>(object sender, TcpAuthorizeEventArgs<T, U> args) where T : IdentityTcpServer<U>;
-
     public class TcpHandlerServerAuth<T> : 
-        TcpHandlerServerBase<
+        TcpHandlerServerAuthBase<
             TcpConnectionServerAuthEventArgs<T>,
             TcpMessageServerAuthEventArgs<T>,
             TcpErrorServerAuthEventArgs<T>,
             ParamsTcpServerAuth,
-            IdentityTcpServer<T>>
+            TcpAuthorizeEventArgs<T>,
+            IdentityTcpServer<T>,
+            T>
     {
-        protected event AuthorizeEvent<IdentityTcpServer<T>, T> _authorizeEvent;
-
         public TcpHandlerServerAuth(ParamsTcpServerAuth parameters) : base(parameters)
         {
         }
@@ -29,7 +28,7 @@ namespace Tcp.NET.Server.Handlers
         {
         }
 
-        public virtual Task AuthorizeCallbackAsync(TcpAuthorizeEventArgs<IdentityTcpServer<T>, T> args, CancellationToken cancellationToken)
+        public override Task AuthorizeCallbackAsync(TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args, CancellationToken cancellationToken)
         {
             FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
             {
@@ -40,7 +39,7 @@ namespace Tcp.NET.Server.Handlers
             return Task.CompletedTask;
         }
 
-        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcpClient connection)
+        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcp connection)
         {
             return new IdentityTcpServer<T>
             {
@@ -78,12 +77,11 @@ namespace Tcp.NET.Server.Handlers
                 MessageEventType = args.MessageEventType
             };
         }
-
         protected override void FireEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
         {
             if (!args.Connection.IsAuthorized)
             {
-                FireEvent(this, new TcpAuthorizeEventArgs<IdentityTcpServer<T>, T>
+                FireEvent(this, new TcpAuthorizeEventArgs<T>
                 {
                     Connection = args.Connection,
                     Token = args.Message,
@@ -101,21 +99,14 @@ namespace Tcp.NET.Server.Handlers
                 base.FireEvent(sender, args);
             }
         }
-        protected virtual void FireEvent(object sender, TcpAuthorizeEventArgs<IdentityTcpServer<T>, T> args)
-        {
-            _authorizeEvent?.Invoke(sender, args);
-        }
 
-        public event AuthorizeEvent<IdentityTcpServer<T>, T> AuthorizeEvent
+        protected override TcpAuthorizeEventArgs<T> CreateAuthorizeEventArgs(TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
         {
-            add
+            return new TcpAuthorizeEventArgs<T>
             {
-                _authorizeEvent += value;
-            }
-            remove
-            {
-                _authorizeEvent -= value;
-            }
+                Connection = args.Connection,
+                Token = args.Token
+            };
         }
     }
 }
