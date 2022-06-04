@@ -106,7 +106,7 @@ namespace Tcp.NET.Server
                 Connection = args.Connection
             });
         }
-        protected virtual void OnAuthorizeEvent(object sender, TcpAuthorizeEventArgs<IdentityTcpServer<T>, T> args)
+        protected virtual void OnAuthorizeEvent(object sender, TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
         {
             Task.Run(async () =>
             {
@@ -160,6 +160,34 @@ namespace Tcp.NET.Server
 
                 await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
             });
+        }
+
+        protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
+        {
+            return new TcpConnectionServerAuthEventArgs<T>
+            {
+                Connection = args.Connection,
+                ConnectionEventType = args.ConnectionEventType
+            };
+        }
+        protected override TcpMessageServerAuthEventArgs<T> CreateMessageEventArgs(TcpMessageServerBaseEventArgs<IdentityTcpServer<T>> args)
+        {
+            return new TcpMessageServerAuthEventArgs<T>
+            {
+                Bytes = args.Bytes,
+                Connection = args.Connection,
+                Message = args.Message,
+                MessageEventType = args.MessageEventType
+            };
+        }
+        protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(TcpErrorServerBaseEventArgs<IdentityTcpServer<T>> args)
+        {
+            return new TcpErrorServerAuthEventArgs<T>
+            {
+                Connection = args.Connection,
+                Exception = args.Exception,
+                Message = args.Message
+            };
         }
 
         public override void Dispose()
