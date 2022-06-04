@@ -1,5 +1,4 @@
 ﻿using Tcp.NET.Client.Events.Args;
-
 using Tcp.NET.Client.Handlers;
 using Tcp.NET.Client.Models;
 using Tcp.NET.Core.Events.Args;
@@ -21,7 +20,7 @@ namespace Tcp.NET.Client
         {
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionEventArgs<ConnectionTcp> args)
+        protected override void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
             FireEvent(this, new TcpConnectionClientEventArgs
             {
@@ -29,7 +28,7 @@ namespace Tcp.NET.Client
                 ConnectionEventType = args.ConnectionEventType
             });
         }
-        protected override void OnMessageEvent(object sender, TcpMessageEventArgs<ConnectionTcp> args)
+        protected override void OnMessageEvent(object sender, TcpMessageClientEventArgs args)
         {
             FireEvent(this, new TcpMessageClientEventArgs
             {
@@ -39,7 +38,7 @@ namespace Tcp.NET.Client
                 MessageEventType = args.MessageEventType
             });
         }
-        protected override void OnErrorEvent(object sender, TcpErrorEventArgs<ConnectionTcp> args)
+        protected override void OnErrorEvent(object sender, TcpErrorClientEventArgs args)
         {
             FireEvent(this, new TcpErrorClientEventArgs
             {
