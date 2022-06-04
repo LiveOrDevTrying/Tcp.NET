@@ -4,11 +4,10 @@ using Tcp.NET.Server.Models;
 
 namespace Tcp.NET.Server.Managers
 {
-    public class TcpConnectionManager<T> : ConnectionManager<T>
-        where T : ConnectionTcpServer
+    public class TcpConnectionManager : TcpConnectionManagerBase<ConnectionTcpServer>
     {
         public TcpConnectionManager() { }
-        public TcpConnectionManager(ConcurrentDictionary<string, T> connections) : base(connections) { }
+        public TcpConnectionManager(ConcurrentDictionary<string, ConnectionTcpServer> connections) : base(connections) { }
 
     }
 }

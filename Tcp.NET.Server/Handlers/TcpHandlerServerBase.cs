@@ -1,18 +1,9 @@
 ﻿using PHS.Networking.Enums;
-using PHS.Networking.Events;
-using PHS.Networking.Events.Args;
-using PHS.Networking.Models;
-using PHS.Networking.Server.Enums;
-using PHS.Networking.Server.Events.Args;
 using PHS.Networking.Server.Handlers;
-using PHS.Networking.Services;
 using PHS.Networking.Utilities;
 using System;
 using System.IO;
-using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,10 +13,10 @@ using Tcp.NET.Server.Models;
 namespace Tcp.NET.Server.Handlers
 {
     public abstract class TcpHandlerServerBase<T, U, V, W, Z> :
-        HandlerServerBaseTcpListener<T, U, V, W, Z>
-        where T : ConnectionEventArgs<Z>
-        where U : MessageEventArgs<Z>
-        where V : ErrorEventArgs<Z>
+        TcpHandlerServerBaseTcp<T, U, V, W, Z>
+        where T : TcpConnectionServerBaseEventArgs<Z>
+        where U : TcpMessageServerBaseEventArgs<Z>
+        where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
         where Z : ConnectionTcpServer
     {
@@ -35,6 +26,7 @@ namespace Tcp.NET.Server.Handlers
         public TcpHandlerServerBase(W parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
+
         public override async Task<bool> SendAsync(string message, Z connection, CancellationToken cancellationToken)
         {
             try
