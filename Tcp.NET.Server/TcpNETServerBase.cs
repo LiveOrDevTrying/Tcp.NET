@@ -8,7 +8,6 @@ using PHS.Networking.Server.Events.Args;
 using Tcp.NET.Server.Events.Args;
 using PHS.Networking.Server.Enums;
 using PHS.Networking.Server.Services;
-using PHS.Networking.Enums;
 using System;
 
 namespace Tcp.NET.Server
