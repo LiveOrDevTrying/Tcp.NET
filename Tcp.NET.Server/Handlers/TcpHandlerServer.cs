@@ -1,6 +1,7 @@
 ﻿using PHS.Networking.Events.Args;
 using PHS.Networking.Models;
 using System;
+using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
@@ -22,7 +23,7 @@ namespace Tcp.NET.Server.Handlers
         {
         }
 
-        protected override ConnectionTcpServer CreateConnection(ConnectionTcpClient connection)
+        protected override ConnectionTcpServer CreateConnection(ConnectionTcp connection)
         {
             return new ConnectionTcpServer
             {

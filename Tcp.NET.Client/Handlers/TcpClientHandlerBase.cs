@@ -9,7 +9,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Client.Events.Args;
 using Tcp.NET.Client.Models;
 using Tcp.NET.Core.Events.Args;
 using Tcp.NET.Core.Models;
@@ -293,7 +292,8 @@ namespace Tcp.NET.Client.Handlers
 
             _connection = CreateConnection(new ConnectionTcp
             {
-                TcpClient = client
+                TcpClient = client,
+                ConnectionId = Guid.NewGuid().ToString()
             });
         }
         protected virtual async Task CreateSSLConnectionAsync(CancellationToken cancellationToken)
@@ -318,7 +318,8 @@ namespace Tcp.NET.Client.Handlers
             {
                 _connection = CreateConnection(new ConnectionTcp
                 {
-                    TcpClient = client
+                    TcpClient = client,
+                    ConnectionId = Guid.NewGuid().ToString()
                 });
             }
             else
