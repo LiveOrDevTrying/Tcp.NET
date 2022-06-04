@@ -1,7 +1,6 @@
 ﻿using Tcp.NET.Server.Models;
 using Tcp.NET.Server.Handlers;
 using Tcp.NET.Server.Managers;
-using PHS.Networking.Enums;
 using Tcp.NET.Server.Events.Args;
 
 namespace Tcp.NET.Server
@@ -13,7 +12,7 @@ namespace Tcp.NET.Server
             TcpErrorServerEventArgs,
             ParamsTcpServer,
             TcpHandlerServer,
-            TcpConnectionManager<ConnectionTcpServer>,
+            TcpConnectionManager,
             ConnectionTcpServer>,
         ITcpNETServer
     {
@@ -27,10 +26,11 @@ namespace Tcp.NET.Server
         {
         }
 
-        protected override TcpConnectionManager<ConnectionTcpServer> CreateConnectionManager()
+        protected override TcpConnectionManager CreateConnectionManager()
         {
-            return new TcpConnectionManager<ConnectionTcpServer>();
+            return new TcpConnectionManager();
         }
+
         protected override TcpHandlerServer CreateHandler(byte[] certificate = null, string certificatePassword = null)
         {
             return certificate != null
@@ -38,29 +38,34 @@ namespace Tcp.NET.Server
                 : new TcpHandlerServer(_parameters);
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionServerEventArgs args)
+        protected override TcpErrorServerEventArgs CreateErrorEventArgs(TcpErrorServerBaseEventArgs<ConnectionTcpServer> args)
         {
-            switch (args.ConnectionEventType)
+            return new TcpErrorServerEventArgs
             {
-                case ConnectionEventType.Connected:
-                    _connectionManager.Add(args.Connection.ConnectionId, args.Connection);
-                    break;
-                case ConnectionEventType.Disconnect:
-                    _connectionManager.Remove(args.Connection.ConnectionId);
-                    break;
-                default:
-                    break;
-            }
+                Connection = args.Connection,
+                Exception = args.Exception,
+                Message = args.Message
+            };
+        }
 
-            FireEvent(this, args);
-        }
-        protected override void OnErrorEvent(object sender, TcpErrorServerEventArgs args)
+        protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<ConnectionTcpServer> args)
         {
-            FireEvent(this, args);
+            return new TcpConnectionServerEventArgs
+            {
+                Connection = args.Connection,
+                ConnectionEventType = args.ConnectionEventType
+            };
         }
-        protected override void OnMessageEvent(object sender, TcpMessageServerEventArgs args)
+
+        protected override TcpMessageServerEventArgs CreateMessageEventArgs(TcpMessageServerBaseEventArgs<ConnectionTcpServer> args)
         {
-            FireEvent(this, args);
+            return new TcpMessageServerEventArgs
+            {
+                Bytes = args.Bytes,
+                Connection = args.Connection,
+                Message = args.Message,
+                MessageEventType = args.MessageEventType
+            };
         }
-    }
+     }
 }
