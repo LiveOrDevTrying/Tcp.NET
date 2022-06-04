@@ -46,9 +46,18 @@ namespace Tcp.NET.Client
             return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
-        protected abstract void OnConnectionEvent(object sender, T args);
-        protected abstract void OnMessageEvent(object sender, U args);
-        protected abstract void OnErrorEvent(object sender, V args);
+        protected virtual void OnConnectionEvent(object sender, T args)
+        {
+            FireEvent(sender, args);
+        }
+        protected virtual void OnMessageEvent(object sender, U args)
+        {
+            FireEvent(sender, args);
+        }
+        protected virtual void OnErrorEvent(object sender, V args)
+        {
+            FireEvent(sender, args);
+        }
 
         protected abstract X CreateTcpClientHandler();
 
