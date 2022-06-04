@@ -15,7 +15,7 @@ namespace Tcp.NET.Client
         where U : TcpMessageEventArgs<Y>
         where V : TcpErrorEventArgs<Y>
         where W : ParamsTcpClient
-        where X : TcpClientHandlerBase<Y>
+        where X : TcpClientHandlerBase<T, U, V, W, X, Y>
         where Y : ConnectionTcp
     {
         protected readonly X _handler;
@@ -46,9 +46,9 @@ namespace Tcp.NET.Client
             return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
-        protected abstract void OnConnectionEvent(object sender, TcpConnectionEventArgs<Y> args);
-        protected abstract void OnMessageEvent(object sender, TcpMessageEventArgs<Y> args);
-        protected abstract void OnErrorEvent(object sender, TcpErrorEventArgs<Y> args);
+        protected abstract void OnConnectionEvent(object sender, T args);
+        protected abstract void OnMessageEvent(object sender, U args);
+        protected abstract void OnErrorEvent(object sender, V args);
 
         protected abstract X CreateTcpClientHandler();
 

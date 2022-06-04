@@ -15,21 +15,22 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client.Handlers
 {
-    public abstract class TcpClientHandlerBase<T> : 
-        CoreNetworkingGeneric<
-            TcpConnectionEventArgs<T>, 
-            TcpMessageEventArgs<T>, 
-            TcpErrorEventArgs<T>,
-            ParamsTcpClient,
-            T>
-        where T : ConnectionTcp
+    public abstract class TcpClientHandlerBase<T, U, V, W, X, Y> : 
+        CoreNetworkingGeneric<T, U, V, W, Y>,
+        ICoreNetworkingGeneric<T, U, V, Y>
+        where T : TcpConnectionEventArgs<Y>
+        where U : TcpMessageEventArgs<Y>
+        where V : TcpErrorEventArgs<Y>
+        where W : ParamsTcpClient
+        where X : TcpClientHandlerBase<T, U, V, W, X, Y>
+        where Y : ConnectionTcp
     {
-        protected T _connection;
+        protected Y _connection;
 
-        public TcpClientHandlerBase(ParamsTcpClient parameters) : base(parameters)
+        public TcpClientHandlerBase(W parameters) : base(parameters)
         {
         }
-
+        
         public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -57,11 +58,11 @@ namespace Tcp.NET.Client.Handlers
 
                     if (_connection != null && _connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
                     {
-                        FireEvent(this, new TcpConnectionEventArgs<T>
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
                         {
                             Connection = _connection,
                             ConnectionEventType = ConnectionEventType.Connected,
-                        });
+                        }));
 
                         _ = Task.Run(async () => { await ReceiveAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
 
@@ -71,12 +72,12 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Exception = ex,
                     Connection = _connection,
                     Message = ex.Message
-                });
+                }));
 
                 await DisconnectAsync(cancellationToken);
             }
@@ -94,11 +95,11 @@ namespace Tcp.NET.Client.Handlers
                         _connection.TcpClient.Close();
                         _connection.TcpClient.Dispose();
 
-                        FireEvent(this, new TcpConnectionEventArgs<T>
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
                         {
                             ConnectionEventType = ConnectionEventType.Disconnect,
                             Connection = _connection
-                        });
+                        }));
                     }
 
                     _connection = null;
@@ -108,12 +109,12 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
-                });
+                }));
             }
 
             return Task.FromResult(false);
@@ -131,25 +132,25 @@ namespace Tcp.NET.Client.Handlers
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes($"{message}"), _parameters.EndOfLineBytes);
                     await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
 
-                    FireEvent(this, new TcpMessageEventArgs<T>
+                    FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                     {
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
                         Message = message,
                         Bytes = bytes
-                    });
+                    }));
 
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
-                });
+                }));
 
                 await DisconnectAsync(cancellationToken);
             }
@@ -168,25 +169,25 @@ namespace Tcp.NET.Client.Handlers
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
                     await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
 
-                    FireEvent(this, new TcpMessageEventArgs<T>
+                    FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                     { 
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
                         Message = null,
                         Bytes = bytes
-                    });
+                    }));
 
                     return true;
                 }
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
-                });
+                }));
 
                 await DisconnectAsync(cancellationToken);
             }
@@ -252,13 +253,13 @@ namespace Tcp.NET.Client.Handlers
                                                 message = Encoding.UTF8.GetString(parts[i]);
                                             }
 
-                                            FireEvent(this, new TcpMessageEventArgs<T>
+                                            FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                                             {
                                                 MessageEventType = MessageEventType.Receive,
                                                 Connection = _connection,
                                                 Message = message,
                                                 Bytes = parts[i]
-                                            });
+                                            }));
                                         }
                                     }
                                 }
@@ -269,12 +270,12 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
-                FireEvent(this, new TcpErrorEventArgs<T>
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
                     Exception = ex,
                     Message = ex.Message
-                });
+                }));
             }
 
             await DisconnectAsync(cancellationToken);
@@ -327,14 +328,17 @@ namespace Tcp.NET.Client.Handlers
                 throw new Exception("Could not create connection - SSL cert has validation problem.");
             }
         }
-        protected abstract T CreateConnection(ConnectionTcp connection);
+        protected abstract Y CreateConnection(ConnectionTcp connection);
+        protected abstract T CreateConnectionEventArgs(TcpConnectionEventArgs<Y> args);
+        protected abstract U CreateMessageEventArgs(TcpMessageEventArgs<Y> args);
+        protected abstract V CreateErrorEventArgs(TcpErrorEventArgs<Y> args);
 
         public override void Dispose()
         {
             DisconnectAsync().Wait();
         }
 
-        public T Connection
+        public Y Connection
         {
             get
             {
