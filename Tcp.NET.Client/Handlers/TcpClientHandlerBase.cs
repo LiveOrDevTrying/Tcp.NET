@@ -15,14 +15,13 @@ using Tcp.NET.Core.Models;
 
 namespace Tcp.NET.Client.Handlers
 {
-    public abstract class TcpClientHandlerBase<T, U, V, W, X, Y> : 
+    public abstract class TcpClientHandlerBase<T, U, V, W, Y> : 
         CoreNetworkingGeneric<T, U, V, W, Y>,
         ICoreNetworkingGeneric<T, U, V, Y>
         where T : TcpConnectionEventArgs<Y>
         where U : TcpMessageEventArgs<Y>
         where V : TcpErrorEventArgs<Y>
         where W : ParamsTcpClient
-        where X : TcpClientHandlerBase<T, U, V, W, X, Y>
         where Y : ConnectionTcp
     {
         protected Y _connection;
