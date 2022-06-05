@@ -15,7 +15,7 @@ namespace Tcp.NET.Client
         where U : TcpMessageEventArgs<Y>
         where V : TcpErrorEventArgs<Y>
         where W : ParamsTcpClient
-        where X : TcpClientHandlerBase<T, U, V, W, X, Y>
+        where X : TcpClientHandlerBase<T, U, V, W, Y>
         where Y : ConnectionTcp
     {
         protected readonly X _handler;
