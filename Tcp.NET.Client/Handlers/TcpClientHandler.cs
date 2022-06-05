@@ -11,7 +11,6 @@ namespace Tcp.NET.Client.Handlers
             TcpMessageClientEventArgs,
             TcpErrorClientEventArgs,
             ParamsTcpClient,
-            TcpClientHandler,
             ConnectionTcp>
     {
         public TcpClientHandler(ParamsTcpClient parameters) : base(parameters)
