@@ -7,14 +7,11 @@ namespace Tcp.NET.TestApps.Server
 {
     public class MockUserService : IUserService<Guid>
     {
-        public Task<bool> IsValidTokenAsync(string token, CancellationToken cancellationToken = default)
+        public Task<bool> TryGetIdAsync(string token, out Guid id, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(token == "testToken");
-        }
+            id = Guid.NewGuid();
 
-        public Task<Guid> GetIdAsync(string token, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(Guid.NewGuid());
+            return token == "testToken" ? Task.FromResult(true) : Task.FromResult(false);
         }
     }
 }
