@@ -117,7 +117,7 @@ namespace Tcp.NET.Server
                         args.Connection.TcpClient.Connected &&
                         !args.Connection.IsAuthorized)
                     {
-                        if (args.Token.Length <= 0)
+                        if (args.Token.Length <= 0 || !await _userService.TryGetIdAsync(args.Token, out var id, _cancellationToken).ConfigureAwait(false))
                         {
                             if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
                             {
@@ -128,19 +128,16 @@ namespace Tcp.NET.Server
                             return;
                         }
 
-                        if (await _userService.IsValidTokenAsync(args.Token, _cancellationToken).ConfigureAwait(false))
+                        args.Connection.UserId = id;
+                        args.Connection.IsAuthorized = true;
+
+                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
                         {
-                            args.Connection.UserId = await _userService.GetIdAsync(args.Token, _cancellationToken).ConfigureAwait(false);
-                            args.Connection.IsAuthorized = true;
-
-                            if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
-                            {
-                                await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, _cancellationToken).ConfigureAwait(false);
-                            }
-
-                            await _handler.AuthorizeCallbackAsync(args, _cancellationToken).ConfigureAwait(false);
-                            return;
+                            await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, _cancellationToken).ConfigureAwait(false);
                         }
+
+                        await _handler.AuthorizeCallbackAsync(args, _cancellationToken).ConfigureAwait(false);
+                        return;
                     }
                 }
                 catch (Exception ex)
