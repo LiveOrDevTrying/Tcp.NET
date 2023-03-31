@@ -28,42 +28,22 @@ namespace Tcp.NET.Client
             _handler.ErrorEvent += OnErrorEvent;
         }
 
-        public virtual async Task<bool> ConnectAsync(CancellationToken? cancellationToken = default)
+        public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.HasValue)
-            {
-                return await _handler.ConnectAsync(cancellationToken.Value).ConfigureAwait(false);
-            }
-
-            return await _handler.ConnectAsync(default(CancellationToken)).ConfigureAwait(false);
+            return await _handler.ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
-        public virtual async Task<bool> DisconnectAsync(CancellationToken? cancellationToken = default)
+        public virtual async Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.HasValue)
-            {
-                return await _handler.DisconnectAsync(cancellationToken.Value).ConfigureAwait(false);
-            }
-
-            return await _handler.DisconnectAsync(default(CancellationToken)).ConfigureAwait(false);
+            return await _handler.DisconnectAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        public virtual async Task<bool> SendAsync(string message, CancellationToken? cancellationToken = default)
+        public virtual async Task<bool> SendAsync(string message, CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.HasValue)
-            {
-                return await _handler.SendAsync(message, cancellationToken.Value).ConfigureAwait(false);
-            }
-
-            return await _handler.SendAsync(message, default(CancellationToken)).ConfigureAwait(false);
+            return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
-        public virtual async Task<bool> SendAsync(byte[] message, CancellationToken? cancellationToken = default)
+        public virtual async Task<bool> SendAsync(byte[] message, CancellationToken cancellationToken = default)
         {
-            if (cancellationToken.HasValue)
-            {
-                return await _handler.SendAsync(message, cancellationToken.Value).ConfigureAwait(false);
-            }
-
-            return await _handler.SendAsync(message, default(CancellationToken)).ConfigureAwait(false);
+            return await _handler.SendAsync(message, cancellationToken).ConfigureAwait(false);
         }
 
         protected virtual void OnConnectionEvent(object sender, T args)
