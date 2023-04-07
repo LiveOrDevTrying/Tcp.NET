@@ -68,7 +68,7 @@ namespace Tcp.NET.Server.Managers
                 return user.GetAll();
             }
 
-            return null;
+            return System.Array.Empty<Z>();
         }
     }
 }
