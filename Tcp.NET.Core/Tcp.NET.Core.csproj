@@ -6,7 +6,7 @@
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The core module for a simple SSL or non-SSL async await Tcp Server and Client with authentication. This package is used by both Tcp.NET.Client and Tcp.NET.Server.</Description>
-    <Copyright>Copyright 2022</Copyright>
+    <Copyright>Copyright 2023</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/LiveOrDevTrying/Tcp.NET</PackageProjectUrl>
     <RepositoryUrl>https://github.com/LiveOrDevTrying/Tcp.NET</RepositoryUrl>
