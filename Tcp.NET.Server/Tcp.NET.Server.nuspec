@@ -12,7 +12,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>The server module for a simple SSL or non-SSL Tcp Server with authentication.</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright 2022</copyright>
+    <copyright>Copyright 2023</copyright>
     <tags>Tcp server client Tcp.NET TcpNET async dotnet net SSL authorization auth authentication liveordevtrying await async</tags>
     <dependencies>
 		<group targetFramework="netcoreapp2.2">
