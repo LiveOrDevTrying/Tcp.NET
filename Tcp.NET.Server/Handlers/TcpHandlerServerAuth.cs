@@ -23,7 +23,6 @@ namespace Tcp.NET.Server.Handlers
         public TcpHandlerServerAuth(ParamsTcpServerAuth parameters) : base(parameters)
         {
         }
-
         public TcpHandlerServerAuth(ParamsTcpServerAuth parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
@@ -47,7 +46,6 @@ namespace Tcp.NET.Server.Handlers
                 ConnectionId = Guid.NewGuid().ToString()
             };
         }
-
         protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(ConnectionEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpConnectionServerAuthEventArgs<T>
@@ -56,7 +54,6 @@ namespace Tcp.NET.Server.Handlers
                 ConnectionEventType = args.ConnectionEventType
             };
         }
-
         protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(ErrorEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpErrorServerAuthEventArgs<T>
@@ -66,7 +63,6 @@ namespace Tcp.NET.Server.Handlers
                 Message = args.Message
             };
         }
-
         protected override TcpMessageServerAuthEventArgs<T> CreateMessageEventArgs(TcpMessageServerBaseEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpMessageServerAuthEventArgs<T>
@@ -77,6 +73,15 @@ namespace Tcp.NET.Server.Handlers
                 MessageEventType = args.MessageEventType
             };
         }
+        protected override TcpAuthorizeEventArgs<T> CreateAuthorizeEventArgs(TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
+        {
+            return new TcpAuthorizeEventArgs<T>
+            {
+                Connection = args.Connection,
+                Token = args.Token
+            };
+        }
+        
         protected override void FireEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
         {
             if (!args.Connection.IsAuthorized)
@@ -98,15 +103,6 @@ namespace Tcp.NET.Server.Handlers
             {
                 base.FireEvent(sender, args);
             }
-        }
-
-        protected override TcpAuthorizeEventArgs<T> CreateAuthorizeEventArgs(TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
-        {
-            return new TcpAuthorizeEventArgs<T>
-            {
-                Connection = args.Connection,
-                Token = args.Token
-            };
         }
     }
 }
