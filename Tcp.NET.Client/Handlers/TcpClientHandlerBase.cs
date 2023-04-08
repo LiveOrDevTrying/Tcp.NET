@@ -49,12 +49,7 @@ namespace Tcp.NET.Client.Handlers
                     {
                         await CreateNonSSLConnectionAsync(cancellationToken).ConfigureAwait(false);
                     }
-
-                    if (_parameters.Token != null && !cancellationToken.IsCancellationRequested)
-                    {
-                        await SendAsync(_parameters.Token, cancellationToken).ConfigureAwait(false);
-                    }
-
+                    
                     if (_connection != null && _connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
                     {
                         FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
@@ -64,6 +59,11 @@ namespace Tcp.NET.Client.Handlers
                         }));
 
                         _ = Task.Run(async () => { await ReceiveAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
+
+                        if (_parameters.Token != null && !cancellationToken.IsCancellationRequested)
+                        {
+                            await SendAsync(_parameters.Token, cancellationToken).ConfigureAwait(false);
+                        }
 
                         return true;
                     };
