@@ -39,11 +39,11 @@ namespace Tcp.NET.Server.Handlers
                     Connection = args.Connection,
                     Token = args.Message,
                 }));
+
+                return;
             }
-            else
-            {
-                base.FireEvent(sender, args);
-            }
+
+            base.FireEvent(sender, args);
         }
         protected override void FireEvent(object sender, T args)
         {

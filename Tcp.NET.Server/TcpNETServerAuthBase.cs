@@ -90,6 +90,8 @@ namespace Tcp.NET.Server
                         args.Connection.UserId = await _userService.GetIdAsync(args.Token, _cancellationToken);
                         args.Connection.IsAuthorized = true;
 
+                        _connectionManager.Add(args.Connection);
+
                         if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
                         {
                             await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, _cancellationToken).ConfigureAwait(false);
