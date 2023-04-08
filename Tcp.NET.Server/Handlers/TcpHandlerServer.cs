@@ -18,7 +18,6 @@ namespace Tcp.NET.Server.Handlers
         public TcpHandlerServer(ParamsTcpServer parameters) : base(parameters)
         {
         }
-
         public TcpHandlerServer(ParamsTcpServer parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
@@ -31,7 +30,6 @@ namespace Tcp.NET.Server.Handlers
                 ConnectionId = Guid.NewGuid().ToString()
             };
         }
-
         protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(ConnectionEventArgs<ConnectionTcpServer> args)
         {
             return new TcpConnectionServerEventArgs
