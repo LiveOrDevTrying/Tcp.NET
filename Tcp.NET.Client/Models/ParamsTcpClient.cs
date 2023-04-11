@@ -78,12 +78,12 @@ namespace Tcp.NET.Client.Models
                 throw new ArgumentException("Token is not valid");
             }
 
-            if (pingBytes.Length <= 0 || pingBytes.All(x => x == 0))
+            if (pingBytes == null || pingBytes.Length <= 0 || pingBytes.All(x => x == 0))
             {
                 pingBytes = Encoding.UTF8.GetBytes("ping");
             }
 
-            if (pongBytes.Length <= 0 || pingBytes.All(x => x == 0))
+            if (pongBytes == null || pongBytes.Length <= 0 || pingBytes.All(x => x == 0))
             {
                 pongBytes = Encoding.UTF8.GetBytes("pong");
             }
