@@ -43,15 +43,18 @@ namespace Tcp.NET.Server
                 _timerPing = null;
             }
 
-            switch (args.ServerEventType)
+            if (_parameters.PingIntervalSec > 0)
             {
-                case ServerEventType.Start:
-                    _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
-                    break;
-                case ServerEventType.Stop:
-                    break;
-                default:
-                    break;
+                switch (args.ServerEventType)
+                {
+                    case ServerEventType.Start:
+                        _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
+                        break;
+                    case ServerEventType.Stop:
+                        break;
+                    default:
+                        break;
+                }
             }
 
             base.FireEvent(sender, args);
