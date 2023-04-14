@@ -27,14 +27,12 @@ namespace Tcp.NET.Server
         public TcpNETServerAuth(ParamsTcpServerAuth parameters,
             IUserService<T> userService) : base(parameters, userService)
         { 
-            _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
         public TcpNETServerAuth(ParamsTcpServerAuth parameters,
             IUserService<T> userService,
             byte[] certificate,
             string certificatePassword) : base(parameters, userService, certificate, certificatePassword)
         {
-            _handler.AuthorizeEvent += OnAuthorizeEvent;
         }
 
         protected override TcpConnectionManagerAuth<T> CreateConnectionManager()
