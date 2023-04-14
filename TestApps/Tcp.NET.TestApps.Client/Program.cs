@@ -1,5 +1,6 @@
 ﻿using PHS.Networking.Enums;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -51,11 +52,12 @@ namespace Tcp.NET.TestApps.Client
 
                 if (line == "restart")
                 {
-                    var clients = _clients.ToList();
-                    _clients = new List<ITcpNETClient>();
-                    foreach (var item in clients)
+                    foreach (var item in _clients.ToList())
                     {
-                        await item.DisconnectAsync();
+                        if (item != null)
+                        {
+                            await item.DisconnectAsync();
+                        }
                     }
                 }
                 else

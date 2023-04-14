@@ -1,4 +1,5 @@
 ﻿using PHS.Networking.Models;
+using PHS.Networking.Utilities;
 using System;
 using System.Linq;
 using System.Text;
@@ -15,8 +16,10 @@ namespace Tcp.NET.Client.Models
         public bool IsSSL { get; protected set; }
         public bool OnlyEmitBytes { get; protected set; }
         public byte[] Token { get; protected set; }
+        public bool UseDisconnectBytes { get; protected set; }
+        public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpClient(string host, int port, string endOfLineCharacters, bool isSSL, string token = "", bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong")
+        public ParamsTcpClient(string host, int port, string endOfLineCharacters, bool isSSL, string token = "", bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null)
         {
             if (string.IsNullOrWhiteSpace(host))
             {
@@ -50,13 +53,20 @@ namespace Tcp.NET.Client.Models
             PongBytes = Encoding.UTF8.GetBytes(pongCharacters);
             IsSSL = isSSL;
             OnlyEmitBytes = onlyEmitBytes;
+            UseDisconnectBytes = useDisconnectBytes;
+            DisconnectBytes = disconnectBytes;
 
             if (!string.IsNullOrWhiteSpace(token))
             {
                 Token = Encoding.UTF8.GetBytes(token);
             }
+
+            if (UseDisconnectBytes && (DisconnectBytes == null || Statics.ByteArrayEquals(DisconnectBytes, Array.Empty<byte>())))
+            {
+                DisconnectBytes = new byte[] { 3 };
+            }
         }
-        public ParamsTcpClient(string host, int port, byte[] endOfLineBytes, bool isSSL, byte[] token = null, bool onlyEmitBytes = true, byte[] pingBytes = null, byte[] pongBytes = null)
+        public ParamsTcpClient(string host, int port, byte[] endOfLineBytes, bool isSSL, byte[] token = null, bool onlyEmitBytes = true, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null)
         {
             if (string.IsNullOrWhiteSpace(host))
             {
@@ -96,6 +106,13 @@ namespace Tcp.NET.Client.Models
             IsSSL = isSSL;
             OnlyEmitBytes = onlyEmitBytes;
             Token = token;
+            UseDisconnectBytes = useDisconnectBytes;
+            DisconnectBytes = disconnectBytes;
+
+            if (UseDisconnectBytes && (DisconnectBytes == null || Statics.ByteArrayEquals(DisconnectBytes, Array.Empty<byte>())))
+            {
+                DisconnectBytes = new byte[] { 3 };
+            }
         }
     }
 }
