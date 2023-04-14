@@ -1,4 +1,5 @@
 ﻿using PHS.Networking.Models;
+using PHS.Networking.Utilities;
 using System;
 using System.Linq;
 using System.Text;
@@ -13,8 +14,10 @@ namespace Tcp.NET.Server.Models
         public string ConnectionSuccessString { get; protected set; }
         public int PingIntervalSec { get; protected set; }
         public bool OnlyEmitBytes { get; protected set; }
+        public bool UseDisconnectBytes { get; protected set; }
+        public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong") : base(port)
+        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
         {
             if (string.IsNullOrEmpty(endOfLineCharacters))
             {
@@ -42,9 +45,16 @@ namespace Tcp.NET.Server.Models
             ConnectionSuccessString = connectionSuccessString;
             PingIntervalSec = pingIntervalSec;
             OnlyEmitBytes = onlyEmitBytes;
+            UseDisconnectBytes = useDisconnectBytes;
+            DisconnectBytes = disconnectBytes;
+            
+            if (UseDisconnectBytes && (DisconnectBytes == null || Statics.ByteArrayEquals(DisconnectBytes, Array.Empty<byte>())))
+            {
+                DisconnectBytes = new byte[] { 3 };
+            }
         }
 
-        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null) : base(port)
+        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
         {
             if (endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
             {
@@ -73,6 +83,13 @@ namespace Tcp.NET.Server.Models
             PongBytes = pongBytes;
             PingIntervalSec = pingIntervalSec;
             OnlyEmitBytes = onlyEmitBytes;
+            UseDisconnectBytes = useDisconnectBytes;
+            DisconnectBytes = disconnectBytes;
+
+            if (UseDisconnectBytes && (DisconnectBytes == null || Statics.ByteArrayEquals(DisconnectBytes, Array.Empty<byte>())))
+            {
+                DisconnectBytes = new byte[] { 3 };
+            }
         }
     }
 }
