@@ -83,7 +83,7 @@ namespace Tcp.NET.Client.Handlers
 
             return false;
         }
-        public virtual Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
+        public virtual async Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -91,8 +91,20 @@ namespace Tcp.NET.Client.Handlers
                 {
                     if (_connection.TcpClient != null)
                     {
-                        _connection.TcpClient.Close();
-                        _connection.TcpClient.Dispose();
+                        if (_parameters.UseDisconnectBytes)
+                        {
+                            await SendAsync(_parameters.DisconnectBytes, cancellationToken);
+                        }
+
+                        if (_connection != null && _connection.TcpClient != null)
+                        {
+                            _connection.TcpClient.Close();
+                        }
+                            
+                        if (_connection != null && _connection.TcpClient != null)
+                        {
+                            _connection.TcpClient.Dispose();
+                        }
 
                         FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
                         {
@@ -103,7 +115,7 @@ namespace Tcp.NET.Client.Handlers
 
                     _connection = null;
 
-                    return Task.FromResult(true);
+                    return true;
                 }
             }
             catch (Exception ex)
@@ -116,7 +128,7 @@ namespace Tcp.NET.Client.Handlers
                 }));
             }
 
-            return Task.FromResult(false);
+            return false;
         }
 
         public virtual async Task<bool> SendAsync(string message, CancellationToken cancellationToken = default)
@@ -198,69 +210,68 @@ namespace Tcp.NET.Client.Handlers
         {
             try
             {
-                using (var persistantMS = new MemoryStream())
+                while (!cancellationToken.IsCancellationRequested && _connection != null && _connection.TcpClient.Connected)
                 {
-                    while (!cancellationToken.IsCancellationRequested && _connection != null && _connection.TcpClient.Connected)
+                    using (var ms = new MemoryStream())
                     {
-                        using (var ms = new MemoryStream())
+                        var endOfMessage = false;
+                        do
                         {
-                            if (persistantMS.Length > 0)
+                            if (_connection.TcpClient.Available <= 0)
                             {
-                                persistantMS.CopyTo(ms);
-                                persistantMS.SetLength(0);
+                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                continue;
                             }
 
-                            var endOfMessage = false;
-                            do
+                            var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
+                            var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                            await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
+
+                            endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
+                        }
+                        while (!endOfMessage && _connection != null && _connection.TcpClient.Connected);
+
+                        if (endOfMessage)
+                        {
+                            var parts = Statics.ByteArraySeparate(ms.ToArray(), _parameters.EndOfLineBytes);
+
+                            for (int i = 0; i < parts.Length; i++)
                             {
-                                if (_connection.TcpClient.Available <= 0)
+                                if (_parameters.UseDisconnectBytes && Statics.ByteArrayEquals(parts[i], _parameters.DisconnectBytes))
                                 {
-                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                                    continue;
+                                    if (_connection != null && _connection.TcpClient != null)
+                                    {
+                                        _connection.TcpClient.Close();
+                                    }
+
+                                    if (_connection != null && _connection.TcpClient != null)
+                                    {
+                                        _connection.TcpClient.Dispose();
+                                    }
+
+                                    FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
+                                    {
+                                        ConnectionEventType = ConnectionEventType.Disconnect,
+                                        Connection = _connection
+                                    }));
+
+                                    _connection = null;
+                                    return;
                                 }
-
-                                var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                                await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
-
-                                endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
-                            }
-                            while (!endOfMessage && _connection != null && _connection.TcpClient.Connected);
-
-                            if (endOfMessage)
-                            {
-                                var parts = Statics.ByteArraySeparate(ms.ToArray(), _parameters.EndOfLineBytes);
-
-                                for (int i = 0; i < parts.Length; i++)
+                                else if (Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
                                 {
-                                    if (parts.Length > 1 && i == parts.Length - 1)
+                                    await SendAsync(_parameters.PongBytes, cancellationToken).ConfigureAwait(false);
+                                }
+                                else
+                                {
+                                    FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                                     {
-                                        await persistantMS.WriteAsync(parts[i], cancellationToken).ConfigureAwait(false);
-                                    }
-                                    else
-                                    {
-                                        if (Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
-                                        {
-                                            await SendAsync(_parameters.PongBytes, cancellationToken).ConfigureAwait(false);
-                                        }
-                                        else
-                                        {
-                                            string message = null;
-
-                                            if (!_parameters.OnlyEmitBytes)
-                                            {
-                                                message = Encoding.UTF8.GetString(parts[i]);
-                                            }
-
-                                            FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
-                                            {
-                                                MessageEventType = MessageEventType.Receive,
-                                                Connection = _connection,
-                                                Message = message,
-                                                Bytes = parts[i]
-                                            }));
-                                        }
-                                    }
+                                        MessageEventType = MessageEventType.Receive,
+                                        Connection = _connection,
+                                        Message = !_parameters.OnlyEmitBytes ? Encoding.UTF8.GetString(parts[i]) : null,
+                                        Bytes = parts[i]
+                                    }));
+                                    
                                 }
                             }
                         }

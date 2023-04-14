@@ -82,21 +82,6 @@ namespace Tcp.NET.Server.Handlers
             };
         }
         
-        protected override void FireEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
-        {
-            if (!args.Connection.IsAuthorized)
-            {
-                FireEvent(this, new TcpAuthorizeEventArgs<T>
-                {
-                    Connection = args.Connection,
-                    Token = args.Message,
-                });
-            }
-            else
-            {
-                base.FireEvent(sender, args);
-            }
-        }
         protected override void FireEvent(object sender, TcpConnectionServerAuthEventArgs<T> args)
         {
             if (args.Connection.IsAuthorized)
