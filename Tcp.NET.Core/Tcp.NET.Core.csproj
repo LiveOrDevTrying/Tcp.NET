@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
-    <Version>6.0.0</Version>
+    <TargetFramework>net7.0</TargetFramework>
+    <Version>7.0.0</Version>
     <Authors>Rob Engel - LiveOrDevTrying</Authors>
     <Company>Rob Engel - LiveOrDevTrying - Pixel Horror Studios</Company>
     <Description>The core module for a simple SSL or non-SSL async await Tcp Server and Client with authentication. This package is used by both Tcp.NET.Client and Tcp.NET.Server.</Description>
@@ -17,7 +17,7 @@
   </PropertyGroup>
 
     <ItemGroup>
-	    <PackageReference Include="PHS.Networking" Version="6.*" />
+	    <PackageReference Include="PHS.Networking" Version="7.0.*" />
     </ItemGroup>
 	
     <ItemGroup>
