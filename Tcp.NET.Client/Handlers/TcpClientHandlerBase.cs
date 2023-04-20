@@ -258,7 +258,7 @@ namespace Tcp.NET.Client.Handlers
                                     _connection = null;
                                     return;
                                 }
-                                else if (Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
+                                else if (_parameters.UsePingPong && Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
                                 {
                                     await SendAsync(_parameters.PongBytes, cancellationToken).ConfigureAwait(false);
                                 }
