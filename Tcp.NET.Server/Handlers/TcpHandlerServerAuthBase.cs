@@ -32,15 +32,24 @@ namespace Tcp.NET.Server.Handlers
 
         protected override void FireEvent(object sender, U args)
         {
-            if (!args.Connection.IsAuthorized)
+            switch (args.MessageEventType)
             {
-                FireEvent(this, CreateAuthorizeEventArgs(new TcpAuthorizeBaseEventArgs<Z, A>
-                {
-                    Connection = args.Connection,
-                    Token = args.Message,
-                }));
+                case PHS.Networking.Enums.MessageEventType.Sent:
+                    break;
+                case PHS.Networking.Enums.MessageEventType.Receive:
+                    if (!args.Connection.IsAuthorized)
+                    {
+                        FireEvent(this, CreateAuthorizeEventArgs(new TcpAuthorizeBaseEventArgs<Z, A>
+                        {
+                            Connection = args.Connection,
+                            Token = args.Bytes,
+                        }));
 
-                return;
+                        return;
+                    }
+                    break;
+                default:
+                    break;
             }
 
             base.FireEvent(sender, args);
