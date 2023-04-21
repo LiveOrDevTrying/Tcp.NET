@@ -17,7 +17,7 @@ namespace Tcp.NET.Server.Models
         public bool UseDisconnectBytes { get; protected set; }
         public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
+        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
         {
             if (string.IsNullOrEmpty(endOfLineCharacters))
             {
@@ -54,7 +54,7 @@ namespace Tcp.NET.Server.Models
             }
         }
 
-        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
+        public ParamsTcpServer(int port, byte[] endOfLineBytes, string connectionSuccessString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base(port)
         {
             if (endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
             {
