@@ -6,7 +6,7 @@ namespace Tcp.NET.Server.Models
     {
         public string ConnectionUnauthorizedString { get; protected set; }
 
-        public ParamsTcpServerAuth(int port, string endOfLineCharacters, string connectionSuccessString = null, string connectionUnauthorizedString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, string pingCharacters = "ping", string pongCharacters = "pong", bool sendDisconnectBytes = true, byte[] disconnectBytes = null) : base(port, endOfLineCharacters, connectionSuccessString, pingIntervalSec, onlyEmitBytes, pingCharacters, pongCharacters, sendDisconnectBytes, disconnectBytes)
+        public ParamsTcpServerAuth(int port, string endOfLineCharacters, string connectionSuccessString = null, string connectionUnauthorizedString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, string pingCharacters = "ping", string pongCharacters = "pong", bool sendDisconnectBytes = true, byte[] disconnectBytes = null) : base(port, endOfLineCharacters, connectionSuccessString, onlyEmitBytes, pingIntervalSec, pingCharacters, pongCharacters, sendDisconnectBytes, disconnectBytes)
         {
             if (onlyEmitBytes && !string.IsNullOrWhiteSpace(connectionUnauthorizedString))
             {
@@ -16,7 +16,7 @@ namespace Tcp.NET.Server.Models
             ConnectionUnauthorizedString = connectionUnauthorizedString;
         }
 
-        public ParamsTcpServerAuth(int port, byte[] endOfLineBytes, string connectionSuccessString = null, string connectionUnauthorizedString = null, int pingIntervalSec = 120, bool onlyEmitBytes = false, byte[] pingBytes = null, byte[] pongBytes = null, bool sendDisconnectBytes = true, byte[] disconnectBytes = null) : base(port, endOfLineBytes, connectionSuccessString, pingIntervalSec, onlyEmitBytes, pingBytes, pongBytes, sendDisconnectBytes, disconnectBytes)
+        public ParamsTcpServerAuth(int port, byte[] endOfLineBytes, string connectionSuccessString = null, string connectionUnauthorizedString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, byte[] pingBytes = null, byte[] pongBytes = null, bool sendDisconnectBytes = true, byte[] disconnectBytes = null) : base(port, endOfLineBytes, connectionSuccessString, onlyEmitBytes, pingIntervalSec, pingBytes, pongBytes, sendDisconnectBytes, disconnectBytes)
         {
             if (onlyEmitBytes && !string.IsNullOrWhiteSpace(connectionUnauthorizedString))
             {
