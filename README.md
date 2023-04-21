@@ -50,24 +50,24 @@ First install [**NuGet package**](https://www.nuget.org/packages/Tcp.NET.Client)
 This will add the most-recent version of [**Tcp.NET.Client**](#tcpnetclient) package to your specified project. 
 
 ### **`TcpNETClient`**
-Once installed, create an instance of **`ITcpNETClient`** with the included implementation **`TcpNETClient`**. 
+Create a variable of type **`ITcpNETClient`** with the included implementation **`TcpNETClient`**. 
 * **`TcpNETClient(ParamsTcpClient parameters) : ITcpNETClient`**
 
 #### **Parameters**
-* **`ParamsTcpClient`** - **Required**
+* **`ParamsTcpClient`** - **Required** - Contains the following connection detail data:
     * **`Host`** - *int* - **Required** - The host or URI of the Tcp server instance to connect (e.g. connect.tcp.net, localhost, 127.0.0.1, etc).
     * **`Port`** - *int* - **Required** - The port of the Tcp server instance to connect (e.g. 6660, 7210, 6483).
-    * **`EndOfLineCharacters`** - *string* - **Required** - The Tcp protocol does not automatically include line termination symbols, but it has become common practice in many applications that the end-of-line symbol is **`\r\n`** which represents an Enter key for many operating systems. It is recommended you use **`\r\n`** as the line termination symbol. Defaults to **`\r\n`**.
+    * **`EndOfLineCharacters`** - *string* - **Required** - The Tcp protocol does not automatically include line termination symbols, but it has become common practice in many applications that the end-of-line symbol is **`\r\n`** which represents an Enter key for many operating systems. It is recommended you use **`\r\n`** as the line termination symbol.
     * **`Token`** - *string* - **Optional** - Optional parameter used by [**TcpNETServerAuth**](#itcpnetserverautht) for authenticating a user. Defaults to **`null`**.
         * Generating and validating a **`token`** is outside the scope of this document, but for more information, check out [**OAuthServer.NET**](https://github.com/LiveOrDevTrying/OAuthServer.NET) or [**IdentityServer4**](https://github.com/IdentityServer/IdentityServer4) for robust, easy-to-implemnt, and easy-to-use .NET identity servers.
+        * A token can be any string. If wanting to use certificates, load the certs as a byte array, base64 encode them, and pass them as a string.
     * **`IsSSL`** - *bool* - **Optional** - Flag specifying if the connection should be made using SSL encryption when connecting to the server. Defaults to **`true`**.
     * **`OnlyEmitBytes`** - *bool* - **Optional** - Flag specifying if [**TcpNETClient**](#tcpnetclient) should decode messages (**`Encoding.UTF8.GetString()`**) and return a string in [**MessageEvent**](#events) or return only the raw byte array received. Defaults to **`false`**.
-    * **`UsePingPong`** - *bool* - **Optional** - Flag specifying if the connection will listen for **`PingCharacters`** and return **`PongCharacters`**. If using [**TcpNETServer**](#itcpnetserver) or [**TcpNETServerAuth<T>**](#itcpnetserverautht), ping/pong is enabled by default. If **`UsePingPong`** is set to false, the connection will be servered after the server's second ping cycle. Defaults to **`true`**.
+    * **`UsePingPong`** - *bool* - **Optional** - Flag specifying if the connection will listen for **`PingCharacters`** and return **`PongCharacters`**. If using [**TcpNETServer**](#itcpnetserver) or [**TcpNETServerAuth<T>**](#itcpnetserverautht), ping/pong is enabled by default. If **`UsePingPong`** is set to false, the connection will be servered after the server's next ping cycle. Defaults to **`true`**.
     * **`PingCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETClient**](#tcpnetclient) will be listening for from the server to verify the connection is still alive. When this string is received, **`PongCharacters`** will immediately be returned. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"ping"`**.
     * **`PongCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETClient**](#tcpnetclient) will send to the server immediately after **`PingCharacters`** is received. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"pong"`**.
-    * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETClient**](#tcpnetclient) gracefully [**disconnects from the server (DisconnectAsync())**](#disconnect-from-the-server), this flag specifies if the **`DisconnectBytes`** should be first sent to the server to fire a disconnect event on the server. Defaults to **`true`**.
-    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the server to signify a client invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#itcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
-
+    * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETClient**](#tcpnetclient) gracefully [**disconnects from the server (DisconnectAsync())**](#disconnect-from-the-server), this flag specifies if the **`DisconnectBytes`** should be first sent to the server to signal a disconnect event. Defaults to **`true`**.
+    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the server to signal a client invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#itcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
 * **`ParamsTcpClient`** can be overloaded to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
     * **`EndOfLineBytes`** - *byte[]* - **Required** - Defaults to **`byte[] { 13, 10 }`**.
     * **`PingBytes`** - *byte[]* - **Optional** - Defaults to **`byte[] { 112, 105, 110, 103 }`**.
@@ -114,7 +114,7 @@ SSL is enabled by default for [**TcpNETClient**](#tcpnetclient), but if you woul
 
 #### **Connect to a Tcp Server**
 
-To connect to a Tcp Server, invoke the ConnectAsync() method.
+To connect to a Tcp Server, invoke the **`ConnectAsync()`** method.
 * **`Task<bool> ConnectAsync(CancellationToken cancellationToken = default)`**
     * Connect to the Tcp Server specified in [**`ParamsTcpClient`**](#parameters)
 
@@ -176,88 +176,89 @@ Example:
 First install the [**NuGet package**](https://www.nuget.org/packages/Tcp.NET.Server) using the [**NuGet package manager**](https://www.nuget.org):
 > install-package Tcp.NET.Server
 
-This will add the most-recent version of the [**Tcp.NET.Server**](#server) package to your specified project. 
+This will add the most-recent version of the [**Tcp.NET.Server**](#server) package to your project. 
 
 There are 2 different classes of Tcp Servers. 
+* [**TcpNETServer**](#tcpnetserver)
+* [**TcpNETServerAuth<T>**](#tcpnetserverauth<T>)
 
-* **[**TcpNETServer**](#tcpnetserver)**
-* **[**TcpNETServerAuth<T>**](#tcpnetserverauth<T>)**
-***
+---
+
 ### **`TcpNETServer`**
-We will now create an instance of **`ITcpNETServer`** with the included implementation **`TcpNETServer`**. The included implementation includes the following constructors (for SSL or non-SSL servers):
+Create a variable of type **`ITcpNETServer`** with the included implementation [**TcpNETServer**](#tcpnetserver). The included implementation includes 2 constructors - one for SSL connections and one for non-SSL connections:
 
-* `TcpNETServer(IParamsTcpServer parameters, TcpHandler handler = null, TcpConnectionManager connectionManager = null)`
-
-    ``` c#
-        ITcpNETServer server = new TcpNETServer(new ParamsTcpServer 
-        {
-            Port = 8989,
-            EndOfLineCharacters = "\r\n",
-            ConnectionSuccessString = "Connected Successfully",
-        });
-    ```
-
-* `TcpNETServer(IParamsTcpServer parameters, byte[] certificate, string certificatePassword, TcpHandler handler = null, TcpConnectionManager connectionManager = null)`
-  
-    ``` c#
-        byte[] certificate = File.ReadAllBytes("cert.pfx");
-        string certificatePassword = "yourCertificatePassword";
-
-        ITcpNETServer server = new TcpNETServer(new ParamsTcpServer 
-        {
-            Port = 8989,
-            EndOfLineCharacters = "\r\n",
-            ConnectionSuccessString = "Connected Successfully",
-        }, certificate, certificatePassword);
-    ```
-
-The [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/) does not specify a listening uri / host. Instead, the server is configured to automatically listen on all available interfaces (including 127.0.0.1, localhost, and the server's exposed IPs).
+* **`TcpNETServer(ParamsTcpServer parameters)`**
+* **`TcpNETServer(ParamsTcpServer parameters, byte[] certificate, string certificatePassword)`**
 
 #### **Parameters**
-* **`IParamsTcpServer`** - **Required** - [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) includes a default implementation called **`ParamsTcpServer`** which contains the following connection detail data:
-    * **`Port`** - *int* - **Required** - The port where the Tcp Server will listen (e.g. 6660, 7210, 6483).
-    * **`EndOfLineCharacters`** - *string* - **Required** - Tcp does not automatically include line termination ends, however in many applications the end-of-line symbol is **`\r\n`** which represents an Enter key for many operating systems. We recommend you use **`\r\n`** as the line termination symbol. Defaults to **`\r\n`**.
-    * **`ConnectionSuccessString`** - *string* - **Required** - The string that will be sent to a newly successful connected client.
-* **`Certificate`** - *byte[]* - **Optional** - A byte array containing the exported SSL certificate with private key if the server will be hosted on Https.
-* **`CertificatePassword`** - *string* - **Optional** - The private key of the exported SSL certificate if the server will be hosted on Https.
-* **`TcpHandler`** - **Optional** - If you want to deserialize an extended **`IPacket`**, you can extend **`TcpHandler`** and override `MessageReceivedAsync(string message, IConnectionTcpServer connection)` to deserialize the object into the class / struct of your choice. For more information, please see **[Receiving an Extended IPacket](#receiving-an-extended-ipacket)** below.
-* **`TcpConnectionManager`** - **Optional** - If you want to customize the connection manager, you can extend and use your own ConnectionManager inherited class here.
+* **`ParamsTcpServer`** - **Required** - Contains the following connection detail data:
+    * **`Port`** - *int* - **Required** - The port that the Tcp server will listen on (e.g. 6660, 7210, 6483).
+    * **`EndOfLineCharacters`** - *string* - **Required** - Tcp does not automatically include line termination ends, however in many applications the end-of-line symbol is **`\r\n`** which represents an Enter key for many operating systems. We recommend you use **`\r\n`** as the line termination symbol.
+    * **`ConnectionSuccessString`** - *string* - **Optional** - The string that will be sent to a newly successful connected client. Defaults to **`null`**.
+    * **`OnlyEmitBytes`** - *bool* - **Optional** - Flag specifying if [**TcpNETServer**](#tcpnetserver) should decode messages (**`Encoding.UTF8.GetString()`**) and return a string in [**MessageEvent**](#events-1) or return only the raw byte array received. Defaults to **`false`**.
+    * **`PingIntervalSec`** - *int* - **Optional** - Int representing how often the server will send all connected clients **`PingCharacters`**. Clients need to immediately response with **`PongCharacters`** or the connection will be severed at the next ping cycle. If you would like to disable the ping service on your Tcp server, set this valuye to 0. Defaults to **`true`**.
+    * **`PingCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will send to each connected client to verify the connection is still alive. When a client receives this string, they will immediately need to respond with **`PongCharacters`** or the connection will be severed during the next ping cycle.. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"ping"`**.
+    * **`PongCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will listen for following a ping cycle to specify that the connection is still alive. Clients need to immediately send **`PongCharacters`** to the server after receiving **`PingCharacters`** or the connection will be severed after the next ping cycle. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"pong"`**.
+    * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETServer**](#tcpnetserver) gracefully [**disconnects a connection (DisconnectConnectionAsync())**](#disconnect-a-connection), this flag specifies if the **`DisconnectBytes`** should be first sent to the client to signal a disconnect event. Defaults to **`true`**.
+    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the client to signal a server invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#itcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
+* **`Certificate`** - *byte[]* - **Optional** - A byte array containing a SSL certificate with private key if the server will be hosted on Https.
+* **`CertificatePassword`** - *string* - **Optional** - The private key of the SSL certificate if the server will be hosted on Https.
 
-#### **Events**
-4 events are exposed on the **`ITcpNETServer`** interface: `MessageEvent`, `ConnectionEvent`, `ErrorEvent`, and `ServerEvent`. These event signatures are below:
+Example non-SSL server:
 
 ``` c#
-    server.MessageEvent += OMessageEvent;
+    ITcpNETServer server = new TcpNETServer(new ParamsTcpServer(8989, "\r\n", connectionSuccesString:"Connected Successfully"));
+```
+
+Example SSL server:
+``` c#
+    byte[] certificate = File.ReadAllBytes("cert.pfx");
+    string certificatePassword = "yourCertificatePassword";
+
+    ITcpNETServer server = new TcpNETServer(new ParamsTcpServer(8989, "\r\n", connectionSuccessString: "Connected Successfully"), certificate, certificatePassword);
+```
+
+#### **Events**
+4 events are exposed on the **`ITcpNETServer`** interface: **`MessageEvent`**, **`ConnectionEvent`**, **`ErrorEvent`**, and **`ServerEvent`**. These event signatures are below:
+
+* **`void OnMessageEvent(object sender, TcpMessageServerEventArgs args);`**
+    * Invoked when a message is sent or received.
+* **`void OnConnectionEvent(object sender, TcpConnectionServerEventArgs args);`**
+    * Invoked when a Tcp client is connecting, connects, or disconnects from the server.
+* **`void OnErrorEvent(object sender, TcpErrorServerEventArgs args);`**
+    * Wraps all internal logic with try catch statements and outputs the specific error(s).
+* **`void OnServerEvent(object sender, ServerEventArgs args);`**
+    * Invoked when the Tcp server starts or stops.
+
+Example:
+
+``` c#
+    server.MessageEvent += OnMessageEvent;
     server.ConnectionEvent += OnConnectionEvent;
     server.ErrorEvent += OnErrorEvent;
     server.ServerEvent += OnServerEvent;
 ```
 
-* `Task OnMessageEvent(object sender, TcpMessageServerEventArgs args);`
-    * Invoked when a message is sent or received.
-* `Task OnConnectionEvent(object sender, TcpConnectionServerEventArgs args);`
-    * Invoked when a Tcp client is connecting, connects, or disconnects from the server.
-* `Task OnErrorEvent(object sender, TcpErrorServerEventArgs args);`
-    * Wraps all internal logic with try catch statements and outputs the specific error(s).
-* `Task OnServerEvent(object sender, ServerEventArgs args);`
-    * Invoked when the Tcp server starts or stops.
-
 #### **Starting the Tcp Server**
-To start the `ITcpNETServer`, call the `StartAsync()` method to instruct the server to begin listening for messages. Likewise, you can stop the server by calling the `StopAsync()` method.
+To start the server, call the **`Start()`** method to instruct the server to begin listening for messages. The **`Start()`** method is a synchronous operation:
+
+* **`void Start();`**
+    * Start the Tcp server and begin listening on the specified port
+
+Example:
 
 ``` c#
-    await server.StartAsync();
-    ...
-    await server.StopAsync();
-    server.Dispose();
+    server.Start();
 ```
 
 #### **SSL**
-To enable SSL for [Tcp.NET Server](https://www.nuget.org/packages/Tcp.NET.Server/), use one of the provided SSL server constructors and manually specify your exported SSL certificate with private key as a byte[] and your certificate's private key as parameters. 
+To enable SSL, use the provided SSL server constructor and specify your SSL certificate as a byte array and your certificate's private key as a string. 
 
-> **The SSL Certificate MUST match the domain where the Tcp Server is hosted / can be accessed or clients will not able to connect to the Tcp Server.** 
+* **`TcpNETServer(ParamsTcpServer parameters, byte[] certificate, string certificatePassword)`**
+
+> **The SSL Certificate MUST match the domain where the Tcp Server is hosted or clients will not able to connect to the Tcp Server.** 
  
-In order to allow successful SSL connections, you must have a valid, non-expired SSL certificate. There are many sources for SSL certificates and some of them are open-source - we recommend [Let's Encrypt](https://letsencrypt.org/).
+In order to allow successful SSL connections, you must have a valid, non-expired SSL certificate. There are many sources for SSL certificates and some of them are open-source ([Let's Encrypt](https://letsencrypt.org/)).
 
 > ***Note: A self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate.***
 
@@ -284,101 +285,6 @@ An example call to send a message to a connection could be:
         Data = "YourDataPayload",
         DateTime = DateTime.UtcNow
     }, connections[0]);
-```
-
-#### **Receiving an Extended `IPacket`**
-If you want to extend **`IPacket`** to include additional fields, you will need to add the optional parameter **`TcpHandler`** that can be included with each constructor. The default **`TcpHandler`** has logic which is specific to deserialize messages of type **`Packet`**, but to receive your own extended **`IPacket`**, we will need to inherit / extend **`TcpHandler`** with our your class. Once **`TcpHandler`** has been extended, override the protected method `MessageReceivedAsync(string message, IConnectionTcpServer connection)` and deserialize into an extended **`IPacket`** of your choice. An example of this logic is below:
-
-``` c#
-    public class TcpHandlerExtended : TcpHandler
-    {
-        public TcpHandlerExtended(IParamsTcpServer parameters) : base(parameters)
-        {
-        }
-
-        public TcpHandlerExtended(IParamsTcpServer parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
-        {
-        }
-
-        protected override async Task MessageReceivedAsync(string message, IConnectionTcpServer connection)
-        {
-            IPacket packet;
-
-            try
-            {
-                packet = JsonConvert.DeserializeObject<PacketExtended>(message);
-
-                if (string.IsNullOrWhiteSpace(packet.Data))
-                {
-                    packet = new PacketExtended
-                    {
-                        Data = message,
-                        Timestamp = DateTime.UtcNow,
-                        PacketExtendedType = PacketExtendedType.PacketType1,
-                        FirstName = "FakeFirstName",
-                        LastName = "FakeLastName",
-                    };
-                }
-            }
-            catch
-            {
-                packet = new PacketExtended
-                {
-                    Data = message,
-                    Timestamp = DateTime.UtcNow,
-                    PacketExtendedType = PacketExtendedType.PacketType1,
-                    FirstName = "FakeFirstName",
-                        LastName = "FakeLastName",
-                };
-            }
-
-            await FireEventAsync(this, new TcpMessageServerEventArgs
-            {
-                MessageEventType = MessageEventType.Receive,
-                Message = packet.Data,
-                Packet = packet,
-                Connection = connection
-            });
-        }
-    }
-
-    enum PacketExtendedType
-    {
-        PacketType1,
-        PacketType2
-    }
-
-    interface IPacketExtended : IPacket 
-    {
-        string Username { get; set; }
-        string FirstName { get; set; }
-        string LastName { get; set; }
-    }
-
-    public class PacketExtended : IPacket 
-    {
-        string Data { get; set; }
-        DateTime Timestamp { get; set; }
-        PacketExtendedType PacketExtendedType {get; set; }
-        string Username { get; set; }
-        string FirstName { get; set; }
-        string LastName { get; set; }
-    }
-```
-
-If you are sending polymorphic objects, first deserialize the initial message into a class or struct that contains “common” fields, such as `PacketExtended` with a `PacketExtendedType` enum field. Then use the value of `PacketExtendedType` and deserialize a second time into the type the enum represents. Repeat until the your polymorphic object is completely deserialized.
-
-Finally, when constructing your **`TcpNETServer`**, pass in your new **`TcpHandlerExtended`** extended class you created. An example is below:
-
-``` c#
-    IParamsTcpServer parameters = new ParamsTcpServer 
-    {
-        Port = 8989,
-        EndOfLineCharacters = "\r\n",
-        ConnectionSuccessString = "Connected Successfully",
-    };
-
-    ITcpNETServer server = new TcpNETServer(parameters, handler: new TcpHandlerExtended(parameters));
 ```
 
 #### **`Ping`**
