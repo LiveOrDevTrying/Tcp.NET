@@ -42,7 +42,7 @@ namespace Tcp.NET.Server.Handlers
                         FireEvent(this, CreateAuthorizeEventArgs(new TcpAuthorizeBaseEventArgs<Z, A>
                         {
                             Connection = args.Connection,
-                            Token = args.Bytes,
+                            Token = args.Message
                         }));
 
                         return;
