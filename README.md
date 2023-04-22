@@ -67,15 +67,15 @@ Example:
         * A token can be any string. If wanting to use certificates, load the certs as a byte array, base64 encode them, and pass them as a string.
     * [**`IsSSL`**](#ssl) - *bool* - **Optional** - Flag specifying if the connection should be made using SSL encryption when connecting to the server. Defaults to **`true`**.
     * **`OnlyEmitBytes`** - *bool* - **Optional** - Flag specifying if [**TcpNETClient**](#tcpnetclient) should decode messages (**`Encoding.UTF8.GetString()`**) and return a string in [**MessageEvent**](#events) or return only the raw byte array received. Defaults to **`false`**.
-    * **`UsePingPong`** - *bool* - **Optional** - Flag specifying if the connection will listen for **`PingCharacters`** and return **`PongCharacters`**. If using [**TcpNETServer**](#itcpnetserver) or [**TcpNETServerAuth<T>**](#tcpnetserverautht), ping/pong is enabled by default. If **`UsePingPong`** is set to false, the connection will be servered after the server's next ping cycle. Defaults to **`true`**.
+    * **`UsePingPong`** - *bool* - **Optional** - Flag specifying if the connection will listen for **`PingCharacters`** and return **`PongCharacters`**. If using [**TcpNETServer**](#tcpnetserver) or [**TcpNETServerAuth<T>**](#tcpnetserverautht), ping/pong is enabled by default. If **`UsePingPong`** is set to false, the connection will be servered after the server's next ping cycle. Defaults to **`true`**.
     * **`PingCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETClient**](#tcpnetclient) will be listening for from the server to verify the connection is still alive. When this string is received, **`PongCharacters`** will immediately be returned. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"ping"`**.
     * **`PongCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETClient**](#tcpnetclient) will send to the server immediately after **`PingCharacters`** is received. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"pong"`**.
     * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETClient**](#tcpnetclient) gracefully [**disconnects from the server (DisconnectAsync())**](#disconnect-from-the-server), this flag specifies if the **`DisconnectBytes`** should be first sent to the server to signal a disconnect event. Defaults to **`true`**.
-    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the server to signal a client invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
+    * **`DisconnectBytes`** - *byte\[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the server to signal a client invoked disconnect. This is the default behaviour for [**TcpNETServer**](#tcpnetserver) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
 * **`ParamsTcpClient`** can be overloaded to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
-    * **`EndOfLineBytes`** - *byte[]* - **Required** - Defaults to **`byte[] { 13, 10 }`**.
-    * **`PingBytes`** - *byte[]* - **Optional** - Defaults to **`byte[] { 112, 105, 110, 103 }`**.
-    * **`PongBytes`** - *byte[]* - **Optional** - Defaults to **`byte[] { 112, 111, 110, 103 }`**.
+    * **`EndOfLineBytes`** - *byte\[]* - **Required** - Defaults to **`byte[] { 13, 10 }`**.
+    * **`PingBytes`** - *byte\[]* - **Optional** - Defaults to **`byte[] { 112, 105, 110, 103 }`**.
+    * **`PongBytes`** - *byte\[]* - **Optional** - Defaults to **`byte[] { 112, 111, 110, 103 }`**.
 
 ### **`Token`**
 
@@ -139,7 +139,7 @@ Example:
 ```
 
 ### **Ping**
-A [**TcpNETServer**](#itcpnetserver) or [**TcpNETServerAuth<T>**](#tcpnetserverautht) will send a ping message to every client at a specified interval defined to verify which connections are still alive. If a client fails to detect the **`PingCharacters`** or **`PingBytes`** and/or respond with the **`PongCharacters`** or **`PongBytes`**, during the the next ping cycle, the connection will be severed and disposed. However, if you are using [**TcpNETClient**](#tcpnetclient), the ping / pong messages are digested and handled and will not be emit by [**`MessageEvent`**](#events). This means you do not need to worry about ping and pong messages if you are using [**TcpNETClient**](#tcpnetclient). 
+A [**TcpNETServer**](#tcpnetserver) or [**TcpNETServerAuth<T>**](#tcpnetserverautht) will send a ping message to every client at a specified interval defined to verify which connections are still alive. If a client fails to detect the **`PingCharacters`** or **`PingBytes`** and/or respond with the **`PongCharacters`** or **`PongBytes`**, during the the next ping cycle, the connection will be severed and disposed. However, if you are using [**TcpNETClient**](#tcpnetclient), the ping / pong messages are digested and handled and will not be emit by [**`MessageEvent`**](#events). This means you do not need to worry about ping and pong messages if you are using [**TcpNETClient**](#tcpnetclient). 
 
 If you are creating your own Tcp connection, you should incorporate logic to listen for **`PingCharacters`** or **`PingBytes`**. If received, immediately respond with a message containing **`PongCharacters`** or **`PingBytes`** followed by the **`EndOfLineCharacters`** or **`EndOfLineBytes`**. This could look similar to the following:
 
@@ -186,11 +186,11 @@ Example:
 First install the [**Tcp.NET.Server package**](https://www.nuget.org/packages/Tcp.NET.Server) using the [**NuGet package manager**](https://www.nuget.org):
 > install-package Tcp.NET.Server
 
-This will add the most-recent version of the [**Tcp.NET.Server**](#https://www.nuget.org/packages/Tcp.NET.Server) package to your project. 
+This will add the most-recent version of the [**Tcp.NET.Server**](https://www.nuget.org/packages/Tcp.NET.Server) package to your project. 
 
 There are 2 different types of Tcp Servers. 
 * [**TcpNETServer**](#tcpnetserver)
-* [**TcpNETServerAuth<T>**](#tcpnetserverauth<T>)
+* [**TcpNETServerAuth<T>**](#tcpnetserverautht)
 
 ---
 
@@ -224,7 +224,7 @@ Example SSL server:
     * **`PingCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will send to each connected client to verify the connection is still alive. When a client receives this string, they will immediately need to respond with **`PongCharacters`** or the connection will be severed during the next ping cycle.. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"ping"`**.
     * **`PongCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will listen for following a ping cycle to specify that the connection is still alive. Clients need to immediately send **`PongCharacters`** to the server after receiving **`PingCharacters`** or the connection will be severed after the next ping cycle. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"pong"`**.
     * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETServer**](#tcpnetserver) gracefully [**disconnects a connection (DisconnectConnectionAsync())**](#disconnect-a-connection), this flag specifies if the **`DisconnectBytes`** should be first sent to the client to signal a disconnect event. Defaults to **`true`**.
-    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the client to signal a server invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
+    * **`DisconnectBytes`** - *byte\[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the client to signal a server invoked disconnect. This is the default behaviour for [**TcpNETServer**](#tcpnetserver) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
 * **`Certificate`** - *byte[]* - **Optional** - A byte array containing a SSL certificate with private key if the server will be hosted on Https.
 * **`CertificatePassword`** - *string* - **Optional** - The private key of the SSL certificate if the server will be hosted on Https.
 
@@ -308,7 +308,7 @@ An example to send a message to a specific connection could be:
 ```
 
 ### **`Ping`**
-[**TcpNETServer**](#itcpnetserver) will send a ping message to every client at a specified interval defined by **`PingIntervalSec`** (defaults to 120 sec, in **`ParamsTcpServer`**) to verify which connections are still alive. If a client fails to detect the **`PingCharacters`** or **`PingBytes`** and/or respond with the **`PongCharacters`** or **`PongBytes`**, during the the next ping cycle, the connection will be severed and disposed. However, if you are using [**TcpNETClient**](#tcpnetclient), the ping / pong messages are digested and handled and will not be emit by [**`MessageEvent`**](#events-1). This means you do not need to worry about ping and pong messages if you are using [**TcpNETClient**](#tcpnetclient). 
+[**TcpNETServer**](#tcpnetserver) will send a ping message to every client at a specified interval defined by **`PingIntervalSec`** (defaults to 120 sec, in **`ParamsTcpServer`**) to verify which connections are still alive. If a client fails to detect the **`PingCharacters`** or **`PingBytes`** and/or respond with the **`PongCharacters`** or **`PongBytes`**, during the the next ping cycle, the connection will be severed and disposed. However, if you are using [**TcpNETClient**](#tcpnetclient), the ping / pong messages are digested and handled and will not be emit by [**`MessageEvent`**](#events-1). This means you do not need to worry about ping and pong messages if you are using [**TcpNETClient**](#tcpnetclient). 
 
 If you would like to disable the ping / pong feature, set the **`PingIntervalSec`** defined in **`ParamsTcpServer`** to 0.
 
@@ -361,7 +361,7 @@ Example:
 
 ---
 ## **`TcpNETServerAuth<T>`**
-[**TcpNETServerAuth<T>**](#tcpserverautht) includes authentication for identifying your connections / users.
+[**TcpNETServerAuth<T>**](#tcpnetserverautht) includes authentication for identifying your connections / users.
 
 You will need to define your UserService, so make a new class that implements IUserService<T>. This object includes a generic, T, which represents the datatype of your user unique Id. For example, T could be an int, a string, a long, or a guid - this depends on the datatype of the unique Id you have set for your user. This generic allows the **`ITcpNETServerAuth<T>`** implementation to allow authentication and identification of users for any user systems. 
 
@@ -422,7 +422,7 @@ Example SSL:
     * **`PingCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will send to each connected client to verify the connection is still alive. When a client receives this string, they will immediately need to respond with **`PongCharacters`** or the connection will be severed during the next ping cycle.. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"ping"`**.
     * **`PongCharacters`** - *string* - **Optional** - String specifying what string [**TcpNETServer**](#tcpnetserver) will listen for following a ping cycle to specify that the connection is still alive. Clients need to immediately send **`PongCharacters`** to the server after receiving **`PingCharacters`** or the connection will be severed after the next ping cycle. An overload is included where **`PingCharacters`** and **`PongCharacters`** are byte arrays and called **`PingBytes`** and **`PongBytes`**. Defaults to **`"pong"`**.
     * **`UseDisconnectBytes`** - *bool* - **Optional** - When [**TcpNETServerAuth<T>**](#tcpnetserverautht) gracefully [**disconnects a connection (DisconnectConnectionAsync())**](#disconnect-a-connection-1), this flag specifies if the **`DisconnectBytes`** should be first sent to the client to signal a disconnect event. Defaults to **`true`**.
-    * **`DisconnectBytes`** - *byte[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the client to signal a server invoked disconnect. This is the default behaviour for [**TcpNETServer**](#itcpnetserver) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
+    * **`DisconnectBytes`** - *byte\[]* - **Optional** - If **`UseDisconnectBytes`** is true, this byte array allows a custom byte array to be sent to the client to signal a server invoked disconnect. This is the default behaviour for [**TcpNETServerAuth<T>**](#tcpnetserverautht) and [**TcpNETServerAuth<T>**](#tcpnetserverautht). If **`UseDisconnectBytes`** is true and **`DisconnectBytes`** is either null or an empty byte array, defaults to **`byte[] { 3 }`**.  
 * **`IUserService<T>`** - **Required** - This interface for a User Service class will need to be implemented. This interface specifies 21 functions, `GetIdAsync()` and `IsValidTokenAsync(string token)`, which will be invoked when the server receives an **`Token`** from a new connection. For more information regarding the User Service class, please see [**IUserService<T>**`](#iuserservicet) below.
 * **`Certificate`** - *byte[]* - **Optional** - A byte array containing the exported SSL certificate with private key if the server will be hosted on Https.
 * **`CertificatePassword`** - *string* - **Optional** - The private key of the exported SSL certificate if the server will be hosted on Https.
@@ -598,6 +598,6 @@ Example:
 
 ---
 ### **Additional Information**
-[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [Rob Engel](https://www.robthegamedev.com) - [LiveOrDevTrying](https://www.liveordevtrying.com) - and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [The Monitaur](https://www.themonitaur.com), [Allie.Chat](https://allie.chat), and [Gem Wars](https://www.gemwarsgame.com) *(currently in development)*. It is used in the following packages: [WebsocketsSimple](https://github.com/LiveOrDevTrying/WebsocketsSimple), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), and [The Monitaur](https://www.themonitaur.com").
+[Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) was created by [Rob Engel](https://www.robthegamedev.com) - [LiveOrDevTrying](https://www.liveordevtrying.com) - and is maintained by [Pixel Horror Studios](https://www.pixelhorrorstudios.com). [Tcp.NET](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [The Monitaur](https://www.themonitaur.com), [Allie.Chat](https://allie.chat), and [Gem Wars](https://www.gemwarsgame.com) *(currently in development)*. It is used in the following packages: [WebsocketsSimple](https://github.com/LiveOrDevTrying/WebsocketsSimple), [NTier.NET](https://github.com/LiveOrDevTrying/NTier.NET), and [The Monitaur](https://www.themonitaur.com).
   
 ![Pixel Horror Studios Logo](https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/PHS.png)
