@@ -7,5 +7,11 @@ namespace Tcp.NET.Core.Models
     {
         public string ConnectionId { get; set; }
         public TcpClient TcpClient { get; set; }
+
+        public virtual void Dispose()
+        {
+            TcpClient?.Close();
+            TcpClient?.Dispose();
+        }
     }
 }

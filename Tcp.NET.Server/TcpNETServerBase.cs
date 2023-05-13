@@ -3,12 +3,12 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Handlers;
-using Tcp.NET.Server.Managers;
 using PHS.Networking.Server.Events.Args;
 using Tcp.NET.Server.Events.Args;
 using PHS.Networking.Server.Enums;
 using PHS.Networking.Server.Services;
 using System;
+using PHS.Networking.Server.Managers;
 
 namespace Tcp.NET.Server
 {
@@ -20,19 +20,23 @@ namespace Tcp.NET.Server
         where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
         where X : TcpHandlerServerBase<T, U, V, W, Z>
-        where Y : TcpConnectionManagerBase<Z>
+        where Y : ConnectionManager<Z>
         where Z : ConnectionTcpServer
     {
         protected Timer _timerPing;
         protected bool _isPingRunning;
-        
+        protected byte[] _certificate;
+        protected string _certificatePassword;
+
         public TcpNETServerBase(W parameters) : base(parameters)
         {
         }
         public TcpNETServerBase(W parameters,
             byte[] certificate,
-            string certificatePassword) : base(parameters, certificate, certificatePassword)
+            string certificatePassword) : base(parameters)
         {
+            _certificate = certificate;
+            _certificatePassword = certificatePassword;
         }
 
         protected override void OnServerEvent(object sender, ServerEventArgs args)
@@ -68,17 +72,13 @@ namespace Tcp.NET.Server
 
                 Task.Run(async () =>
                 {
-                    foreach (var connection in _connectionManager.GetAll())
+                    foreach (var connection in _connectionManager.GetAllConnections())
                     {
                         try
                         {
                             if (connection.HasBeenPinged)
                             {
-                                // Already been pinged, no response, disconnect
-                                if (!_parameters.OnlyEmitBytes)
-                                {
-                                    await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
-                                }
+                                await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
                                 await DisconnectConnectionAsync(connection, _cancellationToken).ConfigureAwait(false);
                             }
                             else

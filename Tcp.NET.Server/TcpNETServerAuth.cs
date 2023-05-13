@@ -1,9 +1,5 @@
 ﻿using PHS.Networking.Enums;
 using PHS.Networking.Server.Services;
-using System;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Handlers;
 using Tcp.NET.Server.Managers;
@@ -39,11 +35,11 @@ namespace Tcp.NET.Server
         {
             return new TcpConnectionManagerAuth<T>();
         }
-        protected override TcpHandlerServerAuth<T> CreateHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServerAuth<T> CreateHandler()
         {
-            return certificate == null
+            return _certificate == null
                 ? new TcpHandlerServerAuth<T>(_parameters)
-                : new TcpHandlerServerAuth<T>(_parameters, certificate, certificatePassword);
+                : new TcpHandlerServerAuth<T>(_parameters, _certificate, _certificatePassword);
         }
 
         protected override void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<T> args)
@@ -51,10 +47,10 @@ namespace Tcp.NET.Server
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:
-                    _connectionManager.Add(args.Connection.ConnectionId, args.Connection);
+                    _connectionManager.AddUser(args.Connection);
                     break;
                 case ConnectionEventType.Disconnect:
-                    _connectionManager.Remove(args.Connection.ConnectionId);
+                    _connectionManager.RemoveConnection(args.Connection.ConnectionId);
                     break;
                 default:
                     break;
@@ -62,17 +58,15 @@ namespace Tcp.NET.Server
 
             FireEvent(this, args);
         }
-        protected override void OnMessageEvent(object sender, TcpMessageServerAuthEventArgs<T> args)
-        {
-            FireEvent(this, args);
-        }
+
         protected override void OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<T> args)
         {
             FireEvent(this, new TcpErrorServerAuthEventArgs<T>
             {
                 Exception = args.Exception,
                 Message = args.Message,
-                Connection = args.Connection
+                Connection = args.Connection,
+                CancellationToken = args.CancellationToken
             });
         }
         protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
@@ -90,7 +84,8 @@ namespace Tcp.NET.Server
                 Bytes = args.Bytes,
                 Connection = args.Connection,
                 Message = args.Message,
-                MessageEventType = args.MessageEventType
+                MessageEventType = args.MessageEventType,
+                CancellationToken = args.CancellationToken
             };
         }
         protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(TcpErrorServerBaseEventArgs<IdentityTcpServer<T>> args)
@@ -99,7 +94,8 @@ namespace Tcp.NET.Server
             {
                 Connection = args.Connection,
                 Exception = args.Exception,
-                Message = args.Message
+                Message = args.Message,
+                CancellationToken = args.CancellationToken
             };
         }
 

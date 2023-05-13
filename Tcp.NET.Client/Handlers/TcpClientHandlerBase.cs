@@ -1,5 +1,5 @@
 ﻿using PHS.Networking.Enums;
-using PHS.Networking.Services;
+using PHS.Networking.Handlers;
 using PHS.Networking.Utilities;
 using System;
 using System.IO;
@@ -16,21 +16,18 @@ using Tcp.NET.Core.Models;
 namespace Tcp.NET.Client.Handlers
 {
     public abstract class TcpClientHandlerBase<T, U, V, W, Y> : 
-        CoreNetworkingGeneric<T, U, V, W, Y>,
-        ICoreNetworkingGeneric<T, U, V, Y>
+        HandlerClientBase<T, U, V, W, Y>
         where T : TcpConnectionEventArgs<Y>
         where U : TcpMessageEventArgs<Y>
         where V : TcpErrorEventArgs<Y>
         where W : ParamsTcpClient
         where Y : ConnectionTcp
     {
-        protected Y _connection;
-
         public TcpClientHandlerBase(W parameters) : base(parameters)
         {
         }
         
-        public virtual async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
+        public override async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -56,6 +53,7 @@ namespace Tcp.NET.Client.Handlers
                         {
                             Connection = _connection,
                             ConnectionEventType = ConnectionEventType.Connected,
+                            CancellationToken = cancellationToken
                         }));
 
                         _ = Task.Run(async () => { await ReceiveAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
@@ -75,15 +73,16 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Exception = ex,
                     Connection = _connection,
-                    Message = ex.Message
+                    Message = ex.Message,
+                    CancellationToken = cancellationToken
                 }));
 
-                await DisconnectAsync(cancellationToken);
+                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return false;
         }
-        public virtual async Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
+        public override async Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -93,23 +92,16 @@ namespace Tcp.NET.Client.Handlers
                     {
                         if (_parameters.UseDisconnectBytes)
                         {
-                            await SendAsync(_parameters.DisconnectBytes, cancellationToken);
+                            await SendAsync(_parameters.DisconnectBytes, cancellationToken).ConfigureAwait(false);
                         }
 
-                        if (_connection != null && _connection.TcpClient != null)
-                        {
-                            _connection.TcpClient.Close();
-                        }
-                            
-                        if (_connection != null && _connection.TcpClient != null)
-                        {
-                            _connection.TcpClient.Dispose();
-                        }
+                        _connection?.Dispose();
 
                         FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
                         {
                             ConnectionEventType = ConnectionEventType.Disconnect,
-                            Connection = _connection
+                            Connection = _connection,
+                            CancellationToken = cancellationToken
                         }));
                     }
 
@@ -124,14 +116,15 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message
+                    Message = ex.Message,
+                    CancellationToken = cancellationToken
                 }));
             }
 
             return false;
         }
 
-        public virtual async Task<bool> SendAsync(string message, CancellationToken cancellationToken = default)
+        public override async Task<bool> SendAsync(string message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -148,7 +141,8 @@ namespace Tcp.NET.Client.Handlers
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
                         Message = message,
-                        Bytes = bytes
+                        Bytes = bytes,
+                        CancellationToken = cancellationToken
                     }));
 
                     return true;
@@ -160,15 +154,16 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message
+                    Message = ex.Message,
+                    CancellationToken = cancellationToken
                 }));
 
-                await DisconnectAsync(cancellationToken);
+                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return false;
         }
-        public virtual async Task<bool> SendAsync(byte[] message, CancellationToken cancellationToken = default)
+        public override async Task<bool> SendAsync(byte[] message, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -185,7 +180,8 @@ namespace Tcp.NET.Client.Handlers
                         MessageEventType = MessageEventType.Sent,
                         Connection = _connection,
                         Message = null,
-                        Bytes = bytes
+                        Bytes = bytes,
+                        CancellationToken = cancellationToken
                     }));
 
                     return true;
@@ -197,10 +193,11 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message
+                    Message = ex.Message,
+                    CancellationToken = cancellationToken
                 }));
 
-                await DisconnectAsync(cancellationToken);
+                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
 
             return false;
@@ -225,7 +222,7 @@ namespace Tcp.NET.Client.Handlers
 
                             var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
                             var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                            await ms.WriteAsync(buffer.Array, buffer.Offset, result, cancellationToken).ConfigureAwait(false);
+                            await ms.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
 
                             endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
                         }
@@ -239,20 +236,13 @@ namespace Tcp.NET.Client.Handlers
                             {
                                 if (_parameters.UseDisconnectBytes && Statics.ByteArrayEquals(parts[i], _parameters.DisconnectBytes))
                                 {
-                                    if (_connection != null && _connection.TcpClient != null)
-                                    {
-                                        _connection.TcpClient.Close();
-                                    }
-
-                                    if (_connection != null && _connection.TcpClient != null)
-                                    {
-                                        _connection.TcpClient.Dispose();
-                                    }
+                                    _connection?.Dispose();
 
                                     FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
                                     {
                                         ConnectionEventType = ConnectionEventType.Disconnect,
-                                        Connection = _connection
+                                        Connection = _connection,
+                                        CancellationToken = cancellationToken
                                     }));
 
                                     _connection = null;
@@ -269,9 +259,9 @@ namespace Tcp.NET.Client.Handlers
                                         MessageEventType = MessageEventType.Receive,
                                         Connection = _connection,
                                         Message = !_parameters.OnlyEmitBytes ? Encoding.UTF8.GetString(parts[i]) : null,
-                                        Bytes = parts[i]
+                                        Bytes = parts[i],
+                                        CancellationToken = cancellationToken
                                     }));
-                                    
                                 }
                             }
                         }
@@ -284,11 +274,12 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message
+                    Message = ex.Message,
+                    CancellationToken = cancellationToken
                 }));
             }
 
-            await DisconnectAsync(cancellationToken);
+            await DisconnectAsync(cancellationToken).ConfigureAwait(false);
         }
 
         protected virtual async Task CreateNonSSLConnectionAsync(CancellationToken cancellationToken)
@@ -342,18 +333,5 @@ namespace Tcp.NET.Client.Handlers
         protected abstract T CreateConnectionEventArgs(TcpConnectionEventArgs<Y> args);
         protected abstract U CreateMessageEventArgs(TcpMessageEventArgs<Y> args);
         protected abstract V CreateErrorEventArgs(TcpErrorEventArgs<Y> args);
-
-        public override void Dispose()
-        {
-            DisconnectAsync().Wait();
-        }
-
-        public Y Connection
-        {
-            get
-            {
-                return _connection;
-            }
-        }
     }
 }

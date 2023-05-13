@@ -27,7 +27,8 @@ namespace Tcp.NET.Client.Handlers
             return new TcpConnectionClientEventArgs
             {
                 Connection = args.Connection,
-                ConnectionEventType = args.ConnectionEventType
+                ConnectionEventType = args.ConnectionEventType,
+                CancellationToken = args.CancellationToken
             };
         }
 
@@ -37,7 +38,8 @@ namespace Tcp.NET.Client.Handlers
             {
                 Connection = args.Connection,
                 Exception = args.Exception,
-                Message = args.Message
+                Message = args.Message,
+                CancellationToken = args.CancellationToken
             };
         }
 
@@ -48,7 +50,8 @@ namespace Tcp.NET.Client.Handlers
                 Bytes = args.Bytes,
                 Connection = args.Connection,
                 Message = args.Message,
-                MessageEventType = args.MessageEventType
+                MessageEventType = args.MessageEventType,
+                CancellationToken = args.CancellationToken
             };
         }
     }

@@ -31,10 +31,10 @@ namespace Tcp.NET.Server
             return new TcpConnectionManager();
         }
 
-        protected override TcpHandlerServer CreateHandler(byte[] certificate = null, string certificatePassword = null)
+        protected override TcpHandlerServer CreateHandler()
         {
-            return certificate != null
-                ? new TcpHandlerServer(_parameters, certificate, certificatePassword)
+            return _certificate != null
+                ? new TcpHandlerServer(_parameters, _certificate, _certificatePassword)
                 : new TcpHandlerServer(_parameters);
         }
 
@@ -44,7 +44,8 @@ namespace Tcp.NET.Server
             {
                 Connection = args.Connection,
                 Exception = args.Exception,
-                Message = args.Message
+                Message = args.Message,
+                CancellationToken = args.CancellationToken
             };
         }
 
@@ -53,7 +54,8 @@ namespace Tcp.NET.Server
             return new TcpConnectionServerEventArgs
             {
                 Connection = args.Connection,
-                ConnectionEventType = args.ConnectionEventType
+                ConnectionEventType = args.ConnectionEventType,
+                CancellationToken = args.CancellationToken
             };
         }
 
@@ -64,7 +66,8 @@ namespace Tcp.NET.Server
                 Bytes = args.Bytes,
                 Connection = args.Connection,
                 Message = args.Message,
-                MessageEventType = args.MessageEventType
+                MessageEventType = args.MessageEventType,
+                CancellationToken = args.CancellationToken
             };
         }
      }
