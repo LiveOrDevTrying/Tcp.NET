@@ -1,4 +1,5 @@
 ﻿using PHS.Networking.Models;
+using System;
 using System.Net.Sockets;
 
 namespace Tcp.NET.Core.Models
@@ -7,11 +8,24 @@ namespace Tcp.NET.Core.Models
     {
         public string ConnectionId { get; set; }
         public TcpClient TcpClient { get; set; }
+        public DateTime NextPing { get; set; }
+        public bool Disposed { get; set; }
 
         public virtual void Dispose()
         {
-            TcpClient?.Close();
-            TcpClient?.Dispose();
+            Disposed = true;
+
+            try
+            {
+                TcpClient?.Close();
+            }
+            catch { }
+
+            try
+            {
+                TcpClient?.Dispose();
+            }
+            catch { }
         }
     }
 }

@@ -83,8 +83,6 @@ namespace Tcp.NET.Server.Handlers
         }
         public override void Stop(CancellationToken cancellationToken = default)
         {
-            _isRunning = false;
-
             try
             {
                 if (_server != null)
@@ -108,6 +106,8 @@ namespace Tcp.NET.Server.Handlers
                     CancellationToken = cancellationToken
                 }));
             }
+
+            _isRunning = false;
         }
 
         protected virtual async Task ListenForConnectionsAsync(CancellationToken cancellationToken)
@@ -122,6 +122,11 @@ namespace Tcp.NET.Server.Handlers
                     {
                         TcpClient = client
                     });
+
+                    if (_parameters.PingIntervalSec > 0)
+                    {
+                        connection.NextPing = DateTime.UtcNow.AddSeconds(_parameters.PingIntervalSec);
+                    }
 
                     FireEvent(this, CreateConnectionEventArgs(new ConnectionEventArgs<Z>
                     {
@@ -162,6 +167,11 @@ namespace Tcp.NET.Server.Handlers
                         {
                             TcpClient = client
                         });
+
+                        if (_parameters.PingIntervalSec > 0)
+                        {
+                            connection.NextPing = DateTime.UtcNow.AddSeconds(_parameters.PingIntervalSec);
+                        }
 
                         FireEvent(this, CreateConnectionEventArgs(new ConnectionEventArgs<Z>
                         {
@@ -278,7 +288,7 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
-                if (connection.TcpClient.Connected && _isRunning)
+                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && _isRunning)
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
                     await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
@@ -304,9 +314,9 @@ namespace Tcp.NET.Server.Handlers
                     Connection = connection,
                     CancellationToken = cancellationToken
                 }));
-
-                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
             }
+
+            await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
             return false;
         }
@@ -314,7 +324,7 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
-                if (connection.TcpClient.Connected && _isRunning)
+                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && _isRunning)
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
                     await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
@@ -341,23 +351,30 @@ namespace Tcp.NET.Server.Handlers
                     CancellationToken = cancellationToken
                 }));
 
-                await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
             }
+
+            await DisconnectConnectionAsync(connection, cancellationToken).ConfigureAwait(false);
 
             return false;
         }
-        public override async Task<bool> DisconnectConnectionAsync(Z connection, CancellationToken cancellationToken)
+        public override async Task<bool> DisconnectConnectionAsync(Z connection, CancellationToken cancellationToken, string disconnectMessage = "")
         {
             try
             {
                 if (connection != null)
                 {
-                    if (connection.TcpClient != null &&
-                        !connection.Disposed)
+                    if (connection.TcpClient != null && !connection.Disposed)
                     {
+                        connection.Disposed = true;
+
+                        if (!string.IsNullOrWhiteSpace(disconnectMessage))
+                        {
+                            await SendAsync(disconnectMessage, connection, cancellationToken).ConfigureAwait(false);
+                        }
+
                         if (_parameters.UseDisconnectBytes)
                         {
-                            await SendAsync(_parameters.DisconnectBytes, connection, cancellationToken);
+                            await SendAsync(_parameters.DisconnectBytes, connection, cancellationToken).ConfigureAwait(false);
                         }
 
                         connection?.Dispose();
@@ -368,10 +385,10 @@ namespace Tcp.NET.Server.Handlers
                             Connection = connection,
                             CancellationToken = cancellationToken
                         }));
+                        
+                        return true;
                     }
                 }
-
-                return true;
             }
             catch (Exception ex)
             {
@@ -384,19 +401,15 @@ namespace Tcp.NET.Server.Handlers
                 }));
             }
 
+            connection?.Dispose();
+
             return false;
         }
-
 
         protected abstract Z CreateConnection(ConnectionTcp connection);
         protected abstract T CreateConnectionEventArgs(ConnectionEventArgs<Z> args);
         protected abstract U CreateMessageEventArgs(TcpMessageServerBaseEventArgs<Z> args);
         protected abstract V CreateErrorEventArgs(ErrorEventArgs<Z> args);
-
-        public override void Dispose()
-        {
-            Stop();
-        }
 
         public TcpListener Server
         {

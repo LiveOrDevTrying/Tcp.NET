@@ -23,8 +23,11 @@ namespace Tcp.NET.Client.Handlers
         where W : ParamsTcpClient
         where Y : ConnectionTcp
     {
+        protected bool _isRunning;
+
         public TcpClientHandlerBase(W parameters) : base(parameters)
         {
+            _isRunning = true;
         }
         
         public override async Task<bool> ConnectAsync(CancellationToken cancellationToken = default)
@@ -37,6 +40,8 @@ namespace Tcp.NET.Client.Handlers
                     {
                         await DisconnectAsync(cancellationToken).ConfigureAwait(false);
                     }
+
+                    _isRunning = true;
 
                     if (_parameters.IsSSL)
                     {
@@ -69,6 +74,7 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
+                Console.WriteLine("FAILED CAUGHT HERE 2");
                 FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Exception = ex,
@@ -76,9 +82,9 @@ namespace Tcp.NET.Client.Handlers
                     Message = ex.Message,
                     CancellationToken = cancellationToken
                 }));
-
-                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
+
+            await DisconnectAsync(cancellationToken).ConfigureAwait(false);
 
             return false;
         }
@@ -88,8 +94,10 @@ namespace Tcp.NET.Client.Handlers
             {
                 if (_connection != null)
                 {
-                    if (_connection.TcpClient != null)
+                    if (!_connection.Disposed)
                     {
+                        _connection.Disposed = true;
+
                         if (_parameters.UseDisconnectBytes)
                         {
                             await SendAsync(_parameters.DisconnectBytes, cancellationToken).ConfigureAwait(false);
@@ -103,11 +111,13 @@ namespace Tcp.NET.Client.Handlers
                             Connection = _connection,
                             CancellationToken = cancellationToken
                         }));
+
+                        _connection = null;
+
+                        _isRunning = false;
+
+                        return true;
                     }
-
-                    _connection = null;
-
-                    return true;
                 }
             }
             catch (Exception ex)
@@ -120,6 +130,11 @@ namespace Tcp.NET.Client.Handlers
                     CancellationToken = cancellationToken
                 }));
             }
+
+            _connection?.Dispose();
+            _connection = null;
+
+            _isRunning = false;
 
             return false;
         }
@@ -157,9 +172,9 @@ namespace Tcp.NET.Client.Handlers
                     Message = ex.Message,
                     CancellationToken = cancellationToken
                 }));
-
-                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
+
+            await DisconnectAsync(cancellationToken).ConfigureAwait(false);
 
             return false;
         }
@@ -196,9 +211,9 @@ namespace Tcp.NET.Client.Handlers
                     Message = ex.Message,
                     CancellationToken = cancellationToken
                 }));
-
-                await DisconnectAsync(cancellationToken).ConfigureAwait(false);
             }
+
+            await DisconnectAsync(cancellationToken).ConfigureAwait(false);
 
             return false;
         }
@@ -246,6 +261,8 @@ namespace Tcp.NET.Client.Handlers
                                     }));
 
                                     _connection = null;
+
+                                    _isRunning = false;
                                     return;
                                 }
                                 else if (_parameters.UsePingPong && Statics.ByteArrayEquals(parts[i], _parameters.PingBytes))
@@ -270,6 +287,7 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
+                Console.WriteLine("FAILED CAUGHT HERE");
                 FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
@@ -333,5 +351,13 @@ namespace Tcp.NET.Client.Handlers
         protected abstract T CreateConnectionEventArgs(TcpConnectionEventArgs<Y> args);
         protected abstract U CreateMessageEventArgs(TcpMessageEventArgs<Y> args);
         protected abstract V CreateErrorEventArgs(TcpErrorEventArgs<Y> args);
+
+        public bool IsRunning
+        {
+            get
+            {
+                return _isRunning;
+            }
+        }
     }
 }

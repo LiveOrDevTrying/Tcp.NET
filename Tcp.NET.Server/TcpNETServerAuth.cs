@@ -1,5 +1,6 @@
 ﻿using PHS.Networking.Enums;
 using PHS.Networking.Server.Services;
+using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Handlers;
 using Tcp.NET.Server.Managers;
@@ -42,33 +43,6 @@ namespace Tcp.NET.Server
                 : new TcpHandlerServerAuth<T>(_parameters, _certificate, _certificatePassword);
         }
 
-        protected override void OnConnectionEvent(object sender, TcpConnectionServerAuthEventArgs<T> args)
-        {
-            switch (args.ConnectionEventType)
-            {
-                case ConnectionEventType.Connected:
-                    _connectionManager.AddUser(args.Connection);
-                    break;
-                case ConnectionEventType.Disconnect:
-                    _connectionManager.RemoveConnection(args.Connection.ConnectionId);
-                    break;
-                default:
-                    break;
-            }
-
-            FireEvent(this, args);
-        }
-
-        protected override void OnErrorEvent(object sender, TcpErrorServerAuthEventArgs<T> args)
-        {
-            FireEvent(this, new TcpErrorServerAuthEventArgs<T>
-            {
-                Exception = args.Exception,
-                Message = args.Message,
-                Connection = args.Connection,
-                CancellationToken = args.CancellationToken
-            });
-        }
         protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(TcpConnectionServerBaseEventArgs<IdentityTcpServer<T>> args)
         {
             return new TcpConnectionServerAuthEventArgs<T>

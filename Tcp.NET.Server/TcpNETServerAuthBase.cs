@@ -6,6 +6,7 @@ using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Handlers;
 using Tcp.NET.Server.Models;
 using PHS.Networking.Server.Managers;
+using PHS.Networking.Enums;
 
 namespace Tcp.NET.Server
 {
@@ -95,8 +96,6 @@ namespace Tcp.NET.Server
                     {
                         await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, args.CancellationToken).ConfigureAwait(false);
                     }
-
-                    await DisconnectConnectionAsync(args.Connection, args.CancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -108,7 +107,34 @@ namespace Tcp.NET.Server
                         CancellationToken = args.CancellationToken
                     }));
                 }
+
+                await DisconnectConnectionAsync(args.Connection, args.CancellationToken).ConfigureAwait(false);
             });
+        }
+
+        protected override void OnConnectionEvent(object sender, T args)
+        {
+            switch (args.ConnectionEventType)
+            {
+                case ConnectionEventType.Connected:
+                    if (!_connectionManager.AddUser(args.Connection))
+                    {
+                        Task.Run(async () =>
+                        {
+                            FireEvent(this, args);
+                            await DisconnectConnectionAsync(args.Connection, args.CancellationToken).ConfigureAwait(false);
+                        });
+                        return;
+                    }
+                    break;
+                case ConnectionEventType.Disconnect:
+                    _connectionManager.RemoveConnection(args.Connection.ConnectionId);
+                    break;
+                default:
+                    break;
+            }
+
+            FireEvent(this, args);
         }
 
         public override void Dispose()

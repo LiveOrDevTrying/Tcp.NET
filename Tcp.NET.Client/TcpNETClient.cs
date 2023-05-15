@@ -29,7 +29,7 @@ namespace Tcp.NET.Client
         {
             get
             {
-                return _handler.Connection?.TcpClient?.Connected ?? false;
+                return _handler.IsRunning;
             }
         }
     }
