@@ -19,6 +19,7 @@ namespace Tcp.NET.TestApps.Client
         private static ConcurrentDictionary<int, ITcpNETClient> _clients = new ConcurrentDictionary<int, ITcpNETClient>();
         private static Timer _timer;
         private static int _max;
+        private static bool _isDone;
 
         static async Task Main(string[] args)
         {
@@ -69,7 +70,7 @@ namespace Tcp.NET.TestApps.Client
 
         private static void OnTimerTick(object state)
         {
-            if (_clients.Values.Where(x => x.IsRunning).Count() < _max)
+            if (!_isDone && _clients.Values.Where(x => x.IsRunning).Count() < _max)
             {
                 var client = new TcpNETClient(new ParamsTcpClient("localhost", 8989, "\r\n", "testToken", false));
                 client.ConnectionEvent += OnConnectionEvent;
@@ -78,6 +79,11 @@ namespace Tcp.NET.TestApps.Client
                 _clients.TryAdd(client.GetHashCode(), client);
 
                 Task.Run(async () => await client.ConnectAsync());
+
+                if (_clients.Values.Where(x => x.IsRunning).Count() >= _max)
+                {
+                    _isDone = true;
+                }
             }
         }
         private static void OnErrorEvent(object sender, TcpErrorClientEventArgs args)
@@ -86,7 +92,6 @@ namespace Tcp.NET.TestApps.Client
         }
         private static void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
-
             switch (args.ConnectionEventType)
             {
                 case ConnectionEventType.Connected:

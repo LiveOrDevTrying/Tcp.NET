@@ -53,7 +53,7 @@ namespace Tcp.NET.Server
                 switch (args.ServerEventType)
                 {
                     case ServerEventType.Start:
-                        _timerPing = new Timer(OnTimerPingTick, null, 1000, 1000);
+                        _timerPing = new Timer(OnTimerPingTick, null, 100, 100);
                         break;
                     case ServerEventType.Stop:
                         break;
