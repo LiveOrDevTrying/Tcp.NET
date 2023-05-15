@@ -74,7 +74,6 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("FAILED CAUGHT HERE 2");
                 FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Exception = ex,
@@ -226,22 +225,19 @@ namespace Tcp.NET.Client.Handlers
                 {
                     using (var ms = new MemoryStream())
                     {
-                        var endOfMessage = false;
-                        do
+                        if (_connection.TcpClient.Available > 0)
                         {
-                            if (_connection.TcpClient.Available <= 0)
-                            {
-                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                                continue;
-                            }
-
                             var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
                             var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                             await ms.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
-
-                            endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
                         }
-                        while (!endOfMessage && _connection != null && _connection.TcpClient.Connected);
+                        else
+                        {
+                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                            continue;
+                        }
+                        
+                        var endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes) > -1;
 
                         if (endOfMessage)
                         {
@@ -287,7 +283,6 @@ namespace Tcp.NET.Client.Handlers
             }
             catch (Exception ex)
             {
-                Console.WriteLine("FAILED CAUGHT HERE");
                 FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
                 {
                     Connection = _connection,
@@ -303,6 +298,9 @@ namespace Tcp.NET.Client.Handlers
         protected virtual async Task CreateNonSSLConnectionAsync(CancellationToken cancellationToken)
         {
             // Establish the remote endpoint for the socket.  
+            _connection?.Dispose();
+            _connection = null;
+
             var client = new TcpClient()
             {
                 ReceiveTimeout = 60000
@@ -319,6 +317,9 @@ namespace Tcp.NET.Client.Handlers
         protected virtual async Task CreateSSLConnectionAsync(CancellationToken cancellationToken)
         {
             // Establish the remote endpoint for the socket.  
+            _connection?.Dispose();
+            _connection = null;
+
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
             var client = new TcpClient()
             {

@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
+using System.Linq;
 
 namespace Tcp.NET.Server.Handlers
 {
@@ -214,22 +215,19 @@ namespace Tcp.NET.Server.Handlers
                 {
                     using (var ms = new MemoryStream())
                     {
-                        var endOfMessage = false;
-                        do
+                        if (connection.TcpClient.Available > 0)
                         {
-                            if (connection.TcpClient.Available <= 0)
-                            {
-                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                                continue;
-                            }
-
                             var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
                             var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                             await ms.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
-
-                            endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes);
                         }
-                        while (!endOfMessage && connection.TcpClient.Connected);
+                        else
+                        {
+                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                            continue;
+                        }
+
+                        var endOfMessage = Statics.ByteArrayContainsSequence(ms.ToArray(), _parameters.EndOfLineBytes) > -1;
 
                         if (endOfMessage)
                         {
@@ -367,14 +365,26 @@ namespace Tcp.NET.Server.Handlers
                     {
                         connection.Disposed = true;
 
+                        var bytes = new byte[0];
+
                         if (!string.IsNullOrWhiteSpace(disconnectMessage))
                         {
-                            await SendAsync(disconnectMessage, connection, cancellationToken).ConfigureAwait(false);
+                            bytes = Encoding.UTF8.GetBytes(disconnectMessage);
+
+                            if (_parameters.UseDisconnectBytes)
+                            {
+                                bytes = bytes.Concat(_parameters.EndOfLineBytes).ToArray();
+                            }
                         }
 
                         if (_parameters.UseDisconnectBytes)
                         {
-                            await SendAsync(_parameters.DisconnectBytes, connection, cancellationToken).ConfigureAwait(false);
+                            bytes = bytes.Concat(_parameters.DisconnectBytes).ToArray();
+                        }
+
+                        if (bytes.Length > 0)
+                        {
+                            await SendAsync(Encoding.UTF8.GetBytes(disconnectMessage).Concat(_parameters.EndOfLineBytes).Concat(_parameters.DisconnectBytes).ToArray(), connection, cancellationToken).ConfigureAwait(false);
                         }
 
                         connection?.Dispose();

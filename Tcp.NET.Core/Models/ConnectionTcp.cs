@@ -17,7 +17,7 @@ namespace Tcp.NET.Core.Models
 
             try
             {
-                TcpClient?.Close();
+                TcpClient?.GetStream().Close();
             }
             catch { }
 

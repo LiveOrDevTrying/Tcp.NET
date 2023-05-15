@@ -74,7 +74,6 @@ namespace Tcp.NET.Server
                 {
                     // Check for token here
                     if (args.Connection != null &&
-                        args.Connection.TcpClient.Connected &&
                         !args.Connection.IsAuthorized)
                     {
                         if (args.Token.Length > 0 && await _userService.IsValidTokenAsync(args.Token, args.CancellationToken).ConfigureAwait(false))

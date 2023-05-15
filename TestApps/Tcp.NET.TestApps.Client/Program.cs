@@ -86,7 +86,6 @@ namespace Tcp.NET.TestApps.Client
         }
         private static void OnConnectionEvent(object sender, TcpConnectionClientEventArgs args)
         {
-            Console.WriteLine(args.ConnectionEventType + " " + _clients.Values.Where(x => x.IsRunning).Count());
 
             switch (args.ConnectionEventType)
             {
@@ -105,6 +104,8 @@ namespace Tcp.NET.TestApps.Client
                 default:
                     break;
             }
+
+            Console.WriteLine(args.ConnectionEventType + " " + _clients.Values.Where(x => x.IsRunning).Count());
         }
         private static void OnMessageEvent(object sender, TcpMessageClientEventArgs args)
         {
