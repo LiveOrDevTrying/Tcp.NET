@@ -53,7 +53,7 @@ namespace Tcp.NET.Server
                 switch (args.ServerEventType)
                 {
                     case ServerEventType.Start:
-                        _timerPing = new Timer(OnTimerPingTick, null, 100, 100);
+                        _timerPing = new Timer(OnTimerPingTick, args.CancellationToken, 100, 100);
                         break;
                     case ServerEventType.Stop:
                         break;
@@ -79,12 +79,12 @@ namespace Tcp.NET.Server
                         {
                             if (connection.HasBeenPinged)
                             {
-                                await _handler.DisconnectConnectionAsync(connection, _cancellationToken, "No ping response - disconnected.").ConfigureAwait(false);
+                                await _handler.DisconnectConnectionAsync(connection, (CancellationToken)state, "No ping response - disconnected.").ConfigureAwait(false);
                             }
                             else
                             {
                                 connection.HasBeenPinged = true;
-                                await SendToConnectionAsync(_parameters.PingBytes, connection, _cancellationToken).ConfigureAwait(false);
+                                await SendToConnectionAsync(_parameters.PingBytes, connection, (CancellationToken)state).ConfigureAwait(false);
                                 connection.NextPing = DateTime.UtcNow.AddSeconds(_parameters.PingIntervalSec);
                             }
                         }
@@ -94,7 +94,8 @@ namespace Tcp.NET.Server
                             {
                                 Connection = connection,
                                 Exception = ex,
-                                Message = ex.Message
+                                Message = ex.Message,
+                                CancellationToken = (CancellationToken)state
                             }));
                         }
                     }

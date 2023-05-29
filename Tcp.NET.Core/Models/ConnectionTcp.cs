@@ -10,8 +10,8 @@ namespace Tcp.NET.Core.Models
         public string ConnectionId { get; set; }
         public TcpClient TcpClient { get; set; }
         public MemoryStream MemoryStream { get; set; }
-        public DateTime NextPing { get; set; }
         public bool Disposed { get; set; }
+        public bool EndOfLine { get; set; }
 
         public ConnectionTcp()
         {
@@ -20,24 +20,22 @@ namespace Tcp.NET.Core.Models
 
         public virtual void Dispose()
         {
-            Disposed = true;
+            try
+            {
+                TcpClient?.GetStream().Close();
+            }
+            catch { }
+
+            try
+            {
+                TcpClient?.Dispose();
+            }
+            catch { }
 
             try
             {
                 MemoryStream.Close();
                 MemoryStream.Dispose();
-            }
-            catch { }
-
-            try
-            {
-                TcpClient?.Close();
-            }
-            catch { }
-
-            try
-            {
-                //TcpClient?.Dispose();
             }
             catch { }
         }

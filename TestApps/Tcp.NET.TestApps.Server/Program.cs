@@ -15,7 +15,7 @@ namespace Tcp.NET.TestApps.Server
 
         static async Task Main(string[] args)
         {
-            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized", pingIntervalSec: 10), new MockUserService()); ;
+            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized", pingIntervalSec: 10), new MockUserService());
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;

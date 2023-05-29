@@ -2,7 +2,6 @@
 using PHS.Networking.Handlers;
 using PHS.Networking.Utilities;
 using System;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Security;
@@ -110,13 +109,13 @@ namespace Tcp.NET.Client.Handlers
                         CancellationToken = cancellationToken
                     }));
 
-                    _connection = null;
-
                     _isRunning = false;
 
                     return true;
                 }
             }
+            
+            _isRunning = false;
 
             return false;
         }
@@ -208,27 +207,30 @@ namespace Tcp.NET.Client.Handlers
             {
                 while (!cancellationToken.IsCancellationRequested && _connection != null && _connection.TcpClient.Connected)
                 {
-                    var endOfMessage = false;
-
                     do
                     {
-                        if (_connection.TcpClient.Available > 0)
+                        try
                         {
-                            var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                            var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                            await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                            if (_connection.TcpClient.Available > 0)
+                            {
+                                var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
+                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
 
-                            endOfMessage = Statics.ByteArrayContainsSequence(_connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                                _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                            }
+                            else
+                            {
+                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                            }
                         }
-                        else
-                        {
-                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                        }
+                        catch { }
                     }
-                    while (!endOfMessage && _connection != null && _connection.TcpClient.Connected);
+                    while (_connection != null && !_connection.EndOfLine && _connection.TcpClient.Connected);
 
-                    if (endOfMessage)
+                    if (_connection != null && _connection.EndOfLine)
                     {
+                        _connection.EndOfLine = false;
                         var bytes = _connection.MemoryStream.ToArray();
                         _connection.MemoryStream.SetLength(0);
 
@@ -251,8 +253,6 @@ namespace Tcp.NET.Client.Handlers
                                         Connection = _connection,
                                         CancellationToken = cancellationToken
                                     }));
-
-                                    _connection = null;
 
                                     _isRunning = false;
                                     return;

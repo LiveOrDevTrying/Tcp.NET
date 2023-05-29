@@ -213,27 +213,31 @@ namespace Tcp.NET.Server.Handlers
             {
                 while (connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
                 {
-                    var endOfMessage = false;
-
                     do
                     {
-                        if (connection.TcpClient.Available > 0)
+                        try
                         {
-                            var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
-                            var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                            await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                            if (connection.TcpClient.Available > 0)
+                            {
+                                var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
+                                var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
 
-                            endOfMessage = Statics.ByteArrayContainsSequence(connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                            }
+                            else
+                            {
+                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                            }
                         }
-                        else
-                        {
-                            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-                        }
+                        catch { }
                     }
-                    while (!endOfMessage && connection.TcpClient.Connected);
+                    while (!connection.EndOfLine && connection.TcpClient.Connected);
 
-                    if (endOfMessage)
+                    if (connection.EndOfLine)
                     {
+                        connection.EndOfLine = false;
+
                         var bytes = connection.MemoryStream.ToArray();
                         connection.MemoryStream.SetLength(0);
 
@@ -332,7 +336,7 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
-                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && message.Where(x => x != 0).Count() > 0)
+                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
                     await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
@@ -368,7 +372,7 @@ namespace Tcp.NET.Server.Handlers
         {
             if (connection != null)
             {
-                if (connection.TcpClient != null && !connection.Disposed)
+                if (!connection.Disposed)
                 {
                     connection.Disposed = true;
 

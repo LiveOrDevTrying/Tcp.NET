@@ -17,7 +17,6 @@ namespace Tcp.NET.TestApps.Client
     class Program
     {
         private static ConcurrentDictionary<int, ITcpNETClient> _clients = new ConcurrentDictionary<int, ITcpNETClient>();
-        private static Timer _timer;
         private static int _max;
         private static bool _isDone;
 
@@ -45,7 +44,7 @@ namespace Tcp.NET.TestApps.Client
 
             Console.ReadLine();
 
-            _timer = new Timer(OnTimerTick, null, 0, CalculateNumberOfUsersPerMinute(numberUsers));
+            _ = new Timer(OnTimerTick, null, 0, CalculateNumberOfUsersPerMinute(numberUsers));
 
             while (true)
             {
