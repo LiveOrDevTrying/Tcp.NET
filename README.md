@@ -52,7 +52,7 @@ Create a variable of type **`ITcpNETClient`** with the included implementation *
 Signature:
 * **`TcpNETClient(ParamsTcpClient parameters) : ITcpNETClient`**
 
-**`ParamsTcpClientByes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays
+**`ParamsTcpClientByes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
 
 * **`TcpNETClient(ParamsTcpClientBytes parameters) : ITcpNETClient`**
 
@@ -430,7 +430,7 @@ Signatures:
 
 All connection objects will contain an **`UserId`** which represents the unique identifier for the authenticated user and are exposed from the included events.
 
-**`ParamsTcpServerAuthBytes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays
+**`ParamsTcpServerAuthBytes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
 
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuthBytes parameters) : ITcpNETServerAuth<T>`**
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuthBytes parameters, byte[] certificate, string certificatePassword) : ITcpNETServerAuth<T>`**
@@ -654,4 +654,4 @@ Example:
 ### **Additional Information**
 [**Tcp.NET**](https://www.github.com/liveordevtrying/tcp.net) was created by [**Rob Engel**](https://www.robthegamedev.com) - [**LiveOrDevTrying**](https://www.liveordevtrying.com) - and is maintained by [**Pixel Horror Studios**](https://www.pixelhorrorstudios.com). [**Tcp.NET**](https://www.github.com/liveordevtrying/tcp.net) is currently implemented in (but not limited to) the following projects: [**The Monitaur**](https://www.themonitaur.com), [**Allie.Chat**](https://allie.chat), and [**Gem Wars**](https://www.pixelhorrorstudios.com) *(currently in development)*. It is used in the following packages: [**WebsocketsSimple**](https://github.com/LiveOrDevTrying/WebsocketsSimple), [**NTier.NET**](https://github.com/LiveOrDevTrying/NTier.NET), and [**The Monitaur**](https://www.themonitaur.com).
   
-![Pixel Horror Studios Logo](https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/PHS.png)
+![Pixel Horror Studios Logo](https://pixelhorrorstudios.s3-us-west-2.amazonaws.com/Packages/PHS.png)++++
