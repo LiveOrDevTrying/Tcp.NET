@@ -52,7 +52,7 @@ Create a variable of type **`ITcpNETClient`** with the included implementation *
 Signature:
 * **`TcpNETClient(ParamsTcpClient parameters) : ITcpNETClient`**
 
-**`ParamsTcpClientByes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays
+**`ParamsTcpClientByes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
 
 * **`TcpNETClient(ParamsTcpClientBytes parameters) : ITcpNETClient`**
 
@@ -125,18 +125,22 @@ SSL is enabled by default for [**TcpNETClient**](#tcpnetclient), but if you woul
 #### **Connect to a Tcp Server**
 
 To connect to a Tcp Server, invoke the **`ConnectAsync()`** method.
+
+Signature:
 * **`Task<bool> ConnectAsync(CancellationToken cancellationToken = default)`**
     * Connect to the Tcp Server specified in [**`ParamsTcpClient`**](#parameters)
 
-Signature:
+Example:
 
 ``` c#
-    Task<bool> client.ConnectAsync(CancellationToken cancellationToken = default);
+    await client.ConnectAsync();
 ```     
 
 #### **Send a Message to the Server**
 
 2 functions are exposed to send messages to the server:
+
+Signatures:
 * **`Task<bool> SendAsync(string message, CancellationToken cancellationToken = default)`**
     * Send the specified string to the server.
 * **`Task<bool> SendAsync(byte[] message, CancellationToken cancellationTokenn = default)`**
@@ -205,7 +209,7 @@ There are 2 different types of Tcp Servers.
 ---
 
 ## **`TcpNETServer`**
-Create a variable of type **`ITcpNETServer`** with the included implementation [**TcpNETServer**](#tcpnetserver). The included implementation includes 2 constructors - one for SSL connections and one for non-SSL connections:
+Create a variable of type **`ITcpNETServer`** with the included implementation [**TcpNETServer**](#tcpnetserver). The included implementation includes multiple constructors for SSL connections and non-SSL connections:
 
 Signatures:
 * **`TcpNETServer(ParamsTcpServer parameters) : ITcpNETServer`**
@@ -281,7 +285,7 @@ Examples:
 ### **SSL**
 To enable SSL, use the provided SSL server constructor and specify your SSL certificate as a byte array and your certificate's private key as a string. 
 
-Signature:
+Signatures:
 * **`TcpNETServer(ParamsTcpServer parameters, byte[] certificate, string certificatePassword);`**
 * **`TcpNETServer(ParamsTcpServerBytes parameters, byte[] certificate, string certificatePassword);`**
 
@@ -300,16 +304,16 @@ In order to allow successful SSL connections, you must have a valid, non-expired
 > ***Note: A self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate.***
 
 ### **Start the Server**
-To start the server, call the **`Start()`** method to instruct the server to begin listening for messages. The **`Start()`** method is a synchronous operation:
+To start the server, call the **`StartAsync()`** method to instruct the server to begin listening for messages.
 
 Signature:
-* **`void Start();`**
+* **`Task StartAsync(CancellationToken cancellationToken = default);`**
     * Start the Tcp server and begin listening on the specified port
 
 Example:
 
 ``` c#
-    server.Start();
+    await server.StartAsync();
 ```
 
 ### **Send a Message**
@@ -368,14 +372,14 @@ Example:
 **`ConnectionTcpServer`** represents a connected client to the server. These are exposed in **`ConnectionEvent`**, can be retrieved from  **`Connections`** inside of [**TcpNETServer**](#tcpnetserver), or by extending [**TcpNETServer**](#tcpnetserver) and using the **`this._connectionManager`** object.
 
 ### **Stop the Server**
-To stop the server, call the **`Stop()`** method.
+To stop the server, call the **`StopAsync()`** method.
 
 Signature:
-* **`void Stop();`**
+* **`Task StopAsync(CancellationToken cancellationToken = default);`**
 
 Example: 
 ``` c#
-    server.Stop();
+    await server.StopAsync();
 ```
 
 ### **Disposal**
@@ -422,7 +426,7 @@ Example:
 
 Implement the **`GetIdAsync()`** and **`IsValidTokenAsync()`** methods to validate the Token that was passed. Generating and validating a **`token`** is outside the scope of this document, but for more information, check out [**OAuthServer.NET**](https://github.com/LiveOrDevTrying/OAuthServer.NET) or [**IdentityServer4**](https://github.com/IdentityServer/IdentityServer4) for robust, easy-to-implemnt, and easy-to-use .NET identity servers.
 
-Next, create a variable of type **`ITcpNETServerAuth<T>`** with the included implementation **`TcpNETServerAuth<T>`** where T is the same type as you defined in IUserService. The included implementation includes 2 constructors - one for SSL connections and one for non-SSL connections:
+Next, create a variable of type **`ITcpNETServerAuth<T>`** with the included implementation **`TcpNETServerAuth<T>`** where T is the same type as you defined in **`IUserService`**. The included implementation includes multiple constructors for SSL connections and non-SSL connections:
 
 Signatures:
 * `TcpNETServerAuth<T>(ParamsTcpServerAuth parameters, IUserService<T> userService) : ITcpNETServerAuth<T>`
@@ -430,7 +434,7 @@ Signatures:
 
 All connection objects will contain an **`UserId`** which represents the unique identifier for the authenticated user and are exposed from the included events.
 
-**`ParamsTcpServerAuthBytes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays
+**`ParamsTcpServerAuthBytes`** can be used instead to specify **`EndOfLineCharacters`**, **`PingCharacters`**, and **`PongCharacters`** as byte arrays:
 
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuthBytes parameters) : ITcpNETServerAuth<T>`**
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuthBytes parameters, byte[] certificate, string certificatePassword) : ITcpNETServerAuth<T>`**
@@ -540,7 +544,7 @@ Examples:
 ### **SSL**
 To enable SSL, use the provided SSL server constructor and specify your SSL certificate as a byte array and your certificate's private key as a string. 
 
-Signature:
+Signatures:
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuth parameters, IUserManager<T> userManager, byte[] certificate, string certificatePassword);`**
 * **`TcpNETServerAuth<T>(ParamsTcpServerAuthBytes parameters, IUserManager<T> userManager, byte[] certificate, string certificatePassword);`**
 
@@ -559,16 +563,16 @@ In order to allow successful SSL connections, you must have a valid, non-expired
 > ***Note: A self-signed certificate or one from a non-trusted CA is not considered a valid SSL certificate.***
 
 ### **Start the Server**
-To start the server, call the **`Start()`** method to instruct the server to begin listening for messages. The **`Start()`** method is a synchronous operation:
+To start the server, call the **`StartAsync()`** method to instruct the server to begin listening for messages.
 
 Signature:
-* **`void Start();`**
+* **`Task StartAsync(CancellationToken cancellationToken = default);`**
     * Start the Tcp server and begin listening on the specified port
 
 Example:
 
 ``` c#
-    server.Start();
+    await server.StartAsync();
 ```
 
 ### **Send a Message**
@@ -629,14 +633,14 @@ Example:
 **`IdentityTcpServer<T>`** represents a connected client to the server. These are exposed in **`ConnectionEvent`**, can be retrieved from  **`Connections`** inside of [**TcpNETServerAuth<T>**](#tcpnetserverautht), or by extending [**TcpNETServerAuth<T>**](#tcpnetserverautht) and using the **`this._connectionManager`** object.
 
 ### **Stop the Server**
-To stop the server, call the **`Stop()`** method.
+To stop the server, call the **`StopAsync()`** method.
 
 Signature:
-* **`void Stop();`**
+* **`Task StopAsync(CancellationToken cancellationToken = default);`**
 
 Example: 
 ``` c#
-    server.Stop();
+    await server.StopAsync();
 ```
 
 ### **Disposal**
