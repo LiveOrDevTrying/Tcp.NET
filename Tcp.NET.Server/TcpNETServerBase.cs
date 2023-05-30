@@ -3,12 +3,13 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Handlers;
-using Tcp.NET.Server.Managers;
 using PHS.Networking.Server.Events.Args;
 using Tcp.NET.Server.Events.Args;
 using PHS.Networking.Server.Enums;
 using PHS.Networking.Server.Services;
 using System;
+using PHS.Networking.Server.Managers;
+using System.Linq;
 
 namespace Tcp.NET.Server
 {
@@ -20,19 +21,23 @@ namespace Tcp.NET.Server
         where V : TcpErrorServerBaseEventArgs<Z>
         where W : ParamsTcpServer
         where X : TcpHandlerServerBase<T, U, V, W, Z>
-        where Y : TcpConnectionManagerBase<Z>
+        where Y : ConnectionManager<Z>
         where Z : ConnectionTcpServer
     {
         protected Timer _timerPing;
         protected bool _isPingRunning;
-        
+        protected byte[] _certificate;
+        protected string _certificatePassword;
+
         public TcpNETServerBase(W parameters) : base(parameters)
         {
         }
         public TcpNETServerBase(W parameters,
             byte[] certificate,
-            string certificatePassword) : base(parameters, certificate, certificatePassword)
+            string certificatePassword) : base(parameters)
         {
+            _certificate = certificate;
+            _certificatePassword = certificatePassword;
         }
 
         protected override void OnServerEvent(object sender, ServerEventArgs args)
@@ -48,7 +53,7 @@ namespace Tcp.NET.Server
                 switch (args.ServerEventType)
                 {
                     case ServerEventType.Start:
-                        _timerPing = new Timer(OnTimerPingTick, null, _parameters.PingIntervalSec * 1000, _parameters.PingIntervalSec * 1000);
+                        _timerPing = new Timer(OnTimerPingTick, args.CancellationToken, 100, 100);
                         break;
                     case ServerEventType.Stop:
                         break;
@@ -68,23 +73,19 @@ namespace Tcp.NET.Server
 
                 Task.Run(async () =>
                 {
-                    foreach (var connection in _connectionManager.GetAll())
+                    foreach (var connection in _connectionManager.GetAllConnections().Where(x => !x.Disposed && x.NextPing <= DateTime.UtcNow))
                     {
                         try
                         {
                             if (connection.HasBeenPinged)
                             {
-                                // Already been pinged, no response, disconnect
-                                if (!_parameters.OnlyEmitBytes)
-                                {
-                                    await SendToConnectionAsync("No ping response - disconnected.", connection, _cancellationToken).ConfigureAwait(false);
-                                }
-                                await DisconnectConnectionAsync(connection, _cancellationToken).ConfigureAwait(false);
+                                await _handler.DisconnectConnectionAsync(connection, (CancellationToken)state, "No ping response - disconnected.").ConfigureAwait(false);
                             }
                             else
                             {
                                 connection.HasBeenPinged = true;
-                                await SendToConnectionAsync(_parameters.PingBytes, connection, _cancellationToken).ConfigureAwait(false);
+                                await SendToConnectionAsync(_parameters.PingBytes, connection, (CancellationToken)state).ConfigureAwait(false);
+                                connection.NextPing = DateTime.UtcNow.AddSeconds(_parameters.PingIntervalSec);
                             }
                         }
                         catch (Exception ex)
@@ -93,7 +94,8 @@ namespace Tcp.NET.Server
                             {
                                 Connection = connection,
                                 Exception = ex,
-                                Message = ex.Message
+                                Message = ex.Message,
+                                CancellationToken = (CancellationToken)state
                             }));
                         }
                     }
