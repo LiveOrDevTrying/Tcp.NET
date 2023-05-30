@@ -1,6 +1,5 @@
 ﻿using PHS.Networking.Enums;
 using PHS.Networking.Events.Args;
-using PHS.Networking.Models;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,7 +31,8 @@ namespace Tcp.NET.Server.Handlers
             FireEvent(this, new TcpConnectionServerAuthEventArgs<T>
             {
                 ConnectionEventType = ConnectionEventType.Connected,
-                Connection = args.Connection
+                Connection = args.Connection,
+                CancellationToken = args.CancellationToken
             });
 
             return Task.CompletedTask;
@@ -51,7 +51,8 @@ namespace Tcp.NET.Server.Handlers
             return new TcpConnectionServerAuthEventArgs<T>
             {
                 Connection = args.Connection,
-                ConnectionEventType = args.ConnectionEventType
+                ConnectionEventType = args.ConnectionEventType,
+                CancellationToken = args.CancellationToken
             };
         }
         protected override TcpErrorServerAuthEventArgs<T> CreateErrorEventArgs(ErrorEventArgs<IdentityTcpServer<T>> args)
@@ -60,7 +61,8 @@ namespace Tcp.NET.Server.Handlers
             {
                 Connection = args.Connection,
                 Exception = args.Exception,
-                Message = args.Message
+                Message = args.Message,
+                CancellationToken = args.CancellationToken
             };
         }
         protected override TcpMessageServerAuthEventArgs<T> CreateMessageEventArgs(TcpMessageServerBaseEventArgs<IdentityTcpServer<T>> args)
@@ -70,7 +72,8 @@ namespace Tcp.NET.Server.Handlers
                 Bytes = args.Bytes,
                 Connection = args.Connection,
                 Message = args.Message,
-                MessageEventType = args.MessageEventType
+                MessageEventType = args.MessageEventType,
+                CancellationToken = args.CancellationToken
             };
         }
         protected override TcpAuthorizeEventArgs<T> CreateAuthorizeEventArgs(TcpAuthorizeBaseEventArgs<IdentityTcpServer<T>, T> args)
@@ -78,7 +81,8 @@ namespace Tcp.NET.Server.Handlers
             return new TcpAuthorizeEventArgs<T>
             {
                 Connection = args.Connection,
-                Token = args.Token
+                Token = args.Token,
+                CancellationToken = args.CancellationToken
             };
         }
         

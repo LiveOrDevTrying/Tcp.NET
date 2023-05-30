@@ -1,10 +1,11 @@
 ﻿using PHS.Networking.Utilities;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace Tcp.NET.Client.Models
 {
-    public class ParamsTcpClient : IParamsTcpClient
+    public class ParamsTcpClientBytes : IParamsTcpClient
     {
         public string Host { get; protected set; }
         public int Port { get; protected set; }
@@ -18,7 +19,7 @@ namespace Tcp.NET.Client.Models
         public bool UseDisconnectBytes { get; protected set; }
         public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpClient(string host, int port, string endOfLineCharacters, string token = "", bool isSSL = true, bool onlyEmitBytes = false, bool usePingPong = true, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null)
+        public ParamsTcpClientBytes(string host, int port, byte[] endOfLineBytes, byte[] token = null, bool isSSL = true, bool onlyEmitBytes = true, bool usePingPong = true, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null)
         {
             if (string.IsNullOrWhiteSpace(host))
             {
@@ -30,36 +31,37 @@ namespace Tcp.NET.Client.Models
                 throw new ArgumentException("Port is not valid");
             }
 
-            if (string.IsNullOrEmpty(endOfLineCharacters))
+            if (endOfLineBytes == null || endOfLineBytes.Length <= 0 || Statics.ByteArrayEquals(endOfLineBytes, Array.Empty<byte>()))
             {
                 throw new ArgumentException("End of Line Characters are not valid");
             }
 
-            if (usePingPong && string.IsNullOrEmpty(pingCharacters))
+            if (token != null && token.Where(x => x != 0).ToArray().Length <= 0)
             {
-                throw new ArgumentException("Ping Characters are not valid");
+                throw new ArgumentException("Token is not valid");
             }
 
-            if (usePingPong && string.IsNullOrEmpty(pongCharacters))
+            if (usePingPong && (pingBytes == null || pingBytes.Length <= 0 || Statics.ByteArrayEquals(pingBytes, Array.Empty<byte>())))
             {
-                throw new ArgumentException("Pong Characters are not valid");
+                pingBytes = Encoding.UTF8.GetBytes("ping");
+            }
+
+            if (usePingPong && (pongBytes == null || pongBytes.Length <= 0 || Statics.ByteArrayEquals(pongBytes, Array.Empty<byte>())))
+            {
+                pongBytes = Encoding.UTF8.GetBytes("pong");
             }
 
             Host = host;
             Port = port;
-            EndOfLineBytes = Encoding.UTF8.GetBytes(endOfLineCharacters);
+            EndOfLineBytes = endOfLineBytes;
             UsePingPong = usePingPong;
-            PingBytes = Encoding.UTF8.GetBytes(pingCharacters);
-            PongBytes = Encoding.UTF8.GetBytes(pongCharacters);
+            PingBytes = pingBytes;
+            PongBytes = pongBytes;
             IsSSL = isSSL;
             OnlyEmitBytes = onlyEmitBytes;
             UseDisconnectBytes = useDisconnectBytes;
             DisconnectBytes = disconnectBytes;
-
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                Token = Encoding.UTF8.GetBytes(token);
-            }
+            Token = token;
 
             if (UseDisconnectBytes && (DisconnectBytes == null || Statics.ByteArrayEquals(DisconnectBytes, Array.Empty<byte>())))
             {

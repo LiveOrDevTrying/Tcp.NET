@@ -1,10 +1,12 @@
-﻿using PHS.Networking.Utilities;
+﻿using PHS.Networking.Models;
+using PHS.Networking.Utilities;
 using System;
+using System.Linq;
 using System.Text;
 
 namespace Tcp.NET.Server.Models
 {
-    public class ParamsTcpServer : IParamsTcpServer
+    public class ParamsTcpServerBytes : IParamsTcpServer
     {
         public int Port { get; protected set; }
         public byte[] EndOfLineBytes { get; protected set; }
@@ -16,26 +18,26 @@ namespace Tcp.NET.Server.Models
         public bool UseDisconnectBytes { get; protected set; }
         public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpServer(int port, string endOfLineCharacters, string connectionSuccessString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, string pingCharacters = "ping", string pongCharacters = "pong", bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base()
+        public ParamsTcpServerBytes(int port, byte[] endOfLineBytes, string connectionSuccessString = null, bool onlyEmitBytes = false, int pingIntervalSec = 120, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null) : base()
         {
             if (port <= 0)
             {
                 throw new ArgumentException("Port is not valid");
             }
 
-            if (string.IsNullOrEmpty(endOfLineCharacters))
+            if (endOfLineBytes.Length <= 0 || endOfLineBytes.All(x => x == 0))
             {
                 throw new ArgumentException("End of Line Characters are not valid");
             }
 
-            if (string.IsNullOrEmpty(pingCharacters))
+            if (pingBytes == null || pingBytes.Length <= 0 || pingBytes.All(x => x == 0))
             {
-                throw new ArgumentException("Ping Characters are not valid");
+                pingBytes = Encoding.UTF8.GetBytes("ping");
             }
 
-            if (string.IsNullOrEmpty(pongCharacters))
+            if (pongBytes == null || pongBytes.Length <= 0 || pingBytes.All(x => x == 0))
             {
-                throw new ArgumentException("Pong Characters are not valid");
+                pongBytes = Encoding.UTF8.GetBytes("pong");
             }
 
             if (onlyEmitBytes && !string.IsNullOrWhiteSpace(connectionSuccessString))
@@ -44,10 +46,10 @@ namespace Tcp.NET.Server.Models
             }
 
             Port = port;
-            EndOfLineBytes = Encoding.UTF8.GetBytes(endOfLineCharacters);
-            PingBytes = Encoding.UTF8.GetBytes(pingCharacters);
-            PongBytes = Encoding.UTF8.GetBytes(pongCharacters);
+            EndOfLineBytes = endOfLineBytes;
             ConnectionSuccessString = connectionSuccessString;
+            PingBytes = pingBytes;
+            PongBytes = pongBytes;
             PingIntervalSec = pingIntervalSec;
             OnlyEmitBytes = onlyEmitBytes;
             UseDisconnectBytes = useDisconnectBytes;
