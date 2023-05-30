@@ -218,7 +218,7 @@ namespace Tcp.NET.Server.Handlers
                             {
                                 var buffer = new byte[connection.TcpClient.Available];
                                 var result = connection.TcpClient.Client.Receive(buffer, SocketFlags.None);
-                                await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                                await connection.MemoryStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
 
                                 connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
                             }
@@ -275,7 +275,7 @@ namespace Tcp.NET.Server.Handlers
                             }
                         }
 
-                        await connection.MemoryStream.WriteAsync(bytes, cancellationToken);
+                        await connection.MemoryStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
                     }
                 }
             }
@@ -300,7 +300,7 @@ namespace Tcp.NET.Server.Handlers
                 if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && !string.IsNullOrWhiteSpace(message))
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {
@@ -336,7 +336,7 @@ namespace Tcp.NET.Server.Handlers
                 if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {

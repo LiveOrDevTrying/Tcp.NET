@@ -213,9 +213,9 @@ namespace Tcp.NET.Client.Handlers
                         {
                             if (_connection.TcpClient.Available > 0)
                             {
-                                var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                                await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                                var buffer = new byte[_connection.TcpClient.Available];
+                                var result = _connection.TcpClient.Client.Receive(buffer);
+                                await _connection.MemoryStream.WriteAsync(buffer, 0, result, cancellationToken).ConfigureAwait(false);
 
                                 _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
                             }
@@ -277,7 +277,7 @@ namespace Tcp.NET.Client.Handlers
 
                         if (bytes.Length > 0)
                         {
-                            await _connection.MemoryStream.WriteAsync(bytes, cancellationToken);
+                            await _connection.MemoryStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
                         }
                     }
                 }
