@@ -97,7 +97,7 @@ namespace Tcp.NET.TestApps.Client
                     break;
                 case ConnectionEventType.Disconnect:
                     var client = (ITcpNETClient)sender;
-                    _clients.TryRemove(_clients.FirstOrDefault(x => x.Key == client.GetHashCode()));
+                    _clients.TryRemove(client.GetHashCode(), out var _);
 
                     client.ConnectionEvent -= OnConnectionEvent;
                     client.MessageEvent -= OnMessageEvent;
