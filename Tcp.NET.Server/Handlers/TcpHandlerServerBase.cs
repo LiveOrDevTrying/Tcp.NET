@@ -220,7 +220,7 @@ namespace Tcp.NET.Server.Handlers
                                 var result = connection.TcpClient.Client.Receive(buffer, SocketFlags.None);
                                 await connection.MemoryStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
 
-                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                             }
                             else
                             {
