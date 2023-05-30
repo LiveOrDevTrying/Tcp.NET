@@ -1,5 +1,4 @@
 ﻿using PHS.Networking.Events.Args;
-using PHS.Networking.Models;
 using System;
 using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
@@ -35,7 +34,8 @@ namespace Tcp.NET.Server.Handlers
             return new TcpConnectionServerEventArgs
             {
                 Connection = args.Connection,
-                ConnectionEventType = args.ConnectionEventType
+                ConnectionEventType = args.ConnectionEventType,
+                CancellationToken = args.CancellationToken,
             };
         }
         protected override TcpMessageServerEventArgs CreateMessageEventArgs(TcpMessageServerBaseEventArgs<ConnectionTcpServer> args)
@@ -45,7 +45,8 @@ namespace Tcp.NET.Server.Handlers
                 Connection = args.Connection,
                 Bytes = args.Bytes,
                 Message = args.Message,
-                MessageEventType = args.MessageEventType
+                MessageEventType = args.MessageEventType,
+                CancellationToken = args.CancellationToken
             };
         }
         protected override TcpErrorServerEventArgs CreateErrorEventArgs(ErrorEventArgs<ConnectionTcpServer> args)
@@ -54,7 +55,8 @@ namespace Tcp.NET.Server.Handlers
             {
                 Connection = args.Connection,
                 Exception = args.Exception,
-                Message = args.Message
+                Message = args.Message,
+                CancellationToken = args.CancellationToken
             };
         }
     }

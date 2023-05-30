@@ -5,6 +5,7 @@ using Tcp.NET.Server;
 using Tcp.NET.Server.Models;
 using Tcp.NET.Server.Events.Args;
 using PHS.Networking.Enums;
+using System.Linq;
 
 namespace Tcp.NET.TestApps.Server
 {
@@ -14,18 +15,18 @@ namespace Tcp.NET.TestApps.Server
 
         static async Task Main(string[] args)
         {
-            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized"), new MockUserService()); ;
+            _authServer = new TcpNETServerAuth<Guid>(new ParamsTcpServerAuth(8989, "\r\n", "Connected Successfully", "Not authorized", pingIntervalSec: 10), new MockUserService());
             _authServer.MessageEvent += OnMessageEvent;
             _authServer.ServerEvent += OnServerEvent;
             _authServer.ConnectionEvent += OnConnectionEvent;
             _authServer.ErrorEvent += OnErrorEvent;
-            _authServer.Start();
+            await _authServer.StartAsync();
 
             while (true)
             {
                 Console.ReadLine();
 
-                foreach (var item in _authServer.Connections)
+                foreach (var item in _authServer.Connections.ToList())
                 {
                     await _authServer.DisconnectConnectionAsync(item);
                 }
