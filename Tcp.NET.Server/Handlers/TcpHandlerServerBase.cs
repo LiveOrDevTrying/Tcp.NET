@@ -223,7 +223,7 @@ namespace Tcp.NET.Server.Handlers
                                 var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
                                 await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
 
-                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.GetBuffer(), _parameters.EndOfLineBytes) > -1;
+                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                             }
                             else
                             {
