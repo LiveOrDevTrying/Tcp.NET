@@ -4,8 +4,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Handlers;
-using Tcp.NET.Server.Managers;
 using Tcp.NET.Server.Models;
+using PHS.Networking.Server.Managers;
+using PHS.Networking.Enums;
 
 namespace Tcp.NET.Server
 {
@@ -16,7 +17,7 @@ namespace Tcp.NET.Server
         where V : TcpErrorServerAuthBaseEventArgs<Z, A>
         where W : ParamsTcpServerAuth
         where X : TcpHandlerServerAuthBase<T, U, V, W, B, Z, A>
-        where Y : TcpConnectionManagerAuthBase<Z, A>
+        where Y : ConnectionManagerAuth<Z, A>
         where Z : IdentityTcpServer<A>
         where B : TcpAuthorizeBaseEventArgs<Z, A>
     {
@@ -44,7 +45,7 @@ namespace Tcp.NET.Server
         {
             if (IsServerRunning)
             {
-                var connections = _connectionManager.GetAll(userId);
+                var connections = _connectionManager.GetAllConnectionsForUser(userId);
 
                 foreach (var connection in connections)
                 {
@@ -56,7 +57,7 @@ namespace Tcp.NET.Server
         {
             if (IsServerRunning)
             {
-                var connections = _connectionManager.GetAll(userId);
+                var connections = _connectionManager.GetAllConnectionsForUser(userId);
 
                 foreach (var connection in connections)
                 {
@@ -73,40 +74,27 @@ namespace Tcp.NET.Server
                 {
                     // Check for token here
                     if (args.Connection != null &&
-                        args.Connection.TcpClient.Connected &&
                         !args.Connection.IsAuthorized)
                     {
-                        if (args.Token.Length <= 0 || !await _userService.IsValidTokenAsync(args.Token, _cancellationToken).ConfigureAwait(false))
+                        if (args.Token.Length > 0 && await _userService.IsValidTokenAsync(args.Token, args.CancellationToken).ConfigureAwait(false))
                         {
-                            if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                            args.Connection.UserId = await _userService.GetIdAsync(args.Token, args.CancellationToken);
+                            args.Connection.IsAuthorized = true;
+
+                            if (!string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
                             {
-                                await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                                await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, args.CancellationToken).ConfigureAwait(false);
                             }
 
-                            await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
+                            await _handler.AuthorizeCallbackAsync(args, args.CancellationToken).ConfigureAwait(false);
                             return;
                         }
-
-                        args.Connection.UserId = await _userService.GetIdAsync(args.Token, _cancellationToken);
-                        args.Connection.IsAuthorized = true;
-
-                        _connectionManager.Add(args.Connection);
-
-                        if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionSuccessString))
-                        {
-                            await SendToConnectionAsync(_parameters.ConnectionSuccessString, args.Connection, _cancellationToken).ConfigureAwait(false);
-                        }
-
-                        await _handler.AuthorizeCallbackAsync(args, _cancellationToken).ConfigureAwait(false);
-                        return;
                     }
 
-                    if (!_parameters.OnlyEmitBytes || !string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
+                    if (!string.IsNullOrWhiteSpace(_parameters.ConnectionUnauthorizedString))
                     {
-                        await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, _cancellationToken).ConfigureAwait(false);
+                        await SendToConnectionAsync(_parameters.ConnectionUnauthorizedString, args.Connection, args.CancellationToken).ConfigureAwait(false);
                     }
-
-                    await DisconnectConnectionAsync(args.Connection, _cancellationToken).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
@@ -114,10 +102,38 @@ namespace Tcp.NET.Server
                     {
                         Connection = args.Connection,
                         Exception = ex,
-                        Message = ex.Message
+                        Message = ex.Message,
+                        CancellationToken = args.CancellationToken
                     }));
                 }
+
+                await DisconnectConnectionAsync(args.Connection, args.CancellationToken).ConfigureAwait(false);
             });
+        }
+
+        protected override void OnConnectionEvent(object sender, T args)
+        {
+            switch (args.ConnectionEventType)
+            {
+                case ConnectionEventType.Connected:
+                    if (!_connectionManager.AddUser(args.Connection))
+                    {
+                        Task.Run(async () =>
+                        {
+                            FireEvent(this, args);
+                            await DisconnectConnectionAsync(args.Connection, args.CancellationToken).ConfigureAwait(false);
+                        });
+                        return;
+                    }
+                    break;
+                case ConnectionEventType.Disconnect:
+                    _connectionManager.RemoveConnection(args.Connection.ConnectionId);
+                    break;
+                default:
+                    break;
+            }
+
+            FireEvent(this, args);
         }
 
         public override void Dispose()
