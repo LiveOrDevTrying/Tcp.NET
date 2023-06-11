@@ -38,7 +38,7 @@ namespace Tcp.NET.Server.Handlers
             return Task.CompletedTask;
         }
 
-        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcp connection)
+        protected override IdentityTcpServer<T> CreateConnection(ConnectionTcpServer connection)
         {
             return new IdentityTcpServer<T>
             {
