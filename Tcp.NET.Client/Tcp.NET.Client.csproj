@@ -15,16 +15,16 @@
     <PackageIcon>Logo.png</PackageIcon>
     <RepositoryType>GitHub</RepositoryType>
   </PropertyGroup>
-
-  <ItemGroup>
-	  <PackageReference Include="Tcp.NET.Core" Version="5.*" />
-  </ItemGroup>
 	
   <ItemGroup>
     <None Include="Logo.png">
       <Pack>True</Pack>
       <PackagePath></PackagePath>
     </None>
+  </ItemGroup>
+	
+  <ItemGroup>
+    <PackageReference Include="Tcp.NET.Core" Version="5.0.59" />
   </ItemGroup>
 
 </Project>
