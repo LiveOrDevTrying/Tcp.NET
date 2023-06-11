@@ -24,13 +24,5 @@ namespace Tcp.NET.Client
         {
             return new TcpClientHandler(_parameters);
         }
-
-        public bool IsRunning
-        {
-            get
-            {
-                return _handler.IsRunning;
-            }
-        }
     }
 }
