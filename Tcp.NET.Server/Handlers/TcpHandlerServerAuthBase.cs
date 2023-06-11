@@ -1,4 +1,7 @@
-﻿using System.Threading;
+﻿using System;
+using System.Linq;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
@@ -42,7 +45,7 @@ namespace Tcp.NET.Server.Handlers
                         FireEvent(this, CreateAuthorizeEventArgs(new TcpAuthorizeBaseEventArgs<Z, A>
                         {
                             Connection = args.Connection,
-                            Token = args.Message,
+                            Token = args.Bytes,
                             CancellationToken = args.CancellationToken
                         }));
 
