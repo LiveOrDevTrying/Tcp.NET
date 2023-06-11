@@ -5,7 +5,6 @@ using PHS.Networking.Server.Events.Args;
 using PHS.Networking.Server.Handlers;
 using PHS.Networking.Utilities;
 using System;
-using System.IO;
 using System.Net.Security;
 using System.Net;
 using System.Net.Sockets;
@@ -115,11 +114,13 @@ namespace Tcp.NET.Server.Handlers
         {
             while (_isRunning && !cancellationToken.IsCancellationRequested)
             {
+                TcpClient client = null;
+
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
+                    client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
 
-                    var connection = CreateConnection(new ConnectionTcp
+                    var connection = CreateConnection(new ConnectionTcpServer
                     {
                         TcpClient = client
                     });
@@ -146,6 +147,18 @@ namespace Tcp.NET.Server.Handlers
                         Message = ex.Message,
                         CancellationToken = cancellationToken
                     }));
+
+                    try
+                    {
+                        client?.GetStream().Close();
+                    }
+                    catch { }
+
+                    try
+                    {
+                        client?.Dispose();
+                    }
+                    catch { }
                 }
             }
         }
@@ -153,15 +166,17 @@ namespace Tcp.NET.Server.Handlers
         {
             while (_isRunning && !cancellationToken.IsCancellationRequested)
             {
+                TcpClient client = null;
+
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
+                    client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(new X509Certificate2(_certificate, _certificatePassword)).ConfigureAwait(false);
 
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
-                        var connection = CreateConnection(new ConnectionTcp
+                        var connection = CreateConnection(new ConnectionTcpServer
                         {
                             TcpClient = client
                         });
@@ -190,7 +205,8 @@ namespace Tcp.NET.Server.Handlers
                             CancellationToken = cancellationToken
                         }));
 
-                        client.Close();
+                        client?.GetStream().Close();
+                        client?.Dispose();
                     }
                 }
                 catch (Exception ex)
@@ -201,6 +217,18 @@ namespace Tcp.NET.Server.Handlers
                         Message = ex.Message,
                         CancellationToken = cancellationToken
                     }));
+
+                    try
+                    {
+                        client?.GetStream().Close();
+                    }
+                    catch { }
+
+                    try
+                    {
+                        client?.Dispose();
+                    }
+                    catch { }
                 }
             }
         }
@@ -297,7 +325,11 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
-                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && !string.IsNullOrWhiteSpace(message))
+                if (connection.TcpClient.Connected && 
+                    connection.TcpClient.Client != null && 
+                    !cancellationToken.IsCancellationRequested && 
+                    _isRunning && 
+                    !string.IsNullOrWhiteSpace(message))
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
                     connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
@@ -333,7 +365,11 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
-                if (connection.TcpClient.Connected && connection.TcpClient.Client != null && !cancellationToken.IsCancellationRequested && _isRunning && message.Where(x => x != 0).Any())
+                if (connection.TcpClient.Connected && 
+                    connection.TcpClient.Client != null && 
+                    !cancellationToken.IsCancellationRequested && 
+                    _isRunning && 
+                    message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
                     connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
@@ -367,51 +403,64 @@ namespace Tcp.NET.Server.Handlers
         }
         public override async Task<bool> DisconnectConnectionAsync(Z connection, CancellationToken cancellationToken, string disconnectMessage = "")
         {
-            if (connection != null)
+            try
             {
-                if (!connection.Disposed)
+                if (connection != null)
                 {
-                    connection.Disposed = true;
-
-                    var bytes = new byte[0];
-
-                    if (!string.IsNullOrWhiteSpace(disconnectMessage))
+                    if (!connection.Disposed)
                     {
-                        bytes = Encoding.UTF8.GetBytes(disconnectMessage);
+                        connection.Disposed = true;
+
+                        var bytes = new byte[0];
+
+                        if (!string.IsNullOrWhiteSpace(disconnectMessage))
+                        {
+                            bytes = Encoding.UTF8.GetBytes(disconnectMessage);
+
+                            if (_parameters.UseDisconnectBytes)
+                            {
+                                bytes = bytes.Concat(_parameters.EndOfLineBytes).ToArray();
+                            }
+                        }
 
                         if (_parameters.UseDisconnectBytes)
                         {
-                            bytes = bytes.Concat(_parameters.EndOfLineBytes).ToArray();
+                            bytes = bytes.Concat(_parameters.DisconnectBytes).ToArray();
                         }
+
+                        if (bytes.Length > 0)
+                        {
+                            await SendAsync(bytes, connection, cancellationToken).ConfigureAwait(false);
+                        }
+
+                        connection?.Dispose();
+
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionServerBaseEventArgs<Z>
+                        {
+                            ConnectionEventType = ConnectionEventType.Disconnect,
+                            Connection = connection,
+                            CancellationToken = cancellationToken
+                        }));
                     }
-
-                    if (_parameters.UseDisconnectBytes)
-                    {
-                        bytes = bytes.Concat(_parameters.DisconnectBytes).ToArray();
-                    }
-
-                    if (bytes.Length > 0)
-                    {
-                        await SendAsync(Encoding.UTF8.GetBytes(disconnectMessage).Concat(_parameters.EndOfLineBytes).Concat(_parameters.DisconnectBytes).ToArray(), connection, cancellationToken).ConfigureAwait(false);
-                    }
-
-                    connection?.Dispose();
-
-                    FireEvent(this, CreateConnectionEventArgs(new TcpConnectionServerBaseEventArgs<Z>
-                    {
-                        ConnectionEventType = ConnectionEventType.Disconnect,
-                        Connection = connection,
-                        CancellationToken = cancellationToken
-                    }));
                 }
 
                 return true;
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorServerBaseEventArgs<Z>
+                {
+                    Connection = connection,
+                    Exception = ex,
+                    Message = $"Error in DisconnectConnection - {ex.Message}",
+                    CancellationToken = cancellationToken
+                }));
             }
 
             return false;
         }
 
-        protected abstract Z CreateConnection(ConnectionTcp connection);
+        protected abstract Z CreateConnection(ConnectionTcpServer connection);
         protected abstract T CreateConnectionEventArgs(ConnectionEventArgs<Z> args);
         protected abstract U CreateMessageEventArgs(TcpMessageServerBaseEventArgs<Z> args);
         protected abstract V CreateErrorEventArgs(ErrorEventArgs<Z> args);

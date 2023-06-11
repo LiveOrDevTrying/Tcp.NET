@@ -23,8 +23,6 @@ namespace Tcp.NET.Client.Handlers
         where W : ParamsTcpClient
         where Y : ConnectionTcp
     {
-        protected bool _isRunning;
-
         public TcpClientHandlerBase(W parameters) : base(parameters)
         {
             _isRunning = true;
@@ -78,7 +76,7 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Exception = ex,
                     Connection = _connection,
-                    Message = ex.Message,
+                    Message = $"Error during ConnectAsync() - {ex.Message}",
                     CancellationToken = cancellationToken
                 }));
             }
@@ -89,30 +87,43 @@ namespace Tcp.NET.Client.Handlers
         }
         public override async Task<bool> DisconnectAsync(CancellationToken cancellationToken = default)
         {
-            if (_connection != null)
+            try
             {
-                if (!_connection.Disposed)
+                if (_connection != null && !cancellationToken.IsCancellationRequested)
                 {
-                    _connection.Disposed = true;
-
-                    if (_parameters.UseDisconnectBytes)
+                    if (!_connection.Disposed)
                     {
-                        await SendAsync(_parameters.DisconnectBytes, cancellationToken).ConfigureAwait(false);
+                        _connection.Disposed = true;
+
+                        if (_parameters.UseDisconnectBytes)
+                        {
+                            await SendAsync(_parameters.DisconnectBytes, cancellationToken).ConfigureAwait(false);
+                        }
+                        
+                        _isRunning = false;
+
+                        _connection?.Dispose();
+
+                        FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
+                        {
+                            ConnectionEventType = ConnectionEventType.Disconnect,
+                            Connection = _connection,
+                            CancellationToken = cancellationToken
+                        }));
+
+                        return true;
                     }
-
-                    _connection?.Dispose();
-
-                    FireEvent(this, CreateConnectionEventArgs(new TcpConnectionEventArgs<Y>
-                    {
-                        ConnectionEventType = ConnectionEventType.Disconnect,
-                        Connection = _connection,
-                        CancellationToken = cancellationToken
-                    }));
-
-                    _isRunning = false;
-
-                    return true;
                 }
+            }
+            catch (Exception ex)
+            {
+                FireEvent(this, CreateErrorEventArgs(new TcpErrorEventArgs<Y>
+                {
+                    CancellationToken = cancellationToken,
+                    Connection = _connection,
+                    Exception = ex,
+                    Message = $"Error in DisconnectAsync() - {ex.Message}"
+                }));
             }
             
             _isRunning = false;
@@ -128,6 +139,7 @@ namespace Tcp.NET.Client.Handlers
                     _connection.TcpClient != null &&
                     _connection.TcpClient.Connected &&
                     !cancellationToken.IsCancellationRequested &&
+                    _isRunning &&
                     !string.IsNullOrWhiteSpace(message))
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes($"{message}"), _parameters.EndOfLineBytes);
@@ -151,7 +163,7 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message,
+                    Message = $"Error during SendAsync() - {ex.Message}",
                     CancellationToken = cancellationToken
                 }));
             }
@@ -168,6 +180,7 @@ namespace Tcp.NET.Client.Handlers
                     _connection.TcpClient != null &&
                     _connection.TcpClient.Connected &&
                     !cancellationToken.IsCancellationRequested &&
+                    _isRunning &&
                     message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
@@ -191,7 +204,7 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message,
+                    Message = $"Error during SendAsync() - {ex.Message}",
                     CancellationToken = cancellationToken
                 }));
             }
@@ -288,7 +301,7 @@ namespace Tcp.NET.Client.Handlers
                 {
                     Connection = _connection,
                     Exception = ex,
-                    Message = ex.Message,
+                    Message = $"Error in ReceiveAsync() - {ex.Message}",
                     CancellationToken = cancellationToken
                 }));
             }
@@ -316,8 +329,7 @@ namespace Tcp.NET.Client.Handlers
 
             _connection = CreateConnection(new ConnectionTcp
             {
-                TcpClient = client,
-                ConnectionId = Guid.NewGuid().ToString()
+                TcpClient = client
             });
         }
         protected virtual async Task CreateSSLConnectionAsync(CancellationToken cancellationToken)
@@ -342,8 +354,7 @@ namespace Tcp.NET.Client.Handlers
             {
                 _connection = CreateConnection(new ConnectionTcp
                 {
-                    TcpClient = client,
-                    ConnectionId = Guid.NewGuid().ToString()
+                    TcpClient = client
                 });
             }
             else
@@ -356,12 +367,9 @@ namespace Tcp.NET.Client.Handlers
         protected abstract U CreateMessageEventArgs(TcpMessageEventArgs<Y> args);
         protected abstract V CreateErrorEventArgs(TcpErrorEventArgs<Y> args);
 
-        public bool IsRunning
+        public override void Dispose()
         {
-            get
-            {
-                return _isRunning;
-            }
+            DisconnectAsync().Wait();
         }
     }
 }
