@@ -11,6 +11,5 @@ namespace Tcp.NET.Client
             TcpErrorClientEventArgs, 
             ConnectionTcp>
     {
-        bool IsRunning { get; }
     }
 }
