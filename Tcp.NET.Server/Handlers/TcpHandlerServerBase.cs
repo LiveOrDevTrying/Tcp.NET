@@ -118,7 +118,7 @@ namespace Tcp.NET.Server.Handlers
 
                 try
                 {
-                    var client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
+                    client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
 
                     var connection = CreateConnection(new ConnectionTcpServer
                     {
