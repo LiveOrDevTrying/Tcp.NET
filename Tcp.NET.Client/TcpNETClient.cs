@@ -20,17 +20,9 @@ namespace Tcp.NET.Client
         {
         }
 
-        protected override TcpClientHandler CreateTcpClientHandler()
+        protected override TcpClientHandler CreateHandler()
         {
             return new TcpClientHandler(_parameters);
-        }
-
-        public bool IsRunning
-        {
-            get
-            {
-                return _handler.IsRunning;
-            }
         }
     }
 }

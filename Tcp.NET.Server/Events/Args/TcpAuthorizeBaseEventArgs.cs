@@ -7,7 +7,7 @@ namespace Tcp.NET.Server.Events.Args
         where Z : IdentityTcpServer<A>
     {
         public Z Connection { get; set; }
-        public string Token { get; set; }
+        public byte[] Token { get; set; }
     }
 }
 
