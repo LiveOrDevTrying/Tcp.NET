@@ -118,7 +118,7 @@ namespace Tcp.NET.Server.Handlers
 
                 try
                 {
-                    client = await _server.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                    client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
 
                     var connection = CreateConnection(new ConnectionTcpServer
                     {
@@ -170,7 +170,7 @@ namespace Tcp.NET.Server.Handlers
 
                 try
                 {
-                    client = await _server.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                    client = await _server.AcceptTcpClientAsync().ConfigureAwait(false);
                     var sslStream = new SslStream(client.GetStream());
                     await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
