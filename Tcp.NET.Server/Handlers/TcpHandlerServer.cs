@@ -21,7 +21,7 @@ namespace Tcp.NET.Server.Handlers
         {
         }
 
-        protected override ConnectionTcpServer CreateConnection(ConnectionTcp connection)
+        protected override ConnectionTcpServer CreateConnection(ConnectionTcpServer connection)
         {
             return new ConnectionTcpServer
             {
