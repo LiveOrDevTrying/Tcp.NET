@@ -20,7 +20,7 @@ namespace Tcp.NET.Client
         {
         }
 
-        protected override TcpClientHandler CreateTcpClientHandler()
+        protected override TcpClientHandler CreateHandler()
         {
             return new TcpClientHandler(_parameters);
         }
