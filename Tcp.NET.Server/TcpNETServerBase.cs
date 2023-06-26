@@ -26,18 +26,14 @@ namespace Tcp.NET.Server
     {
         protected Timer _timerPing;
         protected bool _isPingRunning;
-        protected byte[] _certificate;
-        protected string _certificatePassword;
 
         public TcpNETServerBase(W parameters) : base(parameters)
         {
         }
         public TcpNETServerBase(W parameters,
             byte[] certificate,
-            string certificatePassword) : base(parameters)
+            string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
-            _certificate = certificate;
-            _certificatePassword = certificatePassword;
         }
 
         protected override void OnServerEvent(object sender, ServerEventArgs args)
