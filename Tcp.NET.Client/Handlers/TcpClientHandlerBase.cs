@@ -143,7 +143,16 @@ namespace Tcp.NET.Client.Handlers
                     !string.IsNullOrWhiteSpace(message))
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes($"{message}"), _parameters.EndOfLineBytes);
-                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+                    if (_connection.SslStream != null)
+                    {
+                        await _connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await _connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    }
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                     {
@@ -184,7 +193,16 @@ namespace Tcp.NET.Client.Handlers
                     message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+
+                    if (_connection.SslStream != null)
+                    {
+                        await _connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await _connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await _connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    }
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageEventArgs<Y>
                     { 
@@ -224,17 +242,34 @@ namespace Tcp.NET.Client.Handlers
                     {
                         try
                         {
-                            if (_connection.TcpClient.Available > 0)
+                            if (_connection.SslStream != null)
                             {
-                                var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
-                                var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-                                await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
-
-                                _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                var bytesRead = 0;
+                                if ((bytesRead = _connection.SslStream.Read(_connection.ReadBuffer, 0, _connection.ReadBuffer.Length)) > 0)
+                                {
+                                    await _connection.MemoryStream.WriteAsync(_connection.ReadBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                                    _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                    _connection.ReadBuffer = new byte[4096];
+                                }
+                                else
+                                {
+                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                }
                             }
                             else
                             {
-                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                if (_connection.TcpClient.Available > 0)
+                                {
+                                    var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
+                                    var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                                    await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+
+                                    _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                }
+                                else
+                                {
+                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                }
                             }
                         }
                         catch { }
@@ -357,8 +392,10 @@ namespace Tcp.NET.Client.Handlers
             {
                 _connection = CreateConnection(new ConnectionTcp
                 {
-                    TcpClient = client
-                });
+                    TcpClient = client,
+                    SslStream = sslStream,
+                    ReadBuffer = new byte[4096]
+            });
             }
             else
             {
