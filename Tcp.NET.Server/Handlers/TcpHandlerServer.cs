@@ -26,7 +26,9 @@ namespace Tcp.NET.Server.Handlers
             return new ConnectionTcpServer
             {
                 TcpClient = connection.TcpClient,
-                ConnectionId = Guid.NewGuid().ToString()
+                ConnectionId = Guid.NewGuid().ToString(),
+                SslStream = connection.SslStream,
+                ReadBuffer = connection.ReadBuffer
             };
         }
         protected override TcpConnectionServerEventArgs CreateConnectionEventArgs(ConnectionEventArgs<ConnectionTcpServer> args)
