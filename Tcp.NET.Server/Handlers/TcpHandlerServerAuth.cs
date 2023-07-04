@@ -3,7 +3,6 @@ using PHS.Networking.Events.Args;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 
@@ -43,7 +42,9 @@ namespace Tcp.NET.Server.Handlers
             return new IdentityTcpServer<T>
             {
                 TcpClient = connection.TcpClient,
-                ConnectionId = Guid.NewGuid().ToString()
+                ConnectionId = Guid.NewGuid().ToString(),
+                SslStream = connection.SslStream,
+                ReadBuffer = connection.ReadBuffer
             };
         }
         protected override TcpConnectionServerAuthEventArgs<T> CreateConnectionEventArgs(ConnectionEventArgs<IdentityTcpServer<T>> args)
