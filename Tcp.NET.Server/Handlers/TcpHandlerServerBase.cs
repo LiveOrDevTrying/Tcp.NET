@@ -403,7 +403,7 @@ namespace Tcp.NET.Server.Handlers
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
 
-                    if (connection != null)
+                    if (connection.SslStream != null)
                     {
                         await connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
                         await connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
