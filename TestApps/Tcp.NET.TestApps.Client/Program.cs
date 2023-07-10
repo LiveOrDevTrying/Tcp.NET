@@ -114,7 +114,7 @@ namespace Tcp.NET.TestApps.Client
                 case MessageEventType.Sent:
                     break;
                 case MessageEventType.Receive:
-                    //Console.WriteLine(args.Message + " : " + +_clients.Values.Where(x => x.IsRunning).Count());
+                    Console.WriteLine(args.Message + " : " + +_clients.Values.Where(x => x.IsRunning).Count());
                     break;
                 default:
                     break;
