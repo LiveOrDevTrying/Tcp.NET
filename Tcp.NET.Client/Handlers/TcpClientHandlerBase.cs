@@ -146,7 +146,7 @@ namespace Tcp.NET.Client.Handlers
 
                     if (_connection.SslStream != null)
                     {
-                        await _connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await _connection.SslStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
                         await _connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
@@ -196,7 +196,7 @@ namespace Tcp.NET.Client.Handlers
 
                     if (_connection.SslStream != null)
                     {
-                        await _connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await _connection.SslStream.WriteAsync(bytes, 0, bytes.Length).ConfigureAwait(false);
                         await _connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
@@ -247,7 +247,7 @@ namespace Tcp.NET.Client.Handlers
                                 var bytesRead = 0;
                                 if ((bytesRead = _connection.SslStream.Read(_connection.ReadBuffer, 0, _connection.ReadBuffer.Length)) > 0)
                                 {
-                                    await _connection.MemoryStream.WriteAsync(_connection.ReadBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                                    await _connection.MemoryStream.WriteAsync(_connection.ReadBuffer, 0, _connection.ReadBuffer.Length, cancellationToken).ConfigureAwait(false);
                                     _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                                     _connection.ReadBuffer = new byte[4096];
                                 }
@@ -262,7 +262,7 @@ namespace Tcp.NET.Client.Handlers
                                 {
                                     var buffer = new ArraySegment<byte>(new byte[_connection.TcpClient.Available]);
                                     var result = await _connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
-                                    await _connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                                    await _connection.MemoryStream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken).ConfigureAwait(false);
 
                                     _connection.EndOfLine = Statics.ByteArrayContainsSequence(_connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                                 }

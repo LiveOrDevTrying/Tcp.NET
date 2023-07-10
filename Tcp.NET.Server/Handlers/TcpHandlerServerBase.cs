@@ -248,7 +248,7 @@ namespace Tcp.NET.Server.Handlers
                                 var bytesRead = 0;
                                 if ((bytesRead = connection.SslStream.Read(connection.ReadBuffer, 0, connection.ReadBuffer.Length)) > 0)
                                 {
-                                    await connection.MemoryStream.WriteAsync(connection.ReadBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                                    await connection.MemoryStream.WriteAsync(connection.ReadBuffer, 0, bytesRead, cancellationToken).ConfigureAwait(false);
                                     connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                                     connection.ReadBuffer = new byte[4096];
                                 }
@@ -263,7 +263,7 @@ namespace Tcp.NET.Server.Handlers
                                 {
                                     var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
                                     var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
-                                    await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+                                    await connection.MemoryStream.WriteAsync(buffer.Array, buffer.Offset, buffer.Count, cancellationToken).ConfigureAwait(false);
 
                                     connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
                                 }
@@ -353,7 +353,7 @@ namespace Tcp.NET.Server.Handlers
 
                     if (connection.SslStream != null)
                     {
-                        await connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await connection.SslStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
                         await connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
@@ -402,7 +402,7 @@ namespace Tcp.NET.Server.Handlers
 
                     if (connection.SslStream != null)
                     {
-                        await connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await connection.SslStream.WriteAsync(bytes, 0, bytes.Length, cancellationToken).ConfigureAwait(false);
                         await connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
