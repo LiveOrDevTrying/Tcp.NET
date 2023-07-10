@@ -47,7 +47,7 @@ namespace Tcp.NET.Client.Handlers
                     }
                     else
                     {
-                        await CreateNonSSLConnectionAsync(cancellationToken).ConfigureAwait(false);
+                        await CreateConnectionAsync(cancellationToken).ConfigureAwait(false);
                     }
                     
                     if (_connection != null && _connection.TcpClient.Connected && !cancellationToken.IsCancellationRequested)
@@ -162,9 +162,9 @@ namespace Tcp.NET.Client.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -212,9 +212,9 @@ namespace Tcp.NET.Client.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -349,7 +349,7 @@ namespace Tcp.NET.Client.Handlers
             await DisconnectAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        protected virtual async Task CreateNonSSLConnectionAsync(CancellationToken cancellationToken)
+        protected virtual async Task CreateConnectionAsync(CancellationToken cancellationToken)
         {
             // Establish the remote endpoint for the socket.  
             _connection?.Dispose();

@@ -372,9 +372,9 @@ namespace Tcp.NET.Server.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -421,9 +421,9 @@ namespace Tcp.NET.Server.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
