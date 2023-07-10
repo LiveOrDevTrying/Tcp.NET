@@ -12,7 +12,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Tcp.NET.Core.Models;
 using Tcp.NET.Server.Events.Args;
 using Tcp.NET.Server.Models;
 using System.Linq;
@@ -178,7 +177,9 @@ namespace Tcp.NET.Server.Handlers
                     {
                         var connection = CreateConnection(new ConnectionTcpServer
                         {
-                            TcpClient = client
+                            TcpClient = client,
+                            SslStream = sslStream,
+                            ReadBuffer = new byte[4096]
                         });
 
                         if (_parameters.PingIntervalSec > 0)
@@ -242,17 +243,34 @@ namespace Tcp.NET.Server.Handlers
                     {
                         try
                         {
-                            if (connection.TcpClient.Available > 0)
+                            if (connection.SslStream != null)
                             {
-                                var buffer = new byte[connection.TcpClient.Available];
-                                var result = connection.TcpClient.Client.Receive(buffer, SocketFlags.None);
-                                await connection.MemoryStream.WriteAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);
-
-                                connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                var bytesRead = 0;
+                                if ((bytesRead = connection.SslStream.Read(connection.ReadBuffer, 0, connection.ReadBuffer.Length)) > 0)
+                                {
+                                    await connection.MemoryStream.WriteAsync(connection.ReadBuffer.AsMemory(0, bytesRead), cancellationToken).ConfigureAwait(false);
+                                    connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                    connection.ReadBuffer = new byte[4096];
+                                }
+                                else
+                                {
+                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                }
                             }
                             else
                             {
-                                await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                if (connection.TcpClient.Available > 0)
+                                {
+                                    var buffer = new ArraySegment<byte>(new byte[connection.TcpClient.Available]);
+                                    var result = await connection.TcpClient.Client.ReceiveAsync(buffer, SocketFlags.None).ConfigureAwait(false);
+                                    await connection.MemoryStream.WriteAsync(buffer.Array.AsMemory(buffer.Offset, result), cancellationToken).ConfigureAwait(false);
+
+                                    connection.EndOfLine = Statics.ByteArrayContainsSequence(connection.MemoryStream.ToArray(), _parameters.EndOfLineBytes) > -1;
+                                }
+                                else
+                                {
+                                    await Task.Delay(1, cancellationToken).ConfigureAwait(false);
+                                }
                             }
                         }
                         catch { }
@@ -332,7 +350,16 @@ namespace Tcp.NET.Server.Handlers
                     !string.IsNullOrWhiteSpace(message))
                 {
                     var bytes = Statics.ByteArrayAppend(Encoding.UTF8.GetBytes(message), _parameters.EndOfLineBytes);
-                    connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
+
+                    if (connection.SslStream != null)
+                    {
+                        await connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
+                    }
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {
@@ -342,9 +369,9 @@ namespace Tcp.NET.Server.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
@@ -372,7 +399,16 @@ namespace Tcp.NET.Server.Handlers
                     message.Where(x => x != 0).Any())
                 {
                     var bytes = Statics.ByteArrayAppend(message, _parameters.EndOfLineBytes);
-                    connection.TcpClient.Client.Send(bytes, 0, bytes.Length, SocketFlags.None, out var error);
+
+                    if (connection.SslStream != null)
+                    {
+                        await connection.SslStream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+                        await connection.SslStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await connection.TcpClient.Client.SendAsync(new ArraySegment<byte>(bytes), SocketFlags.None).ConfigureAwait(false);
+                    }
 
                     FireEvent(this, CreateMessageEventArgs(new TcpMessageServerBaseEventArgs<Z>
                     {
@@ -382,9 +418,9 @@ namespace Tcp.NET.Server.Handlers
                         Bytes = bytes,
                         CancellationToken = cancellationToken
                     }));
-
-                    return true;
                 }
+
+                return true;
             }
             catch (Exception ex)
             {
