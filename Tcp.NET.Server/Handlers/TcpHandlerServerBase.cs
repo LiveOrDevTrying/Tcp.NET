@@ -44,6 +44,7 @@ namespace Tcp.NET.Server.Handlers
         {
             try
             {
+                Console.WriteLine("Starting");
                 if (_server != null)
                 {
                     Stop(cancellationToken);
@@ -62,10 +63,12 @@ namespace Tcp.NET.Server.Handlers
 
                 if (_certificate == null)
                 {
+                Console.WriteLine("Listen for connections");
                     _ = Task.Run(async () => { await ListenForConnectionsAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
+                Console.WriteLine("Listen for connections SSL");
                     _ = Task.Run(async () => { await ListenForConnectionsSSLAsync(cancellationToken).ConfigureAwait(false); }, cancellationToken).ConfigureAwait(false);
                 }
                 return;
@@ -169,13 +172,17 @@ namespace Tcp.NET.Server.Handlers
 
                 try
                 {
+                Console.WriteLine("Accepting socket");
                     client = await _server.AcceptTcpClientAsync(cancellationToken).ConfigureAwait(false);
+                Console.WriteLine("Received socket");
                     var sslStream = new SslStream(client.GetStream());
+                Console.WriteLine("Authentication as Server");
                     await sslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                     {
                         ServerCertificate = new X509Certificate2(_certificate, _certificatePassword)
                     }, cancellationToken).ConfigureAwait(false);
 
+                Console.WriteLine("Finished Authentication");
                     if (sslStream.IsAuthenticated && sslStream.IsEncrypted)
                     {
                         var connection = CreateConnection(new ConnectionTcpServer
@@ -215,6 +222,7 @@ namespace Tcp.NET.Server.Handlers
                 }
                 catch (Exception ex)
                 {
+                Console.WriteLine("Authentication error");
                     FireEvent(this, CreateErrorEventArgs(new ErrorEventArgs<Z>
                     {
                         Exception = ex,
