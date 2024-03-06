@@ -19,7 +19,7 @@ namespace Tcp.NET.Server
         where T : TcpConnectionServerBaseEventArgs<Z>
         where U : TcpMessageServerBaseEventArgs<Z>
         where V : TcpErrorServerBaseEventArgs<Z>
-        where W : ParamsTcpServer
+        where W : IParamsTcpServer
         where X : TcpHandlerServerBase<T, U, V, W, Z>
         where Y : ConnectionManager<Z>
         where Z : ConnectionTcpServer
