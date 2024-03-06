@@ -13,7 +13,7 @@ namespace Tcp.NET.Server
             TcpConnectionServerAuthEventArgs<T>, 
             TcpMessageServerAuthEventArgs<T>, 
             TcpErrorServerAuthEventArgs<T>,
-            ParamsTcpServerAuth,
+            IParamsTcpServerAuth,
             TcpHandlerServerAuth<T>,
             TcpConnectionManagerAuth<T>,
             IdentityTcpServer<T>,
@@ -21,11 +21,11 @@ namespace Tcp.NET.Server
             TcpAuthorizeEventArgs<T>>,
         ITcpNETServerAuth<T>
     {
-        public TcpNETServerAuth(ParamsTcpServerAuth parameters,
+        public TcpNETServerAuth(IParamsTcpServerAuth parameters,
             IUserService<T> userService) : base(parameters, userService)
         { 
         }
-        public TcpNETServerAuth(ParamsTcpServerAuth parameters,
+        public TcpNETServerAuth(IParamsTcpServerAuth parameters,
             IUserService<T> userService,
             byte[] certificate,
             string certificatePassword) : base(parameters, userService, certificate, certificatePassword)
