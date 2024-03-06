@@ -19,7 +19,7 @@ namespace Tcp.NET.Client.Models
         public bool UseDisconnectBytes { get; protected set; }
         public byte[] DisconnectBytes { get; protected set; }
 
-        public ParamsTcpClientBytes(string host, int port, byte[] endOfLineBytes, byte[] token = null, bool isSSL = true, bool onlyEmitBytes = true, bool usePingPong = true, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null)
+        public ParamsTcpClientBytes(string host, int port, byte[] endOfLineBytes, byte[] token = null, bool isSSL = true, bool onlyEmitBytes = false, bool usePingPong = true, byte[] pingBytes = null, byte[] pongBytes = null, bool useDisconnectBytes = true, byte[] disconnectBytes = null)
         {
             if (string.IsNullOrWhiteSpace(host))
             {
