@@ -20,7 +20,7 @@ namespace Tcp.NET.Client.Handlers
         where T : TcpConnectionEventArgs<Y>
         where U : TcpMessageEventArgs<Y>
         where V : TcpErrorEventArgs<Y>
-        where W : ParamsTcpClient
+        where W : IParamsTcpClient
         where Y : ConnectionTcp
     {
         public TcpClientHandlerBase(W parameters) : base(parameters)

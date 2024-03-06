@@ -23,7 +23,7 @@ namespace Tcp.NET.Server.Handlers
         where T : TcpConnectionServerBaseEventArgs<Z>
         where U : TcpMessageServerBaseEventArgs<Z>
         where V : TcpErrorServerBaseEventArgs<Z>
-        where W : ParamsTcpServer
+        where W : IParamsTcpServer
         where Z : ConnectionTcpServer
     {
         protected TcpListener _server;

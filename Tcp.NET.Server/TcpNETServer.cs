@@ -10,17 +10,17 @@ namespace Tcp.NET.Server
             TcpConnectionServerEventArgs,
             TcpMessageServerEventArgs,
             TcpErrorServerEventArgs,
-            ParamsTcpServer,
+            IParamsTcpServer,
             TcpHandlerServer,
             TcpConnectionManager,
             ConnectionTcpServer>,
         ITcpNETServer
     {
-        public TcpNETServer(ParamsTcpServer parameters) : base(parameters)
+        public TcpNETServer(IParamsTcpServer parameters) : base(parameters)
         {
         }
 
-        public TcpNETServer(ParamsTcpServer parameters, 
+        public TcpNETServer(IParamsTcpServer parameters, 
             byte[] certificate, 
             string certificatePassword) : base(parameters, certificate, certificatePassword)
         {

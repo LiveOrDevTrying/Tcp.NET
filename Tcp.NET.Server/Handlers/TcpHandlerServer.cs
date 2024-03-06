@@ -11,13 +11,13 @@ namespace Tcp.NET.Server.Handlers
             TcpConnectionServerEventArgs,
             TcpMessageServerEventArgs,
             TcpErrorServerEventArgs,
-            ParamsTcpServer,
+            IParamsTcpServer,
             ConnectionTcpServer>
     {
-        public TcpHandlerServer(ParamsTcpServer parameters) : base(parameters)
+        public TcpHandlerServer(IParamsTcpServer parameters) : base(parameters)
         {
         }
-        public TcpHandlerServer(ParamsTcpServer parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
+        public TcpHandlerServer(IParamsTcpServer parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
 
