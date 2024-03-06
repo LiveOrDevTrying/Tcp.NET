@@ -11,12 +11,12 @@ namespace Tcp.NET.Client
             TcpConnectionClientEventArgs,
             TcpMessageClientEventArgs,
             TcpErrorClientEventArgs,
-            ParamsTcpClient,
+            IParamsTcpClient,
             TcpClientHandler,
             ConnectionTcp>,
         ITcpNETClient
     {
-        public TcpNETClient(ParamsTcpClient parameters) : base(parameters)
+        public TcpNETClient(IParamsTcpClient parameters) : base(parameters)
         {
         }
 
