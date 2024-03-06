@@ -13,15 +13,15 @@ namespace Tcp.NET.Server.Handlers
             TcpConnectionServerAuthEventArgs<T>,
             TcpMessageServerAuthEventArgs<T>,
             TcpErrorServerAuthEventArgs<T>,
-            ParamsTcpServerAuth,
+            IParamsTcpServerAuth,
             TcpAuthorizeEventArgs<T>,
             IdentityTcpServer<T>,
             T>
     {
-        public TcpHandlerServerAuth(ParamsTcpServerAuth parameters) : base(parameters)
+        public TcpHandlerServerAuth(IParamsTcpServerAuth parameters) : base(parameters)
         {
         }
-        public TcpHandlerServerAuth(ParamsTcpServerAuth parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
+        public TcpHandlerServerAuth(IParamsTcpServerAuth parameters, byte[] certificate, string certificatePassword) : base(parameters, certificate, certificatePassword)
         {
         }
 

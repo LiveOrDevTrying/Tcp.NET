@@ -2,7 +2,7 @@
 
 namespace Tcp.NET.Server.Models
 {
-    public class ParamsTcpServerAuth : ParamsTcpServer
+    public class ParamsTcpServerAuth : ParamsTcpServer, IParamsTcpServerAuth
     {
         public string ConnectionUnauthorizedString { get; protected set; }
 

@@ -15,7 +15,7 @@ namespace Tcp.NET.Server
         where T : TcpConnectionServerAuthBaseEventArgs<Z, A>
         where U : TcpMessageServerAuthBaseEventArgs<Z, A>
         where V : TcpErrorServerAuthBaseEventArgs<Z, A>
-        where W : ParamsTcpServerAuth
+        where W : IParamsTcpServerAuth
         where X : TcpHandlerServerAuthBase<T, U, V, W, B, Z, A>
         where Y : ConnectionManagerAuth<Z, A>
         where Z : IdentityTcpServer<A>
